@@ -1,0 +1,1010 @@
+// ============================
+// JEWELLERY ERP — PRISMA SCHEMA
+// ============================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Switch to "postgresql" for production
+  url      = env("DATABASE_URL")
+}
+
+// ============================
+// ORGANIZATION & BRANCH
+// ============================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  gstin     String?
+  address   String?
+  city      String?
+  state     String?
+  pin       String?
+  phone     String?
+  email     String?
+  logo      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches        Branch[]
+  users           User[]
+  customers       Customer[]
+  suppliers       Supplier[]
+  products        Product[]
+  categories      ProductCategory[]
+  settings        ShopSettings?
+  rates           RateMaster[]
+  hsnCodes        HsnCode[]
+  employees       Employee[]
+  jewelleryItems  JewelleryItem[]
+  barcodes        Barcode[]
+  sales           Sale[]
+  purchases       Purchase[]
+  urdTransactions UrdTransaction[]
+  jobOrders       JobOrder[]
+  repairs         Repair[]
+  payments        Payment[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  ledgerAccounts  LedgerAccount[]
+  ledgerEntries   LedgerEntry[]
+  expenses        Expense[]
+  income          Income[]
+}
+
+model Branch {
+  id              String   @id @default(uuid())
+  organizationId  String
+  name            String
+  code            String
+  address         String?
+  city            String?
+  state           String?
+  pin             String?
+  phone           String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  users           User[]
+  customers       Customer[]
+  suppliers       Supplier[]
+  jewelleryItems  JewelleryItem[]
+  barcodes        Barcode[]
+  sales           Sale[]
+  purchases       Purchase[]
+  urdTransactions UrdTransaction[]
+  jobOrders       JobOrder[]
+  payments        Payment[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  repairs         Repair[]
+  employees       Employee[]
+  ledgerAccounts  LedgerAccount[]
+  ledgerEntries   LedgerEntry[]
+  expenses        Expense[]
+  income          Income[]
+}
+
+// ============================
+// USERS, ROLES, PERMISSIONS
+// ============================
+
+model User {
+  id              String   @id @default(uuid())
+  organizationId  String
+  branchId        String?
+  name            String
+  email           String   @unique
+  password        String
+  role            String   @default("SALESMAN")
+  isActive        Boolean  @default(true)
+  employeeId      String?
+  lastLogin       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  branch          Branch?      @relation(fields: [branchId], references: [id])
+  assignedJobs       JobAssignment[] @relation("assignedEmployee")
+  materialEmployee   JobMaterialIssue[] @relation("materialEmployee")
+  materialIssuer     JobMaterialIssue[] @relation("materialIssuer")
+  auditLogs          AuditLog[]
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  module      String?
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+// ============================
+// CUSTOMERS
+// ============================
+
+model Customer {
+  id               String   @id @default(uuid())
+  organizationId   String
+  branchId         String?
+  customerId       String
+  name             String
+  mobile           String?
+  alternateMobile  String?
+  address          String?
+  city             String?
+  state            String?
+  pin              String?
+  gstin            String?
+  email            String?
+  notes            String?
+  isActive         Boolean  @default(true)
+  registrationDate DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  branch          Branch?         @relation(fields: [branchId], references: [id])
+  ledgerEntries   CustomerLedger[]
+  advances        CustomerAdvance[]
+  sales           Sale[]
+  urdTransactions UrdTransaction[]
+  jobOrders       JobOrder[]
+  repairs         Repair[]
+  payments        Payment[]
+}
+
+model CustomerLedger {
+  id              String   @id @default(uuid())
+  customerId      String
+  transactionType String
+  transactionId   String
+  transactionNo   String?
+  date            DateTime @default(now())
+  debit           Float    @default(0)
+  credit          Float    @default(0)
+  balance         Float    @default(0)
+  description     String?
+  createdAt       DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+model CustomerAdvance {
+  id          String   @id @default(uuid())
+  customerId  String
+  amount      Float
+  balance     Float
+  paymentMode String
+  reference   String?
+  notes       String?
+  date        DateTime @default(now())
+  employeeId  String?
+  createdAt   DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+// ============================
+// SUPPLIERS
+// ============================
+
+model Supplier {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String?
+  name           String
+  mobile         String?
+  address        String?
+  gstin          String?
+  contact        String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  branch         Branch?        @relation(fields: [branchId], references: [id])
+  ledgerEntries  SupplierLedger[]
+  purchases      Purchase[]
+  payments       Payment[]
+}
+
+model SupplierLedger {
+  id              String   @id @default(uuid())
+  supplierId      String
+  transactionType String
+  transactionId   String
+  date            DateTime @default(now())
+  debit           Float    @default(0)
+  credit          Float    @default(0)
+  balance         Float    @default(0)
+  description     String?
+  createdAt       DateTime @default(now())
+
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+}
+
+// ============================
+// PRODUCTS & INVENTORY
+// ============================
+
+model ProductCategory {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  parentId       String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  parent       ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     ProductCategory[] @relation("CategoryHierarchy")
+  products     Product[]
+}
+
+model Product {
+  id                       String   @id @default(uuid())
+  organizationId           String
+  name                     String
+  description              String?
+  categoryId               String?
+  subCategoryId            String?
+  designCode               String
+  metalType                String
+  purity                   String
+  hsnCode                  String
+  defaultMakingChargeType  String?
+  defaultMakingChargeValue Float?
+  image                    String?
+  isActive                 Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  category       ProductCategory? @relation(fields: [categoryId], references: [id])
+  jewelleryItems JewelleryItem[]
+}
+
+model JewelleryItem {
+  id                String   @id @default(uuid())
+  organizationId    String
+  branchId          String
+  barcode           String   @unique
+  sku               String
+  productId         String?
+  category          String?
+  subCategory       String?
+  designCode        String
+  metalType         String
+  purity            String
+  grossWeight       Float
+  stoneWeight       Float    @default(0)
+  otherWeight       Float    @default(0)
+  netWeight         Float
+  quantity          Int      @default(1)
+  size              String?
+  color             String?
+  brand             String?
+  purchaseRate      Float
+  currentRate       Float
+  makingChargeType  String   @default("PERCENTAGE")
+  makingChargeValue Float    @default(10)
+  hallmarkNumber    String?
+  certificateNumber String?
+  hsnCode           String
+  status            String   @default("IN_STOCK")
+  location          String?
+  supplierId        String?
+  purchaseId        String?
+  purchaseDate      DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  product      Product?     @relation(fields: [productId], references: [id])
+  barcodeRef   Barcode?
+}
+
+model Barcode {
+  id              String          @id @default(uuid())
+  organizationId  String
+  branchId        String
+  barcode         String          @unique
+  jewelleryItemId String? @unique
+  isAssigned      Boolean         @default(false)
+  isActive        Boolean         @default(true)
+  printedCount    Int             @default(0)
+  lastPrintedAt   DateTime?
+  createdAt       DateTime        @default(now())
+
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+  branch        Branch        @relation(fields: [branchId], references: [id])
+  jewelleryItem JewelleryItem? @relation(fields: [jewelleryItemId], references: [id])
+}
+
+// ============================
+// RATES
+// ============================
+
+model RateMaster {
+  id             String   @id @default(uuid())
+  organizationId String
+  metalType      String
+  purity         String
+  rate           Float
+  effectiveDate  DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  history      RateHistory[]
+}
+
+model RateHistory {
+  id           String   @id @default(uuid())
+  rateMasterId String
+  metalType    String
+  purity       String
+  rate         Float
+  effectiveDate DateTime
+  changedAt    DateTime @default(now())
+
+  rateMaster RateMaster @relation(fields: [rateMasterId], references: [id])
+}
+
+// ============================
+// STOCK TRANSACTIONS
+// ============================
+
+model StockTransaction {
+  id               String   @id @default(uuid())
+  organizationId   String
+  branchId         String
+  transactionType  String
+  transactionId    String
+  jewelleryItemId  String?
+  barcode          String?
+  metalType        String
+  purity           String
+  weight           Float
+  quantity         Int
+  rate             Float
+  value            Float
+  reference        String?
+  notes            String?
+  createdById      String?
+  createdAt        DateTime @default(now())
+}
+
+model StockBalance {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String
+  metalType      String
+  purity         String
+  totalWeight    Float    @default(0)
+  totalQuantity  Int      @default(0)
+  totalValue     Float    @default(0)
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, branchId, metalType, purity])
+}
+
+// ============================
+// SALES / BILLING
+// ============================
+
+model Sale {
+  id                String   @id @default(uuid())
+  organizationId    String
+  branchId          String
+  billNumber        String   @unique
+  billType          String   @default("GST")
+  status            String   @default("DRAFT")
+  customerId        String?
+  customerName      String
+  customerMobile    String?
+  customerGstin     String?
+  customerAddress   String?
+  billDate          DateTime @default(now())
+  taxableAmount     Float    @default(0)
+  cgst              Float    @default(0)
+  sgst              Float    @default(0)
+  igst              Float    @default(0)
+  totalTax          Float    @default(0)
+  discount          Float    @default(0)
+  discountType      String   @default("FIXED")
+  urdDeduction      Float    @default(0)
+  roundOff          Float    @default(0)
+  grossAmount       Float    @default(0)
+  netAmount         Float    @default(0)
+  paidAmount        Float    @default(0)
+  balanceAmount     Float    @default(0)
+  paymentMode       String?
+  salesmanId        String?
+  narration         String?
+  electronicReference String?
+  isGst             Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+  items        SaleItem[]
+  payments     SalePayment[]
+  returns      SaleReturn[]
+}
+
+model SaleItem {
+  id               String   @id @default(uuid())
+  saleId           String
+  jewelleryItemId  String?
+  barcode          String?
+  particular       String
+  hsnCode          String
+  purity           String
+  quantity         Int      @default(1)
+  grossWeight      Float    @default(0)
+  netWeight        Float    @default(0)
+  ratePerGram      Float    @default(0)
+  metalValue       Float    @default(0)
+  makingCharges    Float    @default(0)
+  chargeDetails    String   @default("[]")
+  hallMarkAmount   Float    @default(0)
+  discount         Float    @default(0)
+  cgst             Float    @default(0)
+  sgst             Float    @default(0)
+  igst             Float    @default(0)
+  urd              Float    @default(0)
+  urdDocNumber     String?
+  totalAmount      Float    @default(0)
+  sortOrder        Int      @default(0)
+
+  sale Sale @relation(fields: [saleId], references: [id])
+}
+
+model SalePayment {
+  id          String   @id @default(uuid())
+  saleId      String
+  amount      Float
+  paymentMode String
+  reference   String?
+  date        DateTime @default(now())
+  employeeId  String?
+  notes       String?
+
+  sale Sale @relation(fields: [saleId], references: [id])
+}
+
+model SaleReturn {
+  id             String   @id @default(uuid())
+  saleId         String
+  returnNumber   String   @unique
+  returnDate     DateTime @default(now())
+  totalAmount    Float    @default(0)
+  taxReversal    Float    @default(0)
+  refundAmount   Float    @default(0)
+  refundMode     String?
+  reason         String?
+  status         String   @default("COMPLETED")
+  createdAt      DateTime @default(now())
+
+  sale  Sale            @relation(fields: [saleId], references: [id])
+  items SaleReturnItem[]
+}
+
+model SaleReturnItem {
+  id              String   @id @default(uuid())
+  returnId        String
+  saleItemId      String
+  jewelleryItemId String?
+  barcode         String?
+  particular      String
+  quantity        Int
+  weight          Float
+  amount          Float
+  reason          String?
+
+  return SaleReturn @relation(fields: [returnId], references: [id])
+}
+
+// ============================
+// PURCHASES
+// ============================
+
+model Purchase {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String
+  supplierId     String
+  invoiceNumber  String
+  invoiceDate    DateTime
+  metalType      String
+  purity         String
+  grossWeight    Float
+  netWeight      Float
+  quantity       Int      @default(1)
+  rate           Float
+  amount         Float
+  makingCharges  Float    @default(0)
+  stoneCharges   Float    @default(0)
+  otherCharges   Float    @default(0)
+  cgst           Float    @default(0)
+  sgst           Float    @default(0)
+  igst           Float    @default(0)
+  totalAmount    Float
+  paidAmount     Float    @default(0)
+  balanceAmount  Float    @default(0)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  supplier     Supplier     @relation(fields: [supplierId], references: [id])
+  payments     PurchasePayment[]
+}
+
+model PurchasePayment {
+  id          String   @id @default(uuid())
+  purchaseId  String
+  amount      Float
+  paymentMode String
+  reference   String?
+  date        DateTime @default(now())
+  notes       String?
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id])
+}
+
+// ============================
+// URD TRANSACTIONS
+// ============================
+
+model UrdTransaction {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String
+  urdNumber      String   @unique
+  customerId     String?
+  customerName   String
+  metalType      String
+  purity         String
+  grossWeight    Float
+  stoneWeight    Float    @default(0)
+  netWeight      Float
+  rate           Float
+  value          Float
+  deduction      Float    @default(0)
+  meltingLoss    Float    @default(0)
+  finalValue     Float
+  paymentMode    String?
+  referenceBillId String?
+  notes          String?
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+}
+
+// ============================
+// JOB ORDERS
+// ============================
+
+model JobOrder {
+  id                String   @id @default(uuid())
+  organizationId    String
+  branchId          String
+  jobNumber         String   @unique
+  customerId        String?
+  customerName      String
+  customerMobile    String?
+  productDescription String
+  purity            String
+  metalType         String
+  expectedWeight    Float
+  expectedDelivery  DateTime
+  estimatedAmount   Float
+  advanceAmount     Float    @default(0)
+  balanceAmount     Float
+  status            String   @default("ASSIGNED")
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id])
+  branch       Branch          @relation(fields: [branchId], references: [id])
+  customer     Customer?       @relation(fields: [customerId], references: [id])
+  assignments  JobAssignment[]
+  materials    JobMaterialIssue[]
+  materialReturns JobMaterialReturn[]
+  statusHistory JobStatusHistory[]
+}
+
+model JobAssignment {
+  id          String   @id @default(uuid())
+  jobOrderId  String
+  employeeId  String
+  employeeName String
+  assignedAt  DateTime @default(now())
+  dueDate     DateTime
+  status      String   @default("ASSIGNED")
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  jobOrder    JobOrder          @relation(fields: [jobOrderId], references: [id])
+  employee    User              @relation("assignedEmployee", fields: [employeeId], references: [id])
+  materials   JobMaterialIssue[]
+  materialReturns JobMaterialReturn[]
+}
+
+model JobMaterialIssue {
+  id              String   @id @default(uuid())
+  jobOrderId      String
+  jobAssignmentId String
+  employeeId      String
+  metalType       String
+  purity          String
+  weight          Float
+  quantity        Int      @default(1)
+  issuedDate      DateTime @default(now())
+  issuedById      String
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  jobOrder       JobOrder         @relation(fields: [jobOrderId], references: [id])
+  jobAssignment  JobAssignment    @relation(fields: [jobAssignmentId], references: [id])
+  employee       User             @relation("materialEmployee", fields: [employeeId], references: [id])
+  issuer         User             @relation("materialIssuer", fields: [issuedById], references: [id])
+  returns        JobMaterialReturn[]
+}
+
+model JobMaterialReturn {
+  id              String   @id @default(uuid())
+  materialIssueId String
+  jobOrderId      String
+  jobAssignmentId String
+  weight          Float
+  difference      Float
+  wastage         Float
+  approvedWastage Float
+  excessWastage   Float
+  returnDate      DateTime @default(now())
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  materialIssue JobMaterialIssue @relation(fields: [materialIssueId], references: [id])
+  jobAssignment JobAssignment    @relation(fields: [jobAssignmentId], references: [id])
+  jobOrder      JobOrder         @relation(fields: [jobOrderId], references: [id])
+}
+
+model JobStatusHistory {
+  id        String   @id @default(uuid())
+  jobOrderId String
+  fromStatus String?
+  toStatus   String
+  changedBy  String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  jobOrder JobOrder @relation(fields: [jobOrderId], references: [id])
+}
+
+// ============================
+// REPAIRS
+// ============================
+
+model Repair {
+  id                String   @id @default(uuid())
+  organizationId    String
+  branchId          String
+  repairId          String   @unique
+  customerId        String?
+  customerName      String
+  jewelleryItemId   String?
+  barcode           String?
+  problem           String
+  receivedDate      DateTime @default(now())
+  expectedDate      DateTime?
+  assignedEmployeeId String?
+  estimatedCharge   Float    @default(0)
+  advance           Float    @default(0)
+  status            String   @default("RECEIVED")
+  deliveryDate      DateTime?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+}
+
+// ============================
+// PAYMENTS
+// ============================
+
+model Payment {
+  id                     String   @id @default(uuid())
+  organizationId         String
+  branchId               String
+  transactionId          String   @unique
+  customerId             String?
+  supplierId             String?
+  accountId              String?
+  amount                 Float
+  paymentMode            String
+  reference              String?
+  date                   DateTime @default(now())
+  employeeId             String?
+  relatedTransactionId   String?
+  relatedTransactionType String?
+  notes                  String?
+  createdAt              DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+  supplier     Supplier?    @relation(fields: [supplierId], references: [id])
+  account      LedgerAccount? @relation(fields: [accountId], references: [id])
+}
+
+model LedgerAccount {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String?
+  name           String
+  type           String   @default("CASH")
+  accountNumber  String?
+  bankName       String?
+  ifscCode       String?
+  openingBalance Float    @default(0)
+  currentBalance Float    @default(0)
+  isPrimary      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  entries      LedgerEntry[]
+  expenses     Expense[]
+  income       Income[]
+  payments     Payment[]
+}
+
+model LedgerEntry {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String?
+  accountId      String
+  type           String
+  amount         Float
+  date           DateTime @default(now())
+  description    String?
+  reference      String?
+  linkedTo       String?
+  linkedId       String?
+  employeeId     String?
+  employeeName   String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  account      LedgerAccount @relation(fields: [accountId], references: [id])
+}
+
+model Expense {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String?
+  accountId      String?
+  category       String
+  amount         Float
+  date           DateTime @default(now())
+  vendor         String?
+  description    String?
+  reference      String?
+  billNumber     String?
+  paidFromMode   String?
+  employeeId     String?
+  employeeName   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  account      LedgerAccount? @relation(fields: [accountId], references: [id])
+}
+
+model Income {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String?
+  accountId      String?
+  source         String
+  amount         Float
+  date           DateTime @default(now())
+  description    String?
+  reference      String?
+  receivedInMode String?
+  employeeId     String?
+  employeeName   String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  account      LedgerAccount? @relation(fields: [accountId], references: [id])
+}
+
+// ============================
+// TAX
+// ============================
+
+model HsnCode {
+  id          String   @id @default(uuid())
+  organizationId String
+  code        String
+  description String
+  gstRate     Float
+  cgstRate    Float
+  sgstRate    Float
+  igstRate    Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
+
+// ============================
+// EMPLOYEES
+// ============================
+
+model Employee {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String?
+  employeeCode   String
+  name           String
+  mobile         String?
+  email          String?
+  role           String
+  department     String?
+  designation    String?
+  salary         Float?
+  isActive       Boolean  @default(true)
+  joinedAt       DateTime @default(now())
+  userId         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+}
+
+// ============================
+// NOTIFICATIONS
+// ============================
+
+model Notification {
+  id                String   @id @default(uuid())
+  organizationId    String
+  branchId          String?
+  type              String
+  channel           String   @default("IN_APP")
+  title             String
+  message           String
+  recipientId       String?
+  recipientMobile   String?
+  relatedEntityType String?
+  relatedEntityId   String?
+  status            String   @default("PENDING")
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  error             String?
+  createdAt         DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+}
+
+// ============================
+// SETTINGS
+// ============================
+
+model ShopSettings {
+  id                String   @id @default(uuid())
+  organizationId    String   @unique
+  shopName          String
+  shopAddress       String?
+  shopCity          String?
+  shopState         String?
+  shopPin           String?
+  shopPhone         String?
+  shopEmail         String?
+  shopGstin         String?
+  logo              String?
+  invoicePrefix     String   @default("GST")
+  invoiceSuffix     String   @default("")
+  nextBillNumber    Int      @default(1)
+  defaultGstRate    Float    @default(3)
+  defaultCgstRate   Float    @default(1.5)
+  defaultSgstRate   Float    @default(1.5)
+  weightPrecision   Int      @default(3)
+  amountPrecision   Int      @default(2)
+  currency          String   @default("INR")
+  timezone          String   @default("Asia/Kolkata")
+  customMetals      String?  // JSON array of metal names e.g. ["GOLD","SILVER","PLATINUM","ROSE_GOLD"]
+  customPurities    String?  // JSON array of purity names e.g. ["24K","22K","18K","14K","10K","SILVER_999","SILVER_925"]
+  setupCompleted    Boolean  @default(false)
+  setupStep         Int      @default(0)            // 0=pending, 1=profile, 2=accounts, 3=users, 4=done
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
+
+// ============================
+// AUDIT LOG
+// ============================
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String?
+  userId         String
+  userName       String
+  action         String
+  entityType     String
+  entityId       String
+  oldValue       String?
+  newValue       String?
+  ipAddress      String?
+  userAgent      String?
+  timestamp      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+}
+
+// ============================
+// EXPENSES
+// ============================
+

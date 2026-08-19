@@ -1,0 +1,184 @@
+name: Build Desktop Application
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Target platform'
+        required: true
+        type: choice
+        options:
+          - all
+          - windows
+          - linux
+          - macos
+
+jobs:
+  build:
+    name: ${{ matrix.platform }} (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows builds
+          - platform: windows
+            os: windows-latest
+            arch: x86_64
+            target: x86_64-pc-windows-msvc
+            artifact_name: windows-jewellery-erp
+            binary_name: ShriJewellersERP-Setup.exe
+
+          # Linux builds (x86_64)
+          - platform: linux
+            os: ubuntu-22.04
+            arch: x86_64
+            target: x86_64-unknown-linux-gnu
+            artifact_name: linux-x86_64-jewellery-erp
+            binary_name: jewellery-erp.AppImage
+
+          # Linux ARM64 (Raspberry Pi, ARM servers)
+          - platform: linux-arm64
+            os: ubuntu-22.04
+            arch: aarch64
+            target: aarch64-unknown-linux-gnu
+            artifact_name: linux-aarch64-jewellery-erp
+            binary_name: jewellery-erp.AppImage
+
+          # macOS Intel
+          - platform: macos-intel
+            os: macos-latest
+            arch: x86_64
+            target: x86_64-apple-darwin
+            artifact_name: macos-intel-jewellery-erp
+            binary_name: Jewellery-ERP.dmg
+
+          # macOS Apple Silicon
+          - platform: macos-arm
+            os: macos-latest
+            arch: aarch64
+            target: aarch64-apple-darwin
+            artifact_name: macos-arm-jewellery-erp
+            binary_name: Jewellery-ERP.dmg
+
+          - platform: windows-arm64
+            os: windows-latest
+            arch: aarch64
+            target: aarch64-pc-windows-msvc
+            artifact_name: windows-arm-jewellery-erp
+            binary_name: ShriJewellersERP-Setup.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # ===================== Linux specific =====================
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev
+
+      # ===================== macOS specific =====================
+      - name: Install Rust toolchain for macOS
+        if: runner.os == 'macOS'
+        uses: dtolnay/rust-toolchain@stable
+
+      # ===================== Install Rust =====================
+      - name: Install Rust (cross targets)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/desktop/src-tauri
+
+      # ===================== Install dependencies =====================
+      - name: Install npm dependencies
+        run: |
+          npm ci
+
+      # ===================== Build =====================
+      - name: Build desktop application
+        run: |
+          cd packages/desktop
+          npx tauri build --target ${{ matrix.target }}
+
+      - name: Move built artifact
+        run: |
+          cd packages/desktop
+          SRC_DIR=$(find src-tauri/target/${{ matrix.target }}/release/bundle -maxdepth 2 -type d)
+          if [ -d "$SRC_DIR" ]; then
+            mkdir -p ../../dist-build/${{ matrix.artifact_name }}
+            cp -r "$SRC_DIR"/* ../../dist-build/${{ matrix.artifact_name }}/
+            echo "✅ Built packages copied to dist-build/${{ matrix.artifact_name }}"
+          else
+            echo "Source bundle dir not found: $SRC_DIR"
+            find src-tauri/target/${{ matrix.target }}/release/ -name "*.exe" -o -name "*.dmg" -o -name "*.deb" -o -name "*.AppImage" -o -name "*.msi" 2>/dev/null | head -10
+          fi
+
+      - name: List build artifacts
+        run: |
+          echo "=== Build artifacts ==="
+          find packages/desktop/src-tauri/target/ -name "*.exe" -o -name "*.dmg" -o -name "*.deb" -o -name "*.AppImage" -o -name "*.msi" 2>/dev/null
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
+            packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
+            packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.msi
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Generate Checksums
+        uses: eregon/subresource-integrity-action@1.0.0
+        with:
+          algorithm: SHA256
+          source: packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+
+      - name: Upload Release Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag=${GITHUB_REF#refs/tags/}
+          echo "Uploading release artifacts for tag $tag"
+          for dir in windows-jewellery-erp linux-x86_64-jewellery-erp macos-intel-jewellery-erp macos-arm-jewellery-erp; do
+            [ -d "$dir" ] || continue
+            cd "$dir"
+            for f in *; do
+              [ -f "$f" ] || continue
+              gh release upload "$tag" "$f" --clobber || echo "Failed: $dir/$f"
+            done
+            cd ..
+          done

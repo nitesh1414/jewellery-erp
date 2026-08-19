@@ -1,0 +1,41 @@
+{
+  "name": "@jewellery-erp/desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jewellery ERP & POS Desktop Application (Tauri)",
+  "main": "dist/index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:windows": "tauri build --target x86_64-pc-windows-msvc",
+    "tauri:build:linux": "tauri build --target x86_64-unknown-linux-gnu",
+    "tauri:build:mac": "tauri build --target aarch64-apple-darwin",
+    "tauri:build:mac:x64": "tauri build --target x86_64-apple-darwin",
+    "tauri:icon": "tauri icon"
+  },
+  "dependencies": {
+    "@jewellery-erp/shared": "*",
+    "@tanstack/react-query": "^5.24.0",
+    "lucide-react": "^0.344.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^6.22.0",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "@types/react": "^18.2.56",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.4.0",
+    "vite": "^5.1.0"
+  }
+}

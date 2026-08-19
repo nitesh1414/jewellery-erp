@@ -1,0 +1,46 @@
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# Build artifacts (these are bundled per-platform)
+src-tauri/target/x86_64-pc-windows-msvc/
+src-tauri/target/x86_64-unknown-linux-gnu/
+src-tauri/target/aarch64-unknown-linux-gnu/
+src-tauri/target/x86_64-apple-darwin/
+src-tauri/target/aarch64-apple-darwin/
+src-tauri/target/universal-apple-darwin/
+
+# Generated icons (placed manually after first build, then tracked)
+# src-tauri/icons/  # uncomment to ignore all icons
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Distribution builds (kept here as convenience)
+dist-build/
+
+# Auto-generated TS build info
+*.tsbuildinfo
