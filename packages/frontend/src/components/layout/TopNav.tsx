@@ -179,7 +179,7 @@ export function TopNav() {
               <Diamond className="w-4 h-4 text-white" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-sm font-bold text-gray-900 leading-tight">Shri Jewellers</h1>
+              <h1 className="text-sm font-bold text-gray-900 leading-tight">RajShri Jewellers</h1>
               <p className="text-[10px] text-gray-500 leading-tight">ERP & POS</p>
             </div>
           </NavLink>

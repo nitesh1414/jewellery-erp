@@ -90,6 +90,31 @@ class ApiService {
     return data;
   }
 
+  async createCustomer(body: any) {
+    const { data } = await this.client.post('/customers', body);
+    return data;
+  }
+
+  async getCustomer(id: string) {
+    const { data } = await this.client.get(`/customers/${id}`);
+    return data;
+  }
+
+  async updateCustomer(id: string, body: any) {
+    const { data } = await this.client.put(`/customers/${id}`, body);
+    return data;
+  }
+
+  async deleteCustomer(id: string) {
+    const { data } = await this.client.delete(`/customers/${id}`);
+    return data;
+  }
+
+  // Customer Ledger
+  async getCustomerLedger(customerId: string, params?: any) {
+    const { data } = await this.client.get(`/customers/${customerId}/ledger`, { params });
+    return data;
+  }
   // Sales / Billing
   async getSales(params?: any) {
     const { data } = await this.client.get('/sales', { params });
@@ -195,6 +220,7 @@ class ApiService {
     const { data } = await this.client.post(`/sales/${id}/payment`, body);
     return data;
   }
+
 
   async getJobOrderStats() {
     const { data } = await this.client.get('/job-orders/stats/overview');
