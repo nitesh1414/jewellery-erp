@@ -199,7 +199,7 @@ export class JewelleryService {
    * Bulk material entry (for purchase import)
    */
   async bulkCreate(items: any[], organizationId: string, branchId: string, userId: string) {
-    const created = [];
+    const created: any[] = [];
     for (const item of items) {
       const result = await this.create(item, organizationId, branchId, userId);
       created.push(result);

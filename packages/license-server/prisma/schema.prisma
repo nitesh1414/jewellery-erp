@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // switch to "postgresql" for a hosted cloud deployment
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("ADMIN") // ADMIN | SUPER_ADMIN
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Subscription {
+  id               String         @id @default(uuid())
+  licenseKey       String         @unique
+  customerName     String?
+  customerEmail    String?
+  customerPhone    String?
+  notes            String?
+  planType         String         @default("STANDARD") // TRIAL | STANDARD | PRO | ENTERPRISE
+  durationType     String // DAYS | MONTHS | YEARS | LIFETIME
+  durationCount    Int            @default(0) // ignored when durationType = LIFETIME
+  machineBinding   String? // when set, only this machine id can activate
+  maxActivations   Int            @default(1) // how many machines may use an unbound key
+  status           String         @default("ACTIVE") // ACTIVE | REVOKED
+  firstActivatedAt DateTime?
+  expiresAt        DateTime? // set on first activation; null for lifetime / not yet started
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  activations Activation[]
+  events      LicenseEvent[]
+}
+
+model Activation {
+  id               String       @id @default(uuid())
+  subscriptionId   String
+  machineId        String
+  machineInfo      String? // JSON: { os, hostname, appVersion }
+  firstActivatedAt DateTime     @default(now())
+  lastSeenAt       DateTime     @default(now())
+  lastValidatedAt  DateTime?
+  deactivatedAt    DateTime?
+  licenseIssuedAt  DateTime?
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@unique([subscriptionId, machineId])
+  @@index([machineId])
+}
+
+model LicenseEvent {
+  id             String   @id @default(uuid())
+  subscriptionId String?
+  type           String // CREATED | ACTIVATED | ACTIVATION_DENIED | REVOKED | RESTORED | EXTENDED | DEACTIVATED | DELETED | OFFLINE_LICENSE_ISSUED | UPDATED
+  detail         String? // JSON string
+  createdAt      DateTime @default(now())
+
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+}

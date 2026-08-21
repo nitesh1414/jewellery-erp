@@ -15,7 +15,7 @@ export class SalesService {
     page?: number;
     limit?: number;
   }) {
-    const search = query.search; const status = query.status; const billType = query.billType; const startDate = query.startDate; const endDate = query.endDate; const page = +query.page || 1; const limit = +query.limit || 20;
+    const search = query.search; const status = query.status; const billType = query.billType; const startDate = query.startDate; const endDate = query.endDate; const page = Number(query.page ?? 1) || 1; const limit = Number(query.limit ?? 20) || 20;
     const skip = (page - 1) * limit;
 
     const where: any = { organizationId };

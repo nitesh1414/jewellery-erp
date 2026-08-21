@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Plus, ChevronDown } from 'lucide-react';
+import { Search, Bell, Plus, ChevronDown, KeyRound } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -8,6 +8,22 @@ export function TopBar() {
   const user = useAuthStore((s) => s.user);
   const [searchQuery, setSearchQuery] = useState('');
   const [showQuickMenu, setShowQuickMenu] = useState(false);
+  // Subscription chip — only rendered inside the Electron desktop app
+  // (window.desktopBridge is exposed by the desktop shell's preload script).
+  const [licenseChip, setLicenseChip] = useState<{ days: number | null; plan: string } | null>(null);
+
+  useEffect(() => {
+    const bridge = (window as any).desktopBridge;
+    if (!bridge?.getLicenseStatus) return;
+    bridge
+      .getLicenseStatus()
+      .then((s: any) => {
+        if (s?.valid && s.license) {
+          setLicenseChip({ days: s.license.daysRemaining ?? null, plan: s.license.planType });
+        }
+      })
+      .catch(() => undefined);
+  }, []);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,6 +69,19 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
+        {licenseChip && (
+          <span
+            className={`hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+              licenseChip.days !== null && licenseChip.days <= 15
+                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                : 'bg-green-50 text-green-700 border border-green-200'
+            }`}
+            title={`Subscription: ${licenseChip.plan}`}
+          >
+            <KeyRound size={12} />
+            {licenseChip.days === null ? 'Lifetime license' : `License: ${licenseChip.days}d left`}
+          </span>
+        )}
         {/* Quick Actions */}
         <div className="relative" ref={menuRef}>
           <button

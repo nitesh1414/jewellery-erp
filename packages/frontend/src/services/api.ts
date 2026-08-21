@@ -72,6 +72,11 @@ class ApiService {
     return data;
   }
 
+  async delete(url: string, params?: any) {
+    const { data } = await this.client.delete(url, { params });
+    return data;
+  }
+
   // Auth
   async login(email: string, password: string, branchId?: string) {
     const { data } = await this.client.post('/auth/login', { email, password, branchId });

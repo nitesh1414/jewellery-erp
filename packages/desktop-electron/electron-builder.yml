@@ -1,0 +1,105 @@
+appId: com.jewellery.erp.desktop
+productName: Shri Jewellers ERP
+copyright: Copyright © 2026 Shri Jewellers
+
+directories:
+  output: release
+  buildResources: build
+
+# The Electron shell (main + preload + activation page). The ERP backend and
+# frontend live in extraResources (see below) and run as a local service.
+files:
+  - dist-electron/**
+  - dist/**
+  - package.json
+  - node_modules/@jewellery-erp/license-core/**
+  - "!**/*.map"
+
+extraResources:
+  # Compiled NestJS backend with its own production node_modules (incl. the
+  # Prisma SQLite engine) and the pristine template database.
+  - from: staging/backend
+    to: backend
+    filter:
+      - '**/*'
+      - '!seed-desktop.cjs'
+      - '!package-lock.json'
+  # Built React app served by the local backend.
+  - from: staging/frontend
+    to: frontend
+  # Ed25519 public key used to verify subscription licenses offline.
+  - from: resources/license-public-key.pem
+    to: license-public-key.pem
+  # License server URL the app activates against (set via LICENSE_SERVER_URL
+  # at build time; users can also change it on the activation screen).
+  - from: resources/license-server-url.txt
+    to: license-server-url.txt
+
+asar: true
+compression: normal
+electronLanguages:
+  - en-US
+
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Shri Jewellers ERP
+  uninstallDisplayName: Shri Jewellers ERP
+  runAfterFinish: true
+  include: build/installer.nsh
+  artifactName: ShriJewellersERP-Setup-${version}.${ext}
+
+portable:
+  artifactName: ShriJewellersERP-Portable-${version}.${ext}
+
+mac:
+  icon: build/icon.png
+  category: public.app-category.business
+  identity: null # add signing identity for distribution
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  artifactName: ShriJewellersERP-${version}-${arch}.${ext}
+  extendInfo:
+    LSMinimumSystemVersion: '10.13'
+
+dmg:
+  title: Shri Jewellers ERP ${version}
+  artifactName: ShriJewellersERP-Setup-${version}-${arch}.${ext}
+
+linux:
+  icon: build/icon.png
+  category: Office
+  packageCategory: office
+  maintainer: Shri Jewellers <support@shrijewellers.example>
+  target:
+    - target: AppImage
+      arch: [x64, arm64]
+    - target: deb
+      arch: [x64]
+    - target: rpm
+      arch: [x64]
+    - target: tar.gz
+      arch: [x64]
+  artifactName: shri-jewellers-erp-${version}-${arch}.${ext}
+
+appImage:
+  artifactName: ShriJewellersERP-${version}-${arch}.AppImage
+
+deb:
+  packageName: shri-jewellers-erp
+  artifactName: ShriJewellersERP-${version}-${arch}.deb
+
+rpm:
+  packageName: shri-jewellers-erp
+  artifactName: ShriJewellersERP-${version}-${arch}.rpm
