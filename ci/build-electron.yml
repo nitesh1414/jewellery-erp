@@ -1,3 +1,8 @@
+# This is the GitHub Actions workflow for building the desktop installers.
+# Copy (or move) it to .github/workflows/build-electron.yml to activate it
+# (pushing to .github/workflows requires 'workflows' permission on the token).
+# cp ci/build-electron.yml .github/workflows/build-electron.yml
+
 name: Build Desktop Installers (Electron)
 
 on:

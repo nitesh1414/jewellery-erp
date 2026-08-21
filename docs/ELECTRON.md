@@ -90,7 +90,7 @@ npm run dist:desktop:win
 
 Cross-compilation is **not** required for Windows/macOS/Linux x64 — but each
 OS must be built **on** that OS (or use the included GitHub Actions workflow
-`.github/workflows/build-electron.yml`, which builds all three on tagged
+`ci/build-electron.yml` (copy to `.github/workflows/` to activate), which builds all three on tagged
 pushes and uploads the installers as artifacts).
 
 ### Unpacked / test run
