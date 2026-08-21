@@ -59,6 +59,7 @@ export async function startBackend(jwtSecret: string, onExit?: (code: number) =>
       UPLOAD_DIR: userDataPaths.uploadsDir(),
       FRONTEND_DIST: frontendDist(),
       JWT_SECRET: jwtSecret,
+      DESKTOP_DB_AUTO_MIGRATE: '1',
       CORS_ORIGIN: `http://127.0.0.1:${port},http://localhost:${port}`,
     },
   });

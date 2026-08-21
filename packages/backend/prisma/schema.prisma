@@ -54,6 +54,8 @@ model Organization {
   ledgerEntries   LedgerEntry[]
   expenses        Expense[]
   income          Income[]
+  ornamentTypes   OrnamentType[]
+  quotations      Quotation[]
 }
 
 model Branch {
@@ -89,6 +91,8 @@ model Branch {
   ledgerEntries   LedgerEntry[]
   expenses        Expense[]
   income          Income[]
+  ornamentTypes   OrnamentType[]
+  quotations      Quotation[]
 }
 
 // ============================
@@ -322,6 +326,8 @@ model JewelleryItem {
   makingChargeValue Float    @default(10)
   hallmarkNumber    String?
   certificateNumber String?
+  ornament          String?   // ornament master entry name (ledger master)
+  ornamentGender    String?   // MALE | FEMALE | UNISEX
   hsnCode           String
   status            String   @default("IN_STOCK")
   location          String?
@@ -483,6 +489,7 @@ model SaleItem {
   makingCharges    Float    @default(0)
   chargeDetails    String   @default("[]")
   hallMarkAmount   Float    @default(0)
+  hallmarkNumber   String?
   discount         Float    @default(0)
   cgst             Float    @default(0)
   sgst             Float    @default(0)
@@ -913,8 +920,76 @@ model Employee {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  branch       Branch?          @relation(fields: [branchId], references: [id])
+  payments     WorkerPayment[]
+}
+
+model WorkerPayment {
+  id             String   @id @default(uuid())
+  organizationId String
+  branchId       String?
+  employeeId     String
+  type           String   @default("PAYMENT") // SALARY | PAYMENT | ADVANCE
+  amount         Float
+  periodMonth    String?  // e.g. 2026-08 (for salary)
+  paymentMode    String   @default("CASH")
+  reference      String?
+  date           DateTime @default(now())
+  notes          String?
+  createdAt      DateTime @default(now())
+
   organization Organization @relation(fields: [organizationId], references: [id])
-  branch       Branch?      @relation(fields: [branchId], references: [id])
+  employee     Employee     @relation(fields: [employeeId], references: [id])
+}
+
+// ============================
+// ORNAMENT MASTER (ledger master — male / female ornaments)
+// ============================
+
+model OrnamentType {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  gender         String   @default("UNISEX") // MALE | FEMALE | UNISEX
+  category       String?  // Ring, Bangle, Chain, Necklace…
+  notes          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, gender])
+}
+
+// ============================
+// QUOTATIONS (shareable estimate links)
+// ============================
+
+model Quotation {
+  id             String    @id @default(uuid())
+  organizationId String
+  branchId       String
+  quoteNumber    String    @unique
+  token          String    @unique
+  customerId     String?
+  customerName   String
+  customerMobile String?
+  items          String    @default("[]") // JSON array of quote items
+  grossAmount    Float     @default(0)
+  discount       Float     @default(0)
+  netAmount      Float     @default(0)
+  isGst          Boolean   @default(true)
+  validUntil     DateTime?
+  status         String    @default("ACTIVE") // ACTIVE | EXPIRED | ACCEPTED | CONVERTED
+  notes          String?
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
 }
 
 // ============================
@@ -972,6 +1047,8 @@ model ShopSettings {
   timezone          String   @default("Asia/Kolkata")
   customMetals      String?  // JSON array of metal names e.g. ["GOLD","SILVER","PLATINUM","ROSE_GOLD"]
   customPurities    String?  // JSON array of purity names e.g. ["24K","22K","18K","14K","10K","SILVER_999","SILVER_925"]
+  customHallmarks   String?  // JSON array of hallmark master entries e.g. [{"id":"...","label":"Hallmark 22K","purity":"22K","charge":45}]
+  hallmarkCharge    Float    @default(45) // default hallmark charge per item used in billing
   setupCompleted    Boolean  @default(false)
   setupStep         Int      @default(0)            // 0=pending, 1=profile, 2=accounts, 3=users, 4=done
   createdAt         DateTime @default(now())

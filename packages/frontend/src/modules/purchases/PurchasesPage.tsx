@@ -26,8 +26,8 @@ export default function PurchasesPage() {
     metalType: 'GOLD', purity: '22K', rate: 0, paidAmount: 0, notes: '',
   });
   const [items, setItems] = useState<PurchaseItem[]>([]);
-  const [itemForm, setItemForm] = useState<PurchaseItem>({
-    id: '', designCode: '', purity: '22K', grossWeight: 0, netWeight: 0, rate: 0, quantity: 1,
+  const [itemForm, setItemForm] = useState<any>({
+    id: '', designCode: '', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, quantity: 1,
     makingChargeType: 'PERCENTAGE', makingChargeValue: 10,
   });
 
@@ -63,7 +63,7 @@ export default function PurchasesPage() {
       return;
     }
     setItems([...items, { ...itemForm, id: 'item-' + Date.now() }]);
-    setItemForm({ id: '', designCode: '', purity: '22K', grossWeight: 0, netWeight: 0, rate: 0, quantity: 1, makingChargeType: 'PERCENTAGE', makingChargeValue: 10 });
+    setItemForm({ id: '', designCode: '', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, quantity: 1, makingChargeType: 'PERCENTAGE', makingChargeValue: 10 });
   };
 
   return (
@@ -147,7 +147,7 @@ export default function PurchasesPage() {
             {/* Items */}
             <h4 className="font-medium text-gray-700 mb-3">Items (auto-generates barcodes + stock)</h4>
             <div className="bg-gray-50 rounded-xl p-4 mb-4">
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-6 gap-3">
                 <div><label className="label">Design Code</label>
                   <input className="input-field text-xs" value={itemForm.designCode} onChange={e => setItemForm({...itemForm, designCode: e.target.value})} placeholder="RING-005" /></div>
                 <div><label className="label">Purity</label>
@@ -156,6 +156,8 @@ export default function PurchasesPage() {
                   </select></div>
                 <div><label className="label">Gross (g)</label>
                   <input type="number" step="0.001" className="input-field text-xs" value={itemForm.grossWeight || ''} onChange={e => setItemForm({...itemForm, grossWeight: Number(e.target.value)})} /></div>
+                <div><label className="label">Stone (g)</label>
+                  <input type="number" step="0.001" className="input-field text-xs" value={itemForm.stoneWeight || ''} onChange={e => setItemForm({...itemForm, stoneWeight: Number(e.target.value)})} placeholder="0" /></div>
                 <div><label className="label">Net (g) *</label>
                   <input type="number" step="0.001" className="input-field text-xs" value={itemForm.netWeight || ''} onChange={e => setItemForm({...itemForm, netWeight: Number(e.target.value)})} /></div>
                 <div><label className="label">Rate/g</label>

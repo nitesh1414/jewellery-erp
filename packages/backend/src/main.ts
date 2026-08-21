@@ -6,7 +6,32 @@ import * as express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 
+/**
+ * Desktop builds set DESKTOP_DB_AUTO_MIGRATE=1 — on startup the local
+ * database schema is reconciled (prisma db push) so app updates never ship
+ * a schema the existing database doesn't have. Requires the prisma CLI,
+ * which is bundled as a production dependency of the packaged app.
+ */
+async function autoMigrate(): Promise<void> {
+  if (process.env.DESKTOP_DB_AUTO_MIGRATE !== '1') return;
+  try {
+    const { execFileSync } = require('child_process');
+    const path = require('path');
+    const cli = path.join(__dirname, '..', 'node_modules', 'prisma', 'build', 'index.js');
+    if (!fs.existsSync(cli)) return;
+    console.log('[desktop] reconciling database schema…');
+    execFileSync(process.execPath, [cli, 'db', 'push', '--skip-generate', '--accept-data-loss'], {
+      cwd: path.join(__dirname, '..'),
+      env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
+      stdio: 'inherit',
+    });
+  } catch (err) {
+    console.error('[desktop] schema reconcile failed (continuing):', (err as Error).message);
+  }
+}
+
 async function bootstrap() {
+  await autoMigrate();
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS (desktop app is served same-origin from this server, so this

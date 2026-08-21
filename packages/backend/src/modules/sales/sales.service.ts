@@ -163,6 +163,7 @@ export class SalesService {
             makingCharges: itemCalc.totalCharges,
             chargeDetails: JSON.stringify(item.chargeDetails || []),
             hallMarkAmount: itemCalc.hallMarkAmount,
+            hallmarkNumber: item.hallmarkNumber || null,
             discount: itemCalc.discount,
             cgst: itemCalc.cgst,
             sgst: itemCalc.sgst,

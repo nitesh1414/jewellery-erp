@@ -70,24 +70,29 @@ export default function BarcodesPage() {
     scanRef.current?.focus();
   };
 
+  const printStickers = async (ids: string[]) => {
+    if (!ids.length) { toast.error('Nothing to print'); return; }
+    try { await api.post('/barcodes/batch/print', { barcodeIds: ids }); } catch { /* tracking only */ }
+    window.open('/print/barcodes?ids=' + ids.join(','), '_blank');
+  };
+
   const handlePrint = async (barcodeId: string) => {
     try {
       await api.post(`/barcodes/${barcodeId}/print`, {});
-      toast.success('Print tracked');
-    } catch (err) {
-      toast.error('Error tracking print');
-    }
+    } catch { /* tracking only */ }
+    printStickers([barcodeId]);
   };
 
   const handleBatchPrint = async () => {
-    if (!data?.items?.length) return;
-    const ids = data.items.map((i: any) => i.id);
-    try {
-      await api.post('/barcodes/batch/print', { barcodeIds: ids });
-      toast.success('Batch print tracked');
-    } catch (err) {
-      toast.error('Error tracking batch print');
-    }
+    if (!data?.items?.length) { toast.error('No barcodes on this page'); return; }
+    printStickers(data.items.map((i: any) => i.id));
+  };
+
+  const handlePrintUnassigned = async () => {
+    const res = await api.getBarcodes({ limit: 500 });
+    const unassigned = (res.items || []).filter((b: any) => !b.jewelleryItemId).map((b: any) => b.id);
+    if (!unassigned.length) { toast.error('No unassigned barcodes'); return; }
+    printStickers(unassigned);
   };
 
   return (
@@ -103,7 +108,10 @@ export default function BarcodesPage() {
             <Plus className="w-4 h-4" /> Generate Barcodes
           </button>
           <button onClick={handleBatchPrint} className="btn-secondary">
-            <Printer className="w-4 h-4" /> Batch Print
+            <Printer className="w-4 h-4" /> Print This Page
+          </button>
+          <button onClick={handlePrintUnassigned} className="btn-secondary">
+            <Printer className="w-4 h-4" /> Print Unassigned
           </button>
         </div>
       </div>

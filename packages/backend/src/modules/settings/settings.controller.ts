@@ -152,4 +152,20 @@ export class SettingsController {
   async removePurity(@CurrentUser() u: any, @Param('purity') purity: string) {
     return this.settingsService.removePurity(u.organizationId, purity);
   }
+
+  // ====== hallmark master ======
+  @Post('hallmarks')
+  async addHallmark(@CurrentUser() u: any, @Body() body: any) {
+    return this.settingsService.addHallmark(u.organizationId, body);
+  }
+
+  @Put('hallmarks/:id')
+  async updateHallmark(@CurrentUser() u: any, @Param('id') id: string, @Body() body: any) {
+    return this.settingsService.updateHallmark(u.organizationId, id, body);
+  }
+
+  @Delete('hallmarks/:id')
+  async removeHallmark(@CurrentUser() u: any, @Param('id') id: string) {
+    return this.settingsService.removeHallmark(u.organizationId, id);
+  }
 }

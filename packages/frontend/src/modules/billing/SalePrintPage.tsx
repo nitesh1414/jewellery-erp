@@ -38,9 +38,13 @@ export default function SalePrintPage() {
   };
 
   const formats: { key: InvoiceFormat; label: string; icon: any; desc: string }[] = [
-    { key: 'A4_GST', label: 'A4 Tax Invoice', icon: FileText, desc: 'GST-compliant A4 invoice' },
-    { key: 'THERMAL', label: 'Thermal Receipt', icon: Receipt, desc: 'Compact 80mm thermal' },
-    { key: 'ESTIMATE', label: 'Estimate / Quote', icon: Tag, desc: 'Non-binding estimate' },
+    { key: 'A4_GST', label: 'A4 GST', icon: FileText, desc: 'A4 tax invoice — GST with CGST/SGST' },
+    { key: 'A4_NON_GST', label: 'A4 Plain', icon: FileText, desc: 'A4 invoice without GST columns' },
+    { key: 'A5', label: 'A5', icon: FileText, desc: 'A5 half-sheet compact invoice' },
+    { key: 'THERMAL', label: '80mm', icon: Receipt, desc: '80mm thermal receipt (standard POS)' },
+    { key: 'THERMAL_76', label: '76mm', icon: Receipt, desc: '76mm thermal roll' },
+    { key: 'THERMAL_58', label: '58mm', icon: Receipt, desc: '58mm thermal roll (mini POS printers)' },
+    { key: 'ESTIMATE', label: 'Estimate', icon: Tag, desc: 'Non-binding estimate / quotation' },
   ];
 
   if (isLoading) {

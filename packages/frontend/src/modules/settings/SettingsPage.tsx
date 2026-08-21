@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
-import { Save, Settings, Building, Receipt, Percent, Shield, Diamond, Plus, X, Gem, Tag } from 'lucide-react';
+import { Save, Settings, Building, Receipt, Percent, Shield, Diamond, Plus, X, Gem, Tag, BadgeCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<'shop' | 'invoice' | 'tax' | 'metals' | 'purities' | 'rates' | 'roles'>('shop');
+  const [tab, setTab] = useState<'shop' | 'invoice' | 'tax' | 'metals' | 'purities' | 'hallmark' | 'rates' | 'roles'>('shop');
 
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings() });
   const { data: rates } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates() });
@@ -32,6 +32,24 @@ export default function SettingsPage() {
   const addPurityMutation = useMutation({
     mutationFn: (purity: string) => api.post('/settings/purities', { purity }),
     onSuccess: () => { toast.success('Purity added'); qc.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const addHallmarkMutation = useMutation({
+    mutationFn: (body: any) => api.addHallmark(body),
+    onSuccess: () => { toast.success('Hallmark entry added!'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const updateHallmarkMutation = useMutation({
+    mutationFn: ({ id, body }: any) => api.updateHallmark(id, body),
+    onSuccess: () => { toast.success('Hallmark updated!'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const deleteHallmarkMutation = useMutation({
+    mutationFn: (id: string) => api.deleteHallmark(id),
+    onSuccess: () => { toast.success('Deleted'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
 
@@ -95,6 +113,7 @@ export default function SettingsPage() {
           ['invoice', 'Invoice', Receipt],
           ['tax', 'Tax', Percent],
           ['metals', 'Metals', Diamond],
+          ['hallmark', 'Hallmark', BadgeCheck],
           ['purities', 'Purities', Tag],
           ['rates', 'Rate Schedule', Gem],
           ['roles', 'Roles', Shield],
@@ -157,6 +176,17 @@ export default function SettingsPage() {
         )}
 
         {/* Metals */}
+        {tab === 'hallmark' && settings && (
+          <HallmarksTab
+            hallmarks={settings.allHallmarks || []}
+            hallmarkCharge={settings.hallmarkCharge ?? 45}
+            defaultPurities={settings.allPurities || []}
+            onAdd={(body) => addHallmarkMutation.mutate(body)}
+            onUpdate={(id, body) => updateHallmarkMutation.mutate({ id, body })}
+            onDelete={(id) => confirm('Delete this hallmark entry?') && deleteHallmarkMutation.mutate(id)}
+            onSaveDefaultCharge={(charge) => updateMutation.mutate({ hallmarkCharge: charge })}
+          />
+        )}
         {tab === 'metals' && (
           <MetalsTab
             metals={settings?.allMetals || []}
@@ -330,6 +360,84 @@ function RatesTab({ rates, onUpdate }: any) {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+
+/* ==================== HALLMARK MASTER TAB ==================== */
+function HallmarksTab({ hallmarks, hallmarkCharge, defaultPurities, onAdd, onUpdate, onDelete, onSaveDefaultCharge }: any) {
+  const [label, setLabel] = useState('');
+  const [purity, setPurity] = useState('22K');
+  const [charge, setCharge] = useState(45);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCharge, setEditCharge] = useState(0);
+  const [defaultChargeInput, setDefaultChargeInput] = useState(hallmarkCharge);
+
+  return (
+    <div className="card p-6 space-y-5">
+      <div>
+        <p className="text-sm text-gray-500">
+          Hallmark master used while billing — each entry maps a purity to a default hallmark charge. The charge is
+          pre-filled on bill lines when an item carries a hallmark number.
+        </p>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-end gap-3">
+        <div className="flex-1">
+          <label className="label">Default hallmark charge (₹ per item)</label>
+          <input type="number" className="input-field max-w-[160px]" value={defaultChargeInput} onChange={(e) => setDefaultChargeInput(Number(e.target.value))} />
+        </div>
+        <button className="btn-primary" onClick={() => onSaveDefaultCharge(defaultChargeInput)}>Save default</button>
+      </div>
+
+      <div className="border-t pt-5">
+        <label className="label">Add / update hallmark entry</label>
+        <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
+          <div><input className="input-field" placeholder="Label — e.g. Hallmark 22K (916)" value={label} onChange={(e) => setLabel(e.target.value)} /></div>
+          <div>
+            <select className="input-field" value={purity} onChange={(e) => setPurity(e.target.value)}>
+              {defaultPurities.map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}
+            </select>
+          </div>
+          <div><input type="number" className="input-field" placeholder="Charge ₹" value={charge || ''} onChange={(e) => setCharge(Number(e.target.value))} /></div>
+          <button className="btn-primary" onClick={() => { if (!label.trim()) return; onAdd({ label, purity, charge }); setLabel(''); }}>Add entry</button>
+        </div>
+      </div>
+
+      <div className="border-t pt-5">
+        <table className="w-full">
+          <thead><tr className="border-b bg-gray-50">
+            <th className="table-header">Label</th><th className="table-header">Purity</th>
+            <th className="table-header text-right">Charge (₹)</th><th className="table-header"></th>
+          </tr></thead>
+          <tbody>
+            {hallmarks.map((h: any) => (
+              <tr key={h.id} className="border-b border-gray-50">
+                <td className="table-cell font-medium">{h.label}</td>
+                <td className="table-cell">{h.purity}</td>
+                <td className="table-cell text-right">
+                  {editingId === h.id ? (
+                    <div className="flex gap-1 justify-end">
+                      <input type="number" className="input-field !py-1 w-24 text-right" value={editCharge || ''} onChange={(e) => setEditCharge(Number(e.target.value))} autoFocus />
+                      <button className="btn-primary !py-1 !px-2 text-xs" onClick={() => { onUpdate(h.id, { charge: editCharge }); setEditingId(null); }}>Save</button>
+                      <button className="btn-secondary !py-1 !px-2 text-xs" onClick={() => setEditingId(null)}>✕</button>
+                    </div>
+                  ) : (
+                    <button onDoubleClick={() => { setEditingId(h.id); setEditCharge(h.charge); }} className="hover:bg-gray-50 px-2 rounded" title="Double-click to edit">₹{h.charge}</button>
+                  )}
+                </td>
+                <td className="table-cell text-right">
+                  <button
+                    onClick={() => { if (confirm(`Delete hallmark entry "${h.label}"?`)) onDelete(h.id); }}
+                    className="text-red-500 hover:text-red-700 text-xs">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="text-xs text-gray-400 mt-2">Tip: double-click a charge to edit it inline. Entries marked as default can be edited but not deleted.</p>
       </div>
     </div>
   );

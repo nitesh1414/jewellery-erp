@@ -12,6 +12,8 @@ interface Item {
   makingCharges: number;
   chargeDetails: any[];
   hallMarkAmount: number;
+  hallmarkNumber?: string;
+  barcode?: string;
   discount: number;
   urd: number;
   cgst: number;
@@ -76,7 +78,7 @@ function safeInt(n: any) {
 }
 
 /* ==================== A4 GST TAX INVOICE ==================== */
-function A4GST({ bill, shop }: { bill: Bill; shop: Shop }) {
+function A4GST({ bill, shop, hideGst = false }: { bill: Bill; shop: Shop; hideGst?: boolean }) {
   return (
     <div className="invoice-page">
       {/* Header */}
@@ -92,7 +94,7 @@ function A4GST({ bill, shop }: { bill: Bill; shop: Shop }) {
           </div>
         </div>
         <div className="invoice-title">
-          <h1>{bill.billType === 'ESTIMATE' ? 'ESTIMATE' : 'TAX INVOICE'}</h1>
+          <h1>{bill.billType === 'ESTIMATE' ? 'ESTIMATE' : hideGst ? 'INVOICE' : 'TAX INVOICE'}</h1>
           <div className="bill-no">#{bill.billNumber}</div>
           <div style={{ fontSize: 11, marginTop: 4 }}>Date: {fmtDate(bill.billDate)}</div>
         </div>
@@ -131,6 +133,7 @@ function A4GST({ bill, shop }: { bill: Bill; shop: Shop }) {
             <th style={{ width: '9%', textAlign: 'right' }}>Net Wt</th>
             <th style={{ width: '9%', textAlign: 'right' }}>Rate/g</th>
             <th style={{ width: '9%', textAlign: 'right' }}>Making</th>
+            <th style={{ width: '9%', textAlign: 'right' }}>Hallmark</th>
             <th style={{ width: '9%', textAlign: 'right' }}>Total</th>
           </tr>
         </thead>
@@ -149,6 +152,10 @@ function A4GST({ bill, shop }: { bill: Bill; shop: Shop }) {
               <td style={{ textAlign: 'right' }}><strong>{safeNum(item.netWeight)} g</strong></td>
               <td style={{ textAlign: 'right' }}>₹{fmt(item.ratePerGram).replace('₹ ', '')}</td>
               <td style={{ textAlign: 'right' }}>{item.makingCharges > 0 ? '₹' + fmt(item.makingCharges).replace('₹ ', '') : '-'}</td>
+              <td style={{ textAlign: 'right' }}>
+                {item.hallMarkAmount > 0 ? '₹' + fmt(item.hallMarkAmount).replace('₹ ', '') : '-'}
+                {item.hallmarkNumber && <div style={{ fontSize: 8, color: '#666' }}>{item.hallmarkNumber}</div>}
+              </td>
               <td style={{ textAlign: 'right' }}><strong>₹{fmt(item.totalAmount).replace('₹ ', '')}</strong></td>
             </tr>
           ))}
@@ -173,7 +180,7 @@ function A4GST({ bill, shop }: { bill: Bill; shop: Shop }) {
               <td>Taxable Amount</td>
               <td style={{ textAlign: 'right' }}>{fmt(bill.taxableAmount)}</td>
             </tr>
-            {bill.isGst && bill.cgst > 0 && (
+            {!hideGst && bill.isGst && bill.cgst > 0 && (
               <>
                 <tr><td>CGST @1.5%</td><td style={{ textAlign: 'right' }}>{fmt(bill.cgst)}</td></tr>
                 <tr><td>SGST @1.5%</td><td style={{ textAlign: 'right' }}>{fmt(bill.sgst)}</td></tr>
@@ -237,10 +244,11 @@ function A4GST({ bill, shop }: { bill: Bill; shop: Shop }) {
   );
 }
 
-/* ==================== THERMAL RECEIPT (80mm) ==================== */
-function Thermal({ bill, shop }: { bill: Bill; shop: Shop }) {
+/* ==================== THERMAL RECEIPT (58/76/80 mm) ==================== */
+function Thermal({ bill, shop, width = 80 }: { bill: Bill; shop: Shop; width?: 58 | 76 | 80 }) {
+  const scale = width === 58 ? 0.88 : width === 76 ? 0.95 : 1;
   return (
-    <div className="thermal-receipt">
+    <div className="thermal-receipt" style={{ width: `${width - 6}mm`, fontSize: `${11 * scale}px` }}>
       <div className="center header">{shop.shopName || 'JEWeLLERY'}</div>
       {shop.shopAddress && <div className="center" style={{ fontSize: 10 }}>{shop.shopAddress}</div>}
       {(shop.shopCity || shop.shopState) && <div className="center" style={{ fontSize: 10 }}>{[shop.shopCity, shop.shopState].filter(Boolean).join(', ')}</div>}
@@ -261,7 +269,7 @@ function Thermal({ bill, shop }: { bill: Bill; shop: Shop }) {
       {bill.items.map((item, idx) => (
         <div key={idx} style={{ marginBottom: 4 }}>
           <div className="bold">{item.particular.substring(0, 26)}</div>
-          <div style={{ fontSize: 10 }}>{item.purity} | {safeNum(item.netWeight)}g × ₹{safeInt(item.ratePerGram)}</div>
+          <div style={{ fontSize: 10 }}>{item.purity} | {safeNum(item.netWeight)}g × ₹{safeInt(item.ratePerGram)}{item.hallmarkNumber ? ` | HM:${item.hallmarkNumber}` : ''}</div>
           <div className="row"><span>{safeInt(item.quantity)} × {fmt(item.totalAmount).replace('₹ ', '')}</span><span className="bold">{fmt(item.totalAmount)}</span></div>
         </div>
       ))}
@@ -429,7 +437,26 @@ function BarcodeLabel({ barcode, item, shop }: { barcode: string; item?: Item; s
 }
 
 /* ==================== MAIN COMPONENT ==================== */
-export type InvoiceFormat = 'A4_GST' | 'THERMAL' | 'ESTIMATE' | 'BARCODE_LABEL';
+export type InvoiceFormat =
+  | 'A4_GST'        // A4 GST tax invoice
+  | 'A4_NON_GST'    // A4 plain invoice (no GST columns)
+  | 'A5'            // A5 half-sheet compact invoice
+  | 'THERMAL'       // 80mm thermal receipt
+  | 'THERMAL_76'    // 76mm thermal roll
+  | 'THERMAL_58'    // 58mm thermal roll (small POS)
+  | 'ESTIMATE'      // A4 estimate / quotation
+  | 'BARCODE_LABEL';
+
+const PAGE_CSS: Record<InvoiceFormat, string> = {
+  A4_GST: '@page { size: A4; margin: 10mm; }',
+  A4_NON_GST: '@page { size: A4; margin: 10mm; }',
+  A5: '@page { size: A5; margin: 6mm; }',
+  THERMAL: '@page { size: 80mm auto; margin: 2mm; }',
+  THERMAL_76: '@page { size: 76mm auto; margin: 2mm; }',
+  THERMAL_58: '@page { size: 58mm auto; margin: 1.5mm; }',
+  ESTIMATE: '@page { size: A4; margin: 10mm; }',
+  BARCODE_LABEL: '@page { size: 50mm 25mm; margin: 1mm; }',
+};
 
 export function InvoicePrint({ bill, shop, format = 'A4_GST', barcode, item }: {
   bill: Bill;
@@ -442,13 +469,31 @@ export function InvoicePrint({ bill, shop, format = 'A4_GST', barcode, item }: {
     shopName: 'Jewellery Shop'
   };
 
+  let content: React.ReactNode;
   if (format === 'BARCODE_LABEL' && barcode) {
-    return BarcodeLabel({ barcode, item, shop: shopData });
+    content = BarcodeLabel({ barcode, item, shop: shopData });
+  } else if (format === 'THERMAL') {
+    content = <Thermal bill={bill} shop={shopData} width={80} />;
+  } else if (format === 'THERMAL_76') {
+    content = <Thermal bill={bill} shop={shopData} width={76} />;
+  } else if (format === 'THERMAL_58') {
+    content = <Thermal bill={bill} shop={shopData} width={58} />;
+  } else if (format === 'ESTIMATE') {
+    content = <Estimate bill={bill} shop={shopData} />;
+  } else if (format === 'A5') {
+    content = <div style={{ zoom: 0.72 }}><A4GST bill={bill} shop={shopData} hideGst={!bill.isGst} /></div>;
+  } else if (format === 'A4_NON_GST') {
+    content = <A4GST bill={bill} shop={shopData} hideGst />;
+  } else {
+    content = <A4GST bill={bill} shop={shopData} />;
   }
 
-  if (format === 'THERMAL') return <Thermal bill={bill} shop={shopData} />;
-  if (format === 'ESTIMATE') return <Estimate bill={bill} shop={shopData} />;
-  return <A4GST bill={bill} shop={shopData} />;
+  return (
+    <>
+      <style>{PAGE_CSS[format]}</style>
+      {content}
+    </>
+  );
 }
 
 /* ==================== NUMBER TO WORDS ==================== */

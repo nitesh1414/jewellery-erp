@@ -440,6 +440,105 @@ class ApiService {
     return data;
   }
 
+  // ====== Workers (employees) master + payments ======
+  async getWorkers(params?: any) {
+    const { data } = await this.client.get('/employees', { params });
+    return data;
+  }
+
+  async getWorker(id: string) {
+    const { data } = await this.client.get('/employees/' + id);
+    return data;
+  }
+
+  async createWorker(body: any) {
+    const { data } = await this.client.post('/employees', body);
+    return data;
+  }
+
+  async updateWorker(id: string, body: any) {
+    const { data } = await this.client.put('/employees/' + id, body);
+    return data;
+  }
+
+  async deleteWorker(id: string) {
+    const { data } = await this.client.delete('/employees/' + id);
+    return data;
+  }
+
+  async addWorkerPayment(id: string, body: any) {
+    const { data } = await this.client.post(`/employees/${id}/payments`, body);
+    return data;
+  }
+
+  async getWorkerPayments(params?: any) {
+    const { data } = await this.client.get('/employees/payments', { params });
+    return data;
+  }
+
+  // ====== Ornament (ledger) master ======
+  async getOrnaments(params?: any) {
+    const { data } = await this.client.get('/ornaments', { params });
+    return data;
+  }
+
+  async createOrnament(body: any) {
+    const { data } = await this.client.post('/ornaments', body);
+    return data;
+  }
+
+  async updateOrnament(id: string, body: any) {
+    const { data } = await this.client.put('/ornaments/' + id, body);
+    return data;
+  }
+
+  async deleteOrnament(id: string) {
+    const { data } = await this.client.delete('/ornaments/' + id);
+    return data;
+  }
+
+  // ====== Quotations (shareable estimate links) ======
+  async getQuotations(params?: any) {
+    const { data } = await this.client.get('/quotations', { params });
+    return data;
+  }
+
+  async getQuotation(id: string) {
+    const { data } = await this.client.get('/quotations/' + id);
+    return data;
+  }
+
+  async createQuotation(body: any) {
+    const { data } = await this.client.post('/quotations', body);
+    return data;
+  }
+
+  async updateQuotationStatus(id: string, status: string) {
+    const { data } = await this.client.put(`/quotations/${id}/status`, { status });
+    return data;
+  }
+
+  async deleteQuotation(id: string) {
+    const { data } = await this.client.delete('/quotations/' + id);
+    return data;
+  }
+
+  // ====== Settings: hallmarks ======
+  async addHallmark(body: any) {
+    const { data } = await this.client.post('/settings/hallmarks', body);
+    return data;
+  }
+
+  async updateHallmark(id: string, body: any) {
+    const { data } = await this.client.put(`/settings/hallmarks/${id}`, body);
+    return data;
+  }
+
+  async deleteHallmark(id: string) {
+    const { data } = await this.client.delete(`/settings/hallmarks/${id}`);
+    return data;
+  }
+
   // ====== Setup wizard ======
   async getSetupStatus() {
     const { data } = await this.client.get('/settings/setup/status');

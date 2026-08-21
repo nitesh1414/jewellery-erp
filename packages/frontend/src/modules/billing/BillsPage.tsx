@@ -171,7 +171,14 @@ export default function BillsPage() {
                         <button onClick={() => handlePrint(bill)} className="btn-ghost p-1.5 text-primary-600" title="Print A4 Invoice">
                           <Printer className="w-4 h-4" />
                         </button>
-                        <button onClick={() => navigate('/print/sale/' + bill.id + '?format=THERMAL&auto=1')} className="btn-ghost p-1.5 text-purple-600" title="Thermal receipt">
+                        <button
+                          onClick={() => {
+                            const size = prompt('Thermal roll width:\n\n80 — standard POS\n76 — 3-inch roll\n58 — mini printer\n\nEnter 80, 76 or 58:', '80');
+                            if (size === null) return;
+                            const f = size.trim() === '58' ? 'THERMAL_58' : size.trim() === '76' ? 'THERMAL_76' : 'THERMAL';
+                            navigate('/print/sale/' + bill.id + '?format=' + f + '&auto=1');
+                          }}
+                          className="btn-ghost p-1.5 text-purple-600" title="Thermal receipt (choose 80/76/58 mm)">
                           <FileText className="w-4 h-4" />
                         </button>
                         {bill.customerMobile && (

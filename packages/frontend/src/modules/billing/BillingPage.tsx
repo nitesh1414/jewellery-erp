@@ -4,7 +4,7 @@ import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   Search, Scan, Plus, Trash2, Save, X, User,
-  CreditCard, Diamond, Package, ShoppingCart, UserPlus,
+  CreditCard, Diamond, Package, ShoppingCart, UserPlus, Pencil, Link2,
 } from 'lucide-react';
 
 interface BillItem {
@@ -22,6 +22,7 @@ interface BillItem {
   makingCharges: number;
   chargeDetails: any[];
   hallMarkAmount: number;
+  hallmarkNumber?: string;
   discount: number;
   urd: number;
   urdDocNumber?: string;
@@ -52,16 +53,19 @@ export default function BillingPage() {
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentReference, setPaymentReference] = useState('');
   const [showManualItem, setShowManualItem] = useState(false);
+  const [quoteLink, setQuoteLink] = useState<string | null>(null);
+  const [quoteQr, setQuoteQr] = useState<any>(null);
   const [showInventorySelect, setShowInventorySelect] = useState(false);
   const [inventorySearch, setInventorySearch] = useState('');
 
-  const [manualItem, setManualItem] = useState({
+  const [manualItem, setManualItem] = useState<any>({
     particular: '', hsnCode: '7113', purity: '22K',
     grossWeight: 0, netWeight: 0, ratePerGram: 0,
     quantity: 1, makingChargeType: 'PERCENTAGE', makingChargeValue: 10,
+    stoneWeight: 0, hallmarkNumber: '', hallmarkCharge: 0,
   });
 
-  const resetManualItem = () => setManualItem({ particular: '', hsnCode: '7113', purity: '22K', grossWeight: 0, netWeight: 0, ratePerGram: 0, quantity: 1, makingChargeType: 'PERCENTAGE', makingChargeValue: 10 });
+  const resetManualItem = () => setManualItem({ particular: '', hsnCode: '7113', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, ratePerGram: 0, quantity: 1, makingChargeType: 'PERCENTAGE', makingChargeValue: 10, hallmarkNumber: '', hallmarkCharge: 0 });
 
   const handleNewBill = () => {
     setItems([]); setCustomer(null); setCustomerSearch('');
@@ -111,6 +115,7 @@ export default function BillingPage() {
     queryFn: () => api.getJewelleryItems({ search: inventorySearch, status: 'IN_STOCK', limit: 20 }),
     enabled: showInventorySelect,
   });
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
 
   // === CALCULATION ===
   const calculateItem = (item: any) => {
@@ -125,6 +130,7 @@ export default function BillingPage() {
       }
       makingCharges = Math.round(makingCharges * 100) / 100;
     }
+    const hallMarkAmount = (item.chargeDetails || []).filter((c: any) => c.type === 'HALLMARK').reduce((s2: number, c: any) => s2 + (c.amount || c.value || 0), 0);
     const discount = item.discount || 0;
     const urd = item.urd || 0;
     const taxableAmount = Math.round((metalValue + makingCharges - discount - urd) * 100) / 100;
@@ -133,7 +139,16 @@ export default function BillingPage() {
     const cgst = Math.round(taxableAmount * (halfRate / 100) * 100) / 100;
     const sgst = Math.round(taxableAmount * (halfRate / 100) * 100) / 100;
     const totalAmount = Math.round((taxableAmount + cgst + sgst) * 100) / 100;
-    return { metalValue, makingCharges, hallMarkAmount: 0, cgst, sgst, igst: 0, totalAmount };
+    return { metalValue, makingCharges, hallMarkAmount: Math.round(hallMarkAmount * 100) / 100, cgst, sgst, igst: 0, totalAmount };
+  };
+
+  // rebuild chargeDetails with the current hallmark number/charge
+  const applyHallmarkToCharges = (item: any, hallmarkNumber: string, hallmarkCharge: number) => {
+    const others = (item.chargeDetails || []).filter((c: any) => c.type !== 'HALLMARK');
+    if (hallmarkCharge && hallmarkCharge > 0) {
+      return [...others, { type: 'HALLMARK', label: 'Hallmark' + (hallmarkNumber ? ' ' + hallmarkNumber : '') + ' (' + (item.purity || '') + ')', calculationType: 'FIXED_AMOUNT', value: Number(hallmarkCharge) }];
+    }
+    return others;
   };
 
   const addItemToBill = (item: any) => {
@@ -146,12 +161,14 @@ export default function BillingPage() {
     netWeight: 0, grossWeight: 0, ratePerGram: 0,
     makingChargeType: 'PERCENTAGE', makingChargeValue: 0,
     discount: 0, urd: 0, gstIncluded: true, purity: '22K',
+    hallmarkNumber: '', hallmarkCharge: 0,
   });
 
   const updateEditedItem = (itemId: string) => {
     setItems(prev => prev.map(it => {
       if (it.id !== itemId) return it;
-      const merged = { ...it, ...editForm };
+      const merged = { ...it, ...editForm, chargeDetails: applyHallmarkToCharges(it, editForm.hallmarkNumber || '', editForm.hallmarkCharge || 0) };
+      merged.hallmarkNumber = editForm.hallmarkNumber || '';
       const calc = calculateItem(merged);
       return { ...merged, ...calc };
     }));
@@ -184,8 +201,11 @@ export default function BillingPage() {
         particular: item.designCode + ' - ' + item.purity, hsnCode: item.hsnCode, purity: item.purity,
         quantity: 1, grossWeight: item.grossWeight, netWeight: item.netWeight,
         ratePerGram: item.currentRate, metalValue: item.netWeight * item.currentRate,
-        makingCharges: 0,
-        chargeDetails: [{ type: 'MAKING', calculationType: item.makingChargeType, value: item.makingChargeValue, amount: 0 }],
+        makingCharges: 0, hallmarkNumber: item.hallmarkNumber || '',
+        chargeDetails: [
+          { type: 'MAKING', calculationType: item.makingChargeType, value: item.makingChargeValue, amount: 0 },
+          ...(item.hallmarkNumber ? [{ type: 'HALLMARK', label: 'Hallmark ' + item.hallmarkNumber + ' (' + item.purity + ')', calculationType: 'FIXED_AMOUNT', value: Number(settings?.hallmarkCharge ?? 45) }] : []),
+        ],
         hallMarkAmount: 0, discount: 0, urd: 0, cgst: 0, sgst: 0, totalAmount: 0,
       });
       setBarcodeInput('');
@@ -198,6 +218,18 @@ export default function BillingPage() {
   }, []);
 
   const removeItem = (id: string) => setItems(prev => prev.filter(i => i.id !== id));
+
+  const openEditItem = (item: any) => {
+    const hallmarkCharge = (item.chargeDetails || []).find((c: any) => c.type === 'HALLMARK');
+    setEditForm({
+      netWeight: item.netWeight, grossWeight: item.grossWeight, ratePerGram: item.ratePerGram,
+      makingChargeType: (item.chargeDetails || []).find((c: any) => c.type === 'MAKING')?.calculationType || 'PERCENTAGE',
+      makingChargeValue: (item.chargeDetails || []).find((c: any) => c.type === 'MAKING')?.value ?? item.makingCharges ?? 0,
+      discount: item.discount || 0, urd: item.urd || 0, gstIncluded: item.gstIncluded !== false, purity: item.purity,
+      hallmarkNumber: item.hallmarkNumber || '', hallmarkCharge: hallmarkCharge ? (hallmarkCharge.value || hallmarkCharge.amount || 0) : 0,
+    });
+    setEditingItemId(item.id);
+  };
 
   // === TOTALS ===
   const totals = items.reduce((acc, item) => ({
@@ -230,6 +262,39 @@ export default function BillingPage() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to create bill'),
   });
 
+  const createQuotationMutation = useMutation({
+    mutationFn: (body: any) => api.createQuotation(body),
+    onSuccess: (q: any) => {
+      const url = `${window.location.origin}/q/${q.token}`;
+      setQuoteLink(url);
+      setQuoteQr(q);
+      toast.success('Quotation ' + q.quoteNumber + ' created');
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to create quotation'),
+  });
+
+  const handleSaveAsQuotation = () => {
+    if (items.length === 0) { toast.error('Add at least one item'); return; }
+    createQuotationMutation.mutate({
+      customerId: customer?.id,
+      customerName: customer?.name || 'Walk-in Customer',
+      customerMobile: customer?.mobile || '',
+      isGst: billType === 'GST',
+      discount: discountAmount,
+      notes: narration,
+      validUntil: new Date(Date.now() + 15 * 86400000).toISOString(),
+      items: items.map(item => ({
+        particular: item.particular, hsnCode: item.hsnCode, purity: item.purity,
+        quantity: item.quantity, grossWeight: item.grossWeight, netWeight: item.netWeight,
+        ratePerGram: item.ratePerGram, metalValue: item.metalValue,
+        makingCharges: item.makingCharges, hallmarkNumber: item.hallmarkNumber,
+        hallMarkAmount: item.hallMarkAmount, discount: item.discount,
+        totalAmount: item.totalAmount,
+      })),
+    });
+  };
+
   const handleFinalizeBill = () => {
     if (items.length === 0) { toast.error('Add at least one item'); return; }
     const billData = {
@@ -245,6 +310,7 @@ export default function BillingPage() {
         quantity: item.quantity, grossWeight: item.grossWeight, netWeight: item.netWeight,
         ratePerGram: item.ratePerGram, metalValue: item.metalValue,
         makingCharges: item.makingCharges, chargeDetails: item.chargeDetails,
+        hallmarkNumber: item.hallmarkNumber || undefined, hallMarkAmount: item.hallMarkAmount || 0,
         discount: item.discount, urd: item.urd, urdDocNumber: item.urdDocNumber,
       })),
       discount: discountAmount, discountType, isGst: billType === 'GST',
@@ -391,17 +457,27 @@ export default function BillingPage() {
                     {items.map((item, idx) => (
                       <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50">
                         <td className="table-cell text-gray-400">{idx + 1}</td>
-                        <td className="table-cell"><p className="text-sm font-medium">{item.particular}</p>{item.barcode && <p className="text-xs text-gray-400">#{item.barcode}</p>}</td>
+                        <td className="table-cell">
+                          <p className="text-sm font-medium">{item.particular}</p>
+                          {item.barcode && <p className="text-xs text-gray-400">#{item.barcode}</p>}
+                          {item.hallmarkNumber && <p className="text-[10px] text-amber-700">HM: {item.hallmarkNumber} · {item.purity}</p>}
+                        </td>
                         <td className="table-cell">{item.purity}</td>
                         <td className="table-cell text-right">{item.grossWeight.toFixed(3)}</td>
                         <td className="table-cell text-right font-medium">{item.netWeight.toFixed(3)}</td>
                         <td className="table-cell text-right">₹{fm(item.ratePerGram)}</td>
                         <td className="table-cell text-right">₹{fm(item.metalValue)}</td>
-                        <td className="table-cell text-right">{item.makingCharges ? '₹' + fm(item.makingCharges) : '-'}</td>
+                        <td className="table-cell text-right">
+                          {item.makingCharges ? '₹' + fm(item.makingCharges) : '-'}
+                          {item.hallMarkAmount > 0 && <p className="text-[10px] text-amber-700">+HM ₹{fm(item.hallMarkAmount)}</p>}
+                        </td>
                         <td className="table-cell text-right text-green-600">{item.cgst ? '₹' + item.cgst.toFixed(2) : '-'}</td>
                         <td className="table-cell text-right text-green-600">{item.sgst ? '₹' + item.sgst.toFixed(2) : '-'}</td>
                         <td className="table-cell text-right font-semibold">₹{fm(item.totalAmount)}</td>
-                        <td className="table-cell text-right"><button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4" /></button></td>
+                        <td className="table-cell text-right whitespace-nowrap">
+                          <button onClick={() => openEditItem(item)} className="text-gray-400 hover:text-primary-600 p-1" title="Edit line (hallmark, rate, making…)"><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4" /></button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -537,12 +613,33 @@ export default function BillingPage() {
                   </button>
                   <button onClick={handleNewBill} className="btn-secondary" title="New Bill (F2)"><X className="w-4 h-4" /></button>
                 </div>
+                <button onClick={handleSaveAsQuotation} disabled={items.length === 0 || createQuotationMutation.isPending} className="btn-secondary w-full py-2 text-sm">
+                  <Link2 className="w-4 h-4" /> Save as Quotation (get shareable link)
+                </button>
                 {payments.length > 0 && <button onClick={() => setPayments([])} className="btn-ghost w-full text-xs py-1 text-red-500">Clear payments</button>}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Quotation Link Modal */}
+      {quoteLink && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+            <h3 className="font-semibold text-lg mb-1">Quotation {quoteQr?.quoteNumber} created!</h3>
+            <p className="text-sm text-gray-500 mb-3">Share this link with your customer — it opens a clean estimate page without any login:</p>
+            <div className="bg-gray-50 border rounded-lg px-3 py-2 font-mono text-xs break-all">{quoteLink}</div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button className="btn-secondary" onClick={async () => {
+                try { await navigator.clipboard.writeText(quoteLink); toast.success('Link copied!'); } catch { toast.error(quoteLink); }
+              }}>Copy link</button>
+              <a href={quoteLink} target="_blank" rel="noreferrer" className="btn-primary">Open quote</a>
+            </div>
+            <button onClick={() => setQuoteLink(null)} className="w-full text-center text-sm text-gray-400 hover:text-gray-600 mt-3">Close</button>
+          </div>
+        </div>
+      )}
 
       {/* Manual Item Modal */}
       {showManualItem && (
@@ -557,6 +654,7 @@ export default function BillingPage() {
                   <option value="24K">24K</option><option value="22K">22K</option><option value="18K">18K</option><option value="SILVER_925">Silver 925</option>
                 </select></div>
               <div><label className="label">Gross Wt (g)</label><input type="number" step="0.001" className="input-field" value={manualItem.grossWeight || ''} onChange={e => setManualItem({ ...manualItem, grossWeight: Number(e.target.value) })} /></div>
+              <div><label className="label">Stone Wt (g)</label><input type="number" step="0.001" className="input-field" value={manualItem.stoneWeight || ''} onChange={e => setManualItem({ ...manualItem, stoneWeight: Number(e.target.value) })} placeholder="0" /></div>
               <div><label className="label">Net Wt (g) *</label><input type="number" step="0.001" className="input-field" value={manualItem.netWeight || ''} onChange={e => setManualItem({ ...manualItem, netWeight: Number(e.target.value) })} /></div>
               <div><label className="label">Rate/g *</label><input type="number" className="input-field" value={manualItem.ratePerGram || ''} onChange={e => setManualItem({ ...manualItem, ratePerGram: Number(e.target.value) })} /></div>
               <div><label className="label">Making Type</label>
@@ -564,12 +662,30 @@ export default function BillingPage() {
                   <option value="PERCENTAGE">%</option><option value="PER_GRAM">/g</option><option value="FIXED_AMOUNT">Fixed</option>
                 </select></div>
               <div><label className="label">Making Value</label><input type="number" className="input-field" value={manualItem.makingChargeValue} onChange={e => setManualItem({ ...manualItem, makingChargeValue: Number(e.target.value) })} /></div>
+              <div className="col-span-2 border rounded-lg p-3 bg-amber-50/50">
+                <p className="label !text-[10px] !mb-2">Hallmark (with purity {manualItem.purity})</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <input className="input-field" placeholder="Hallmark number (optional)" value={manualItem.hallmarkNumber} onChange={e => setManualItem({ ...manualItem, hallmarkNumber: e.target.value })} />
+                  <div className="flex gap-2">
+                    <input type="number" className="input-field" placeholder="Charge ₹" value={manualItem.hallmarkCharge || ''} onChange={e => setManualItem({ ...manualItem, hallmarkCharge: Number(e.target.value) })} />
+                    <button type="button" className="btn-ghost text-xs px-2 border rounded-lg whitespace-nowrap" onClick={() => setManualItem({ ...manualItem, hallmarkCharge: Number(settings?.hallmarkCharge ?? 45) })}>Default</button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
               <button onClick={() => setShowManualItem(false)} className="btn-secondary">Cancel (Esc)</button>
               <button onClick={() => {
                 if (!manualItem.particular || !manualItem.netWeight || !manualItem.ratePerGram) { toast.error('Fill required fields'); return; }
-                addItemToBill({ ...manualItem, chargeDetails: [{ type: 'MAKING', calculationType: manualItem.makingChargeType, value: manualItem.makingChargeValue, amount: 0 }], makingCharges: 0, discount: 0, urd: 0 });
+                addItemToBill({
+                  ...manualItem,
+                  hallmarkNumber: manualItem.hallmarkNumber || '',
+                  chargeDetails: [
+                    { type: 'MAKING', calculationType: manualItem.makingChargeType, value: manualItem.makingChargeValue, amount: 0 },
+                    ...(manualItem.hallmarkCharge > 0 ? [{ type: 'HALLMARK', label: 'Hallmark ' + (manualItem.hallmarkNumber || '') + ' (' + manualItem.purity + ')', calculationType: 'FIXED_AMOUNT', value: Number(manualItem.hallmarkCharge) }] : []),
+                  ],
+                  makingCharges: 0, discount: 0, urd: 0,
+                });
                 setShowManualItem(false);
                 resetManualItem();
                 barcodeInputRef.current?.focus();
@@ -659,9 +775,7 @@ export default function BillingPage() {
             <div className="grid grid-cols-2 gap-3">
               <div><label className="label">Purity</label>
                 <select className="input-field" value={editForm.purity} onChange={e => setEditForm({ ...editForm, purity: e.target.value })}>
-                  <option value="24K">24K</option><option value="22K">22K</option><option value="20K">20K</option>
-                  <option value="18K">18K</option><option value="14K">14K</option><option value="10K">10K</option>
-                  <option value="SILVER_999">Silver 999</option><option value="SILVER_925">Silver 925</option>
+                  {(settings?.allPurities || ['24K','22K','18K']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
                 </select></div>
               <div><label className="label">Rate / g (₹)</label><input type="number" className="input-field" value={editForm.ratePerGram} onChange={e => setEditForm({ ...editForm, ratePerGram: Number(e.target.value) })} /></div>
               <div><label className="label">Gross Wt (g)</label><input type="number" step="0.001" className="input-field" value={editForm.grossWeight} onChange={e => setEditForm({ ...editForm, grossWeight: Number(e.target.value) })} /></div>
@@ -675,6 +789,22 @@ export default function BillingPage() {
               <div><label className="label">Making Value</label><input type="number" step="0.01" className="input-field" value={editForm.makingChargeValue} onChange={e => setEditForm({ ...editForm, makingChargeValue: Number(e.target.value) })} /></div>
               <div><label className="label">Discount on line (₹)</label><input type="number" className="input-field" value={editForm.discount} onChange={e => setEditForm({ ...editForm, discount: Number(e.target.value) })} /></div>
               <div><label className="label">URD Value (₹)</label><input type="number" className="input-field" value={editForm.urd} onChange={e => setEditForm({ ...editForm, urd: Number(e.target.value) })} /></div>
+              <div className="col-span-2 border rounded-lg p-3 bg-amber-50/50">
+                <p className="label !text-[10px] !mb-2">Hallmark (with purity {editForm.purity})</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="label !text-[10px]">Hallmark Number</label>
+                    <input className="input-field" placeholder="HM-916-xxxx (optional)" value={editForm.hallmarkNumber || ''} onChange={e => setEditForm({ ...editForm, hallmarkNumber: e.target.value })} /></div>
+                  <div><label className="label !text-[10px]">Hallmark Charge (₹)</label>
+                    <div className="flex gap-2">
+                      <input type="number" className="input-field" value={editForm.hallmarkCharge || ''} onChange={e => setEditForm({ ...editForm, hallmarkCharge: Number(e.target.value) })} placeholder="0" />
+                      <button type="button" className="btn-ghost text-xs px-2 border rounded-lg whitespace-nowrap"
+                        onClick={() => setEditForm({ ...editForm, hallmarkCharge: Number(settings?.hallmarkCharge ?? 45) })}>
+                        Use default
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="col-span-2 flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={editForm.gstIncluded} onChange={e => setEditForm({ ...editForm, gstIncluded: e.target.checked })} />

@@ -17,10 +17,14 @@ export default function JewelleryPage() {
     designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0,
     netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113',
     makingChargeType: 'PERCENTAGE', makingChargeValue: 10,
-    category: '', subCategory: '', location: '',
+    category: '', subCategory: '', location: '', ornament: '', ornamentGender: '',
     purchaseDate: new Date().toISOString().split('T')[0],
   });
   const [bulkItems, setBulkItems] = useState('');
+
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
+  const { data: ornamentsData } = useQuery({ queryKey: ['ornaments-active'], queryFn: () => api.getOrnaments({ isActive: 'true' }), staleTime: 60000 });
+  const ornaments = (ornamentsData?.items || []).map((o: any) => o);
 
   const { data, isLoading } = useQuery({
     queryKey: ['jewellery', search, status, metalType, purity, page],
@@ -74,7 +78,7 @@ export default function JewelleryPage() {
         <div className="relative flex-1 max-w-xs"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Search barcode, SKU, design..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
         <select className="input-field w-36" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}><option value="">All Status</option><option value="IN_STOCK">In Stock</option><option value="SOLD">Sold</option><option value="RESERVED">Reserved</option><option value="IN_MANUFACTURING">In Mfg</option><option value="IN_REPAIR">In Repair</option></select>
         <select className="input-field w-32" value={metalType} onChange={e => { setMetalType(e.target.value); setPage(1); }}><option value="">All Metal</option><option value="GOLD">Gold</option><option value="SILVER">Silver</option></select>
-        <select className="input-field w-28" value={purity} onChange={e => { setPurity(e.target.value); setPage(1); }}><option value="">Purity</option><option value="24K">24K</option><option value="22K">22K</option><option value="18K">18K</option><option value="SILVER_925">925</option></select>
+        <select className="input-field w-28" value={purity} onChange={e => { setPurity(e.target.value); setPage(1); }}><option value="">Purity</option>{(settings?.allPurities || ['24K','22K','18K','SILVER_925']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', '925 ')}</option>)}</select>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -132,9 +136,25 @@ export default function JewelleryPage() {
             <div className="grid grid-cols-3 gap-4">
               <div><label className="label">Design Code</label><input className="input-field" value={form.designCode} onChange={e => setForm({...form, designCode: e.target.value})} placeholder="RING-001" /></div>
               <div><label className="label">Metal Type</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}><option value="GOLD">Gold</option><option value="SILVER">Silver</option></select></div>
-              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}><option value="24K">24K</option><option value="22K">22K</option><option value="18K">18K</option><option value="SILVER_999">Silver 999</option><option value="SILVER_925">Silver 925</option></select></div>
+              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}>{(settings?.allPurities || ['24K','22K','18K']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
               <div><label className="label">Category</label><input className="input-field" value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="Ring" /></div>
               <div><label className="label">Sub Category</label><input className="input-field" value={form.subCategory} onChange={e => setForm({...form, subCategory: e.target.value})} /></div>
+              <div>
+                <label className="label">Ornament (ledger master)</label>
+                <select className="input-field" value={form.ornament} onChange={e => {
+                  const o = ornaments.find((x: any) => x.name === e.target.value);
+                  setForm({ ...form, ornament: e.target.value, ornamentGender: o?.gender || '' });
+                }}>
+                  <option value="">— none —</option>
+                  {ornaments.map((o: any) => <option key={o.id} value={o.name}>{o.name} ({o.gender === 'MALE' ? 'Male' : o.gender === 'FEMALE' ? 'Female' : 'Unisex'})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Ornament For</label>
+                <select className="input-field" value={form.ornamentGender} onChange={e => setForm({...form, ornamentGender: e.target.value})}>
+                  <option value="">—</option><option value="MALE">Male</option><option value="FEMALE">Female</option><option value="UNISEX">Unisex</option>
+                </select>
+              </div>
               <div><label className="label">HSN Code</label><input className="input-field" value={form.hsnCode} onChange={e => setForm({...form, hsnCode: e.target.value})} /></div>
               <div><label className="label">Gross Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.grossWeight || ''} onChange={e => setForm({...form, grossWeight: Number(e.target.value)})} /></div>
               <div><label className="label">Stone Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.stoneWeight || ''} onChange={e => setForm({...form, stoneWeight: Number(e.target.value)})} /></div>

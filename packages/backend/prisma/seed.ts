@@ -168,6 +168,25 @@ async function main() {
     }
   }
 
+  // Create Ornament Master (ledger master — male / female / unisex)
+  const ornaments = [
+    { name: 'Gents Ring', gender: 'MALE', category: 'Ring' },
+    { name: 'Gents Chain', gender: 'MALE', category: 'Chain' },
+    { name: 'Gents Bracelet (Kada)', gender: 'MALE', category: 'Bracelet' },
+    { name: 'Ladies Ring', gender: 'FEMALE', category: 'Ring' },
+    { name: 'Ladies Chain', gender: 'FEMALE', category: 'Chain' },
+    { name: 'Bangle Pair', gender: 'FEMALE', category: 'Bangle' },
+    { name: 'Necklace', gender: 'FEMALE', category: 'Necklace' },
+    { name: 'Ear Ring', gender: 'FEMALE', category: 'Ear Ring' },
+    { name: 'Mangalsutra', gender: 'FEMALE', category: 'Mangalsutra' },
+    { name: 'Pendant', gender: 'UNISEX', category: 'Pendant' },
+    { name: 'Coin', gender: 'UNISEX', category: 'Coin' },
+  ];
+  for (const o of ornaments) {
+    const exists = await prisma.ornamentType.findFirst({ where: { organizationId: org.id, name: o.name } });
+    if (!exists) await prisma.ornamentType.create({ data: { ...o, organizationId: org.id } });
+  }
+
   // Create Shop Settings
   await prisma.shopSettings.upsert({
     where: { organizationId: org.id },

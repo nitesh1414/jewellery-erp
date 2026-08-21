@@ -4,7 +4,7 @@ import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   Search, Plus, Briefcase, Clock, CheckCircle, AlertCircle,
-  User, Calendar, HandCoins, FileText, ChevronRight,
+  User, Calendar, HandCoins, FileText, ChevronRight, HardHat, UserPlus, X,
 } from 'lucide-react';
 
 export default function JobOrdersPage() {
@@ -16,16 +16,68 @@ export default function JobOrdersPage() {
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [showAdvance, setShowAdvance] = useState(false);
   const [showBill, setShowBill] = useState(false);
-  const [form, setForm] = useState({ customerName: '', customerMobile: '', productDescription: '', purity: '22K', metalType: 'GOLD', expectedWeight: 0, expectedDelivery: '', estimatedAmount: 0, advanceAmount: 0, notes: '' });
+  const [form, setForm] = useState<any>({ customerId: '', customerName: '', customerMobile: '', productDescription: '', purity: '22K', metalType: 'GOLD', expectedWeight: 0, expectedDelivery: '', estimatedAmount: 0, advanceAmount: 0, notes: '', assignEmployeeId: '', assignDueDate: '' });
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustomerList, setShowCustomerList] = useState(false);
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', address: '', city: '' });
 
   // Advance modal state
   const [advanceForm, setAdvanceForm] = useState({ amount: 0, paymentMode: 'CASH', reference: '' });
+  // Assign worker modal state
+  const [showAssign, setShowAssign] = useState(false);
+  const [assignForm, setAssignForm] = useState({ employeeId: '', dueDate: '', notes: '' });
+
+  const assignMutation = useMutation({
+    mutationFn: ({ id, body }: any) => api.post(`/job-orders/${id}/assign`, body),
+    onSuccess: () => {
+      toast.success('Worker assigned — job moved to ASSIGNED');
+      qc.invalidateQueries({ queryKey: ['job-orders'] });
+      qc.invalidateQueries({ queryKey: ['job-order', selectedJob?.id] });
+      setShowAssign(false);
+      setAssignForm({ employeeId: '', dueDate: '', notes: '' });
+      setSelectedJob(null);
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
   // Final bill modal state
   const [billForm, setBillForm] = useState({ netWeight: 0, ratePerGram: 0, makingChargeType: 'PERCENTAGE', makingChargeValue: 10, hsnCode: '7113', billType: 'GST', discount: 0 });
 
   const { data } = useQuery({ queryKey: ['job-orders', search, status, page], queryFn: () => api.getJobOrders({ search, status, page, limit: 20 }) });
   const { data: jobDetail } = useQuery({ queryKey: ['job-order', selectedJob?.id], queryFn: () => api.getJobOrder(selectedJob.id), enabled: !!selectedJob });
   const { data: stats } = useQuery({ queryKey: ['job-stats'], queryFn: () => api.getJobOrderStats() });
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
+  const { data: workersData } = useQuery({ queryKey: ['workers'], queryFn: () => api.getWorkers({ isActive: 'true' }), staleTime: 60000 });
+  const workers = workersData || [];
+  const { data: customerResults } = useQuery({
+    queryKey: ['job-customers', customerSearch],
+    queryFn: () => api.getCustomers({ search: customerSearch, limit: 8 }),
+    enabled: showCustomerList && customerSearch.trim().length >= 2,
+  });
+
+  const newCustomerMutation = useMutation({
+    mutationFn: (body: any) => api.createCustomer(body),
+    onSuccess: (c: any) => {
+      toast.success('Customer added!');
+      setForm((f: any) => ({ ...f, customerId: c.id, customerName: c.name, customerMobile: c.mobile || '' }));
+      setShowNewCustomer(false);
+      setShowCustomerList(false);
+      setNewCustomer({ name: '', mobile: '', address: '', city: '' });
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: any) => api.put(`/job-orders/${id}/status`, { status }),
+    onSuccess: () => {
+      toast.success('Status updated');
+      qc.invalidateQueries({ queryKey: ['job-orders'] });
+      qc.invalidateQueries({ queryKey: ['job-order', selectedJob?.id] });
+      qc.invalidateQueries({ queryKey: ['job-stats'] });
+      setSelectedJob(null);
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
 
   const createMutation = useMutation({
     mutationFn: (b: any) => api.createJobOrder(b),
@@ -59,8 +111,18 @@ export default function JobOrdersPage() {
   });
 
   const statusColors: Record<string, string> = {
-    ASSIGNED: 'badge-info', ACCEPTED: 'badge-info', IN_PROGRESS: 'badge-warning',
+    CREATED: 'badge-gray', ASSIGNED: 'badge-info', ACCEPTED: 'badge-info', IN_PROGRESS: 'badge-warning',
     QUALITY_CHECK: 'badge-warning', READY: 'badge-success', DELIVERED: 'badge-success', CANCELLED: 'badge-danger',
+  };
+  const JOB_FLOW: Record<string, string[]> = {
+    CREATED: ['ASSIGNED', 'CANCELLED'],
+    ASSIGNED: ['IN_PROGRESS', 'CANCELLED'],
+    ACCEPTED: ['IN_PROGRESS', 'CANCELLED'],
+    IN_PROGRESS: ['READY', 'CANCELLED'],
+    QUALITY_CHECK: ['READY'],
+    READY: ['DELIVERED', 'IN_PROGRESS'],
+    DELIVERED: [],
+    CANCELLED: ['CREATED'],
   };
 
   const fm = (n: number) => '₹' + (n || 0).toLocaleString('en-IN');
@@ -101,8 +163,8 @@ export default function JobOrdersPage() {
         <div className="relative flex-1 max-w-xs"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Search job number or customer..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
         <select className="input-field w-40" value={status} onChange={e => { setStatus(e.target.value); setPage(1); setSelectedJob(null); }}>
           <option value="">All Status</option>
-          <option value="ASSIGNED">Assigned</option><option value="ACCEPTED">Accepted</option><option value="IN_PROGRESS">In Progress</option>
-          <option value="QUALITY_CHECK">Quality Check</option><option value="READY">Ready</option><option value="DELIVERED">Delivered</option><option value="CANCELLED">Cancelled</option>
+          <option value="CREATED">Created</option><option value="ASSIGNED">Assigned</option><option value="IN_PROGRESS">In Progress</option>
+          <option value="READY">Ready</option><option value="DELIVERED">Delivered</option><option value="CANCELLED">Cancelled</option>
         </select>
       </div>
 
@@ -159,11 +221,36 @@ export default function JobOrdersPage() {
                   <div><p className="text-xs text-gray-500">Balance Due</p><p className="font-medium text-red-600">{fm(selectedJob.balanceAmount)}</p></div>
                 </div>
 
+                {/* Status flow — update job status in one click */}
+                {(JOB_FLOW[selectedJob.status] || []).length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t">
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Update status:</span>
+                    {(JOB_FLOW[selectedJob.status] || []).map((st: string) => (
+                      <button
+                        key={st}
+                        onClick={() => { if (confirm('Move job to ' + st.replace('_', ' ') + '?')) statusMutation.mutate({ id: selectedJob.id, status: st }); }}
+                        className={'text-xs px-3 py-1.5 rounded-lg border transition-all ' + (st === 'CANCELLED'
+                          ? 'border-red-200 text-red-600 hover:bg-red-50'
+                          : st === 'DELIVERED' || st === 'READY'
+                            ? 'border-green-200 text-green-700 hover:bg-green-50 font-medium'
+                            : 'border-gray-200 text-gray-600 hover:bg-gray-50')}
+                      >
+                        {st.replace('_', ' ')}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
                   <button onClick={() => setShowAdvance(true)} className="btn-secondary text-sm">
                     <HandCoins className="w-4 h-4" /> Add Advance
                   </button>
+                  {selectedJob.status === 'CREATED' && (
+                    <button onClick={() => setShowAssign(true)} className="btn-secondary text-sm">
+                      <HardHat className="w-4 h-4" /> Assign Worker
+                    </button>
+                  )}
                   {['READY', 'DELIVERED'].includes(selectedJob.status) && (
                     <button onClick={() => setShowBill(true)} className="btn-primary text-sm">
                       <FileText className="w-4 h-4" /> Generate Final Bill
@@ -228,22 +315,129 @@ export default function JobOrdersPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">New Job Order — issues a Token Number</h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2"><label className="label">Customer Name *</label><input className="input-field" value={form.customerName} onChange={e => setForm({...form, customerName: e.target.value})} /></div>
+              <div className="col-span-2 relative">
+                <label className="label">Customer *</label>
+                <div className="flex gap-2">
+                  <input
+                    className="input-field"
+                    placeholder="Type name / mobile to search database…"
+                    value={form.customerName}
+                    onChange={(e) => { setForm({ ...form, customerName: e.target.value, customerId: '' }); setCustomerSearch(e.target.value); setShowCustomerList(true); }}
+                    onFocus={() => setShowCustomerList(true)}
+                  />
+                  <button type="button" onClick={() => { setNewCustomer({ name: form.customerName, mobile: form.customerMobile, address: '', city: '' }); setShowNewCustomer(true); }} className="btn-secondary whitespace-nowrap text-xs">
+                    <UserPlus className="w-4 h-4" /> Add New Customer
+                  </button>
+                </div>
+                {form.customerId && <p className="text-xs text-green-600 mt-1">✓ Existing customer selected from database</p>}
+                {showCustomerList && !form.customerId && customerSearch?.trim().length >= 2 && (
+                  <div className="absolute z-20 mt-1 w-full bg-white border rounded-xl shadow-lg overflow-hidden">
+                    {(customerResults?.items || []).length === 0 && (
+                      <button onClick={() => { setNewCustomer({ name: customerSearch, mobile: '', address: '', city: '' }); setShowNewCustomer(true); setShowCustomerList(false); }}
+                        className="w-full text-left px-4 py-3 text-primary-600 font-medium border-t border-gray-100">
+                        + Add “{customerSearch}” as new customer
+                      </button>
+                    )}
+                    {(customerResults?.items || []).map((c: any) => (
+                      <button key={c.id}
+                        onClick={() => { setForm({ ...form, customerId: c.id, customerName: c.name, customerMobile: c.mobile || '' }); setShowCustomerList(false); }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 border-b border-gray-50 flex justify-between items-center">
+                        <span className="text-sm font-medium">{c.name}</span>
+                        <span className="text-xs text-gray-400">{c.mobile || ''} {c.city ? '· ' + c.city : ''}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div><label className="label">Mobile</label><input className="input-field" value={form.customerMobile} onChange={e => setForm({...form, customerMobile: e.target.value})} /></div>
               <div><label className="label">Product Description *</label><input className="input-field" value={form.productDescription} onChange={e => setForm({...form, productDescription: e.target.value})} placeholder="Gold Ring with diamond" /></div>
-              <div><label className="label">Metal</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}><option value="GOLD">Gold</option><option value="SILVER">Silver</option></select></div>
-              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}><option value="24K">24K</option><option value="22K">22K</option><option value="18K">18K</option></select></div>
+              <div><label className="label">Metal</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}>{(settings?.allMetals || ['GOLD','SILVER']).map((m: string) => <option key={m} value={m}>{m}</option>)}</select></div>
+              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}>{(settings?.allPurities || ['24K','22K','18K']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
               <div><label className="label">Expected Weight (g)</label><input type="number" step="0.01" className="input-field" value={form.expectedWeight || ''} onChange={e => setForm({...form, expectedWeight: Number(e.target.value)})} /></div>
               <div><label className="label">Expected Delivery *</label><input type="date" className="input-field" value={form.expectedDelivery} onChange={e => setForm({...form, expectedDelivery: e.target.value})} /></div>
               <div><label className="label">Estimated Amount (₹)</label><input type="number" className="input-field" value={form.estimatedAmount || ''} onChange={e => setForm({...form, estimatedAmount: Number(e.target.value)})} /></div>
               <div><label className="label">Advance / Token Money (₹)</label><input type="number" className="input-field" value={form.advanceAmount || ''} onChange={e => setForm({...form, advanceAmount: Number(e.target.value)})} /></div>
+              <div className="col-span-2 border-t pt-3 mt-1">
+                <label className="label flex items-center gap-1.5"><HardHat className="w-3.5 h-3.5" /> Assign to Worker (optional — sets status to ASSIGNED)</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <select className="input-field" value={form.assignEmployeeId} onChange={e => setForm({...form, assignEmployeeId: e.target.value})}>
+                    <option value="">— assign later (status: CREATED) —</option>
+                    {workers.map((w: any) => (
+                      <option key={w.id} value={w.id}>{w.name} ({w.role.replace('_', ' ')}{w.mobile ? ' · ' + w.mobile : ''})</option>
+                    ))}
+                  </select>
+                  <input type="date" className="input-field" value={form.assignDueDate} onChange={e => setForm({...form, assignDueDate: e.target.value})} title="Worker due date" />
+                </div>
+                {workers.length === 0 && <p className="text-xs text-orange-500 mt-1">No workers yet — add them in Workers master.</p>}
+              </div>
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
               <button onClick={() => setShowCreate(false)} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (!form.customerName || !form.productDescription || !form.expectedDelivery) { toast.error('Fill required fields'); return; }
-                createMutation.mutate(form);
-              }} disabled={createMutation.isPending} className="btn-primary">Create & Issue Token</button>
+                createMutation.mutate({
+                  ...form,
+                  assignTo: form.assignEmployeeId ? { employeeId: form.assignEmployeeId, dueDate: form.assignDueDate || form.expectedDelivery } : undefined,
+                });
+              }} disabled={createMutation.isPending} className="btn-primary">{form.assignEmployeeId ? 'Create & Assign' : 'Create & Issue Token'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Customer Modal (prompted when customer not in DB) */}
+      {showNewCustomer && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowNewCustomer(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Add New Customer</h3>
+              <button onClick={() => setShowNewCustomer(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2"><label className="label">Name *</label><input className="input-field" value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} autoFocus /></div>
+              <div><label className="label">Mobile</label><input className="input-field" value={newCustomer.mobile} onChange={(e) => setNewCustomer({ ...newCustomer, mobile: e.target.value })} /></div>
+              <div><label className="label">City</label><input className="input-field" value={newCustomer.city} onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })} /></div>
+              <div className="col-span-2"><label className="label">Address</label><input className="input-field" value={newCustomer.address} onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })} /></div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+              <button onClick={() => setShowNewCustomer(false)} className="btn-secondary">Cancel</button>
+              <button
+                onClick={() => { if (!newCustomer.name.trim()) { toast.error('Name required'); return; } newCustomerMutation.mutate(newCustomer); }}
+                className="btn-primary" disabled={newCustomerMutation.isPending}>
+                {newCustomerMutation.isPending ? 'Adding…' : 'Add Customer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Worker Modal */}
+      {showAssign && selectedJob && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAssign(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-1">Assign Worker</h3>
+            <p className="text-sm text-gray-500 mb-4">{selectedJob.jobNumber} · {selectedJob.customerName}</p>
+            <div className="space-y-3">
+              <div>
+                <label className="label">Worker *</label>
+                <select className="input-field" value={assignForm.employeeId} onChange={(e) => setAssignForm({ ...assignForm, employeeId: e.target.value })}>
+                  <option value="">— select worker —</option>
+                  {workers.map((w: any) => <option key={w.id} value={w.id}>{w.name} ({w.role.replace('_', ' ')})</option>)}
+                </select>
+              </div>
+              <div><label className="label">Due Date *</label><input type="date" className="input-field" value={assignForm.dueDate} onChange={(e) => setAssignForm({ ...assignForm, dueDate: e.target.value })} /></div>
+              <div><label className="label">Notes</label><input className="input-field" value={assignForm.notes} onChange={(e) => setAssignForm({ ...assignForm, notes: e.target.value })} /></div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+              <button onClick={() => setShowAssign(false)} className="btn-secondary">Cancel</button>
+              <button
+                onClick={() => {
+                  if (!assignForm.employeeId || !assignForm.dueDate) { toast.error('Select worker and due date'); return; }
+                  assignMutation.mutate({ id: selectedJob.id, body: assignForm });
+                }}
+                className="btn-primary" disabled={assignMutation.isPending}>
+                {assignMutation.isPending ? 'Assigning…' : 'Assign'}
+              </button>
             </div>
           </div>
         </div>
