@@ -235,6 +235,42 @@ async function main() {
     });
   }
 
+
+  // Seed default ledger accounts
+  const cashAccount = await prisma.ledgerAccount.upsert({
+    where: { id: 'cash-default' },
+    update: {},
+    create: {
+      id: 'cash-default',
+      organizationId: org.id,
+      branchId: branch.id,
+      name: 'Cash Counter',
+      type: 'CASH',
+      openingBalance: 0,
+      currentBalance: 0,
+      isPrimary: true,
+      notes: 'Default cash account',
+    },
+  });
+
+  const bankAccount = await prisma.ledgerAccount.upsert({
+    where: { id: 'bank-default' },
+    update: {},
+    create: {
+      id: 'bank-default',
+      organizationId: org.id,
+      branchId: branch.id,
+      name: 'Bank Account',
+      type: 'BANK',
+      openingBalance: 0,
+      currentBalance: 0,
+      bankName: 'HDFC Bank',
+      notes: 'Default bank account',
+    },
+  });
+
+  console.log(`✓ Ledger accounts: ${cashAccount.name}, ${bankAccount.name}`);
+
   console.log('Seed completed successfully!');
   console.log('Admin login: admin@jewellery.com / admin123');
   console.log('Cashier login: cashier@jewellery.com / cash123');
@@ -248,37 +284,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-// Seed default ledger accounts
-const cashAccount = await prisma.ledgerAccount.upsert({
-  where: { id: 'cash-default' },
-  update: {},
-  create: {
-    id: 'cash-default',
-    organizationId: org.id,
-    branchId: branch.id,
-    name: 'Cash Counter',
-    type: 'CASH',
-    openingBalance: 0,
-    currentBalance: 0,
-    isPrimary: true,
-    notes: 'Default cash account',
-  },
-});
-
-const bankAccount = await prisma.ledgerAccount.upsert({
-  where: { id: 'bank-default' },
-  update: {},
-  create: {
-    id: 'bank-default',
-    organizationId: org.id,
-    branchId: branch.id,
-    name: 'Bank Account',
-    type: 'BANK',
-    openingBalance: 0,
-    currentBalance: 0,
-    bankName: 'HDFC Bank',
-    notes: 'Default bank account',
-  },
-});
-
-console.log(`✓ Ledger accounts: ${cashAccount.name}, ${bankAccount.name}`);
