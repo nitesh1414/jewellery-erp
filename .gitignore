@@ -4,7 +4,9 @@ node_modules/
 dist/
 build/
 # electron-builder resources are source-controlled (installer script + icons)
-!packages/desktop-electron/build/
+packages/desktop-electron/build/
+packages/desktop-electron/release/
+packages/desktop-electron/dist-electron/
 backend/uploads/*
 !backend/uploads/.gitkeep
 *.log

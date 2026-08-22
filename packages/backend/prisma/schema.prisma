@@ -40,6 +40,7 @@ model Organization {
   rates           RateMaster[]
   hsnCodes        HsnCode[]
   employees       Employee[]
+  workerPayments  WorkerPayment[]
   jewelleryItems  JewelleryItem[]
   barcodes        Barcode[]
   sales           Sale[]
@@ -91,8 +92,6 @@ model Branch {
   ledgerEntries   LedgerEntry[]
   expenses        Expense[]
   income          Income[]
-  ornamentTypes   OrnamentType[]
-  quotations      Quotation[]
 }
 
 // ============================
@@ -970,7 +969,7 @@ model OrnamentType {
 model Quotation {
   id             String    @id @default(uuid())
   organizationId String
-  branchId       String
+  branchId       String?
   quoteNumber    String    @unique
   token          String    @unique
   customerId     String?
@@ -989,7 +988,6 @@ model Quotation {
   updatedAt      DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
-  branch       Branch       @relation(fields: [branchId], references: [id])
 }
 
 // ============================

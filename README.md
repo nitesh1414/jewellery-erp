@@ -21,10 +21,16 @@ with a **cloud-managed subscription system**.
 
 ```bash
 npm install
-npm run db:push        # create the dev SQLite database
+npm run db:push        # create/update the dev SQLite database
 npm run db:seed        # demo data
 npm run dev            # backend :3001 + frontend :5173
 ```
+
+`db:push`/`db:seed`/`dev` auto-create `packages/backend/.env` with
+`DATABASE_URL="file:./dev.db"` (SQLite) on first run — set `DATABASE_URL` in
+the environment to use PostgreSQL instead. After pulling changes that touch
+`packages/backend/prisma/schema.prisma`, run `npm run db:push` again to
+update your local database.
 
 Login: `admin@jewellery.com` / `admin123`.
 

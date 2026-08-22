@@ -4,7 +4,7 @@ copyright: Copyright © 2026 Shri Jewellers
 
 directories:
   output: release
-  buildResources: build
+  buildResources: assets   # kept out of build/ so the files are never lost to tooling that cleans build dirs
 
 # The Electron shell (main + preload + activation page). The ERP backend and
 # frontend live in extraResources (see below) and run as a local service.
@@ -41,7 +41,7 @@ electronLanguages:
   - en-US
 
 win:
-  icon: build/icon.png
+  icon: assets/icon.png
   target:
     - target: nsis
       arch: [x64]
@@ -56,14 +56,14 @@ nsis:
   shortcutName: Shri Jewellers ERP
   uninstallDisplayName: Shri Jewellers ERP
   runAfterFinish: true
-  include: build/installer.nsh
+  include: assets/installer.nsh
   artifactName: ShriJewellersERP-Setup-${version}.${ext}
 
 portable:
   artifactName: ShriJewellersERP-Portable-${version}.${ext}
 
 mac:
-  icon: build/icon.png
+  icon: assets/icon.png
   category: public.app-category.business
   identity: null # add signing identity for distribution
   target:
@@ -78,7 +78,7 @@ dmg:
   artifactName: ShriJewellersERP-Setup-${version}-${arch}.${ext}
 
 linux:
-  icon: build/icon.png
+  icon: assets/icon.png
   category: Office
   packageCategory: office
   maintainer: Shri Jewellers <support@shrijewellers.example>
