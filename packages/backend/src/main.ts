@@ -32,7 +32,11 @@ async function autoMigrate(): Promise<void> {
 
 async function bootstrap() {
   await autoMigrate();
-  const app = await NestFactory.create(AppModule);
+  // bodyParser: false → we register our own parsers with a bigger limit so
+  // payloads like base64 shop logos don't hit 'request entity too large'
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Enable CORS (desktop app is served same-origin from this server, so this
   // mostly matters for `npm run dev` and custom deployments)

@@ -389,8 +389,9 @@ export class LedgerService {
         _sum: { amount: true },
       }),
     ]);
-    const sumCr = credits._sum.amount?.toNumber() || 0;
-    const sumDr = debits._sum.amount?.toNumber() || 0;
+    // SQLite returns plain numbers here (not Prisma.Decimal), so use Number()
+    const sumCr = Number(credits._sum.amount ?? 0) || 0;
+    const sumDr = Number(debits._sum.amount ?? 0) || 0;
     const currentBalance = account.openingBalance + sumCr - sumDr;
     if (currentBalance !== account.currentBalance) {
       await this.prisma.ledgerAccount.update({
