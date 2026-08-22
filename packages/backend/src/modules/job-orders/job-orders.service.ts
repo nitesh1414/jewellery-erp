@@ -69,6 +69,27 @@ export class JobOrdersService {
   }
 
   async create(data: any, organizationId: string, branchId: string) {
+    // JobOrder.branchId is required — fall back to the org's main branch when
+    // the logged-in user has no branch (this was causing 500s)
+    let resolvedBranchId = branchId;
+    if (!resolvedBranchId) {
+      const branch = await this.prisma.branch.findFirst({ where: { organizationId }, orderBy: { createdAt: 'asc' } });
+      if (!branch) throw new BadRequestException('Create a branch first (Settings → setup)');
+      resolvedBranchId = branch.id;
+    }
+
+    // Normalize inputs — empty strings break FKs / dates (was causing 500s)
+    const customerId = data.customerId && data.customerId !== '' ? data.customerId : null;
+    const expectedDelivery = data.expectedDelivery
+      ? new Date(data.expectedDelivery)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    if (isNaN(expectedDelivery.getTime())) {
+      throw new BadRequestException('Expected delivery date is invalid');
+    }
+    const estimatedAmount = Number(data.estimatedAmount) || 0;
+    const advanceAmount = Number(data.advanceAmount) || 0;
+    const expectedWeight = Number(data.expectedWeight) || 0;
+
     // Generate job number
     const count = await this.prisma.jobOrder.count({ where: { organizationId } });
     const year = new Date().getFullYear();
@@ -79,21 +100,21 @@ export class JobOrdersService {
     const order = await this.prisma.jobOrder.create({
       data: {
         organizationId,
-        branchId,
+        branchId: resolvedBranchId,
         jobNumber,
-        customerId: data.customerId,
+        customerId,
         customerName: data.customerName,
-        customerMobile: data.customerMobile,
+        customerMobile: data.customerMobile || null,
         productDescription: data.productDescription,
-        purity: data.purity,
-        metalType: data.metalType,
-        expectedWeight: data.expectedWeight || 0,
-        expectedDelivery: new Date(data.expectedDelivery),
-        estimatedAmount: data.estimatedAmount || 0,
-        advanceAmount: data.advanceAmount || 0,
-        balanceAmount: (data.estimatedAmount || 0) - (data.advanceAmount || 0),
+        purity: data.purity || '22K',
+        metalType: data.metalType || 'GOLD',
+        expectedWeight,
+        expectedDelivery,
+        estimatedAmount,
+        advanceAmount,
+        balanceAmount: Math.max(0, estimatedAmount - advanceAmount),
         status: assignWorker ? 'ASSIGNED' : 'CREATED',
-        notes: data.notes,
+        notes: data.notes || null,
       },
     });
 
@@ -112,7 +133,10 @@ export class JobOrdersService {
             jobOrderId: order.id,
             employeeId: employee.id,
             employeeName: employee.name,
-            dueDate: data.assignTo.dueDate ? new Date(data.assignTo.dueDate) : new Date(data.expectedDelivery),
+            dueDate:
+              data.assignTo.dueDate && !isNaN(new Date(data.assignTo.dueDate).getTime())
+                ? new Date(data.assignTo.dueDate)
+                : expectedDelivery,
             status: 'ASSIGNED',
             notes: data.assignTo.notes || null,
           },

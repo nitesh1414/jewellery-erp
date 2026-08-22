@@ -61,11 +61,14 @@ export default function PublicQuotePage() {
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 print:border-0 print:shadow-none print:p-0">
           {/* header */}
           <div className="flex justify-between items-start border-b pb-5 mb-5">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{shop.shopName || 'Jewellery Shop'}</h1>
+            <div className="flex items-center gap-3">
+              {shop.logo && <img src={shop.logo} alt="logo" className="w-14 h-14 rounded-lg object-contain border border-gray-100" />}
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">{shop.shopName || 'Jewellery Shop'}</h1>
               {shop.shopAddress && <p className="text-xs text-gray-500 mt-0.5">{shop.shopAddress}{shop.shopCity ? ', ' + shop.shopCity : ''}</p>}
               {shop.shopPhone && <p className="text-xs text-gray-500">Phone: {shop.shopPhone}</p>}
-              {shop.shopGstin && quote.isGst && <p className="text-xs text-gray-500">GSTIN: {shop.shopGstin}</p>}
+                {shop.shopGstin && quote.isGst && <p className="text-xs text-gray-500">GSTIN: {shop.shopGstin}</p>}
+              </div>
             </div>
             <div className="text-right">
               <p className="text-sm font-semibold text-primary-700 uppercase tracking-wide">Quotation / Estimate</p>

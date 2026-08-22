@@ -78,6 +78,14 @@ export function TopNav() {
   const [showUser, setShowUser] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // company details from Settings (shop name + logo shown everywhere)
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
+  // live date-time in the header bar (updates every second, no separate bar)
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
   const navRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
 
@@ -175,11 +183,15 @@ export function TopNav() {
         {/* Left: Logo + Main menu */}
         <div className="flex items-center gap-6 flex-1 min-w-0">
           <NavLink to="/dashboard" className="flex items-center gap-2 flex-shrink-0 pr-4 border-r border-gray-100 h-14">
-            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-              <Diamond className="w-4 h-4 text-white" />
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="text-sm font-bold text-gray-900 leading-tight">RajShri Jewellers</h1>
+            {settings?.logo ? (
+              <img src={settings.logo} alt={settings.shopName || 'logo'} className="w-8 h-8 rounded-lg object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
+                <Diamond className="w-4 h-4 text-white" />
+              </div>
+            )}
+            <div className="hidden sm:block max-w-[160px]">
+              <h1 className="text-sm font-bold text-gray-900 leading-tight truncate">{settings?.shopName || 'Jewellery Shop'}</h1>
               <p className="text-[10px] text-gray-500 leading-tight">ERP & POS</p>
             </div>
           </NavLink>
@@ -346,9 +358,12 @@ export function TopNav() {
             </span>
           ))}
         </div>
-        <div className="flex items-center gap-3 text-gray-500">
-          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
-          <span className="hidden md:inline">{new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+        <div className="flex items-center gap-3 text-gray-500" title="Live date & time">
+          <span className="hidden lg:flex flex-col items-end leading-tight">
+            <span className="text-xs font-medium text-gray-700 tabular-nums">{now.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
+            <span className="text-[10px] text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" />{now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+          </span>
+          <span className="lg:hidden flex items-center gap-1 text-xs tabular-nums"><Clock className="w-3 h-3" /> {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
       </div>
     </header>

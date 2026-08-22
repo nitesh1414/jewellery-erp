@@ -98,6 +98,7 @@ export class QuotationsService {
       shopPhone: settings.shopPhone,
       shopGstin: settings.shopGstin,
       shopEmail: settings.shopEmail,
+      logo: settings.logo,
     } : null };
   }
 

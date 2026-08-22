@@ -39,6 +39,7 @@ export default function BarcodePrintPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const ids = params.get('ids');
+  const codes = params.get('codes'); // barcode strings (e.g. from jewellery items)
   const scope = params.get('scope'); // unassigned | all
   const [sizeKey, setSizeKey] = useState('38x25');
   const [copies, setCopies] = useState(1);
@@ -46,8 +47,30 @@ export default function BarcodePrintPage() {
   const size = STICKER_SIZES.find((s) => s.key === sizeKey)!;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['barcode-print', ids, scope],
+    queryKey: ['barcode-print', ids, codes, scope],
     queryFn: async () => {
+      // print by barcode value (jumped from Jewellery/Inventory tab)
+      if (codes) {
+        const list = codes.split(',').filter(Boolean);
+        const items = await Promise.all(
+          list.map((code) =>
+            api.getJewelleryByBarcode(code.trim()).catch(() => null),
+          ),
+        );
+        return items
+          .filter(Boolean)
+          .map((item: any) => ({
+            id: item.id,
+            barcode: item.barcode,
+            jewelleryItem: {
+              designCode: item.designCode,
+              sku: item.sku,
+              purity: item.purity,
+              netWeight: item.netWeight,
+              currentRate: item.currentRate,
+            },
+          }));
+      }
       if (ids) {
         // selected barcode ids
         const res = await api.getBarcodes({ limit: 500 });
@@ -101,7 +124,7 @@ export default function BarcodePrintPage() {
         {isLoading ? (
           <div className="text-center py-16 text-gray-400">Loading…</div>
         ) : (
-          <div className={size.layout === 'roll' ? 'flex flex-col items-center gap-1' : 'grid'}
+          <div className={'print-area ' + (size.layout === 'roll' ? 'flex flex-col items-center gap-1' : 'grid')}
                style={size.layout === 'sheet' ? { gridTemplateColumns: `repeat(${size.cols}, ${size.w}mm)`, gap: '2mm' } : undefined}>
             {stickers.map((b: any, i: number) => (
               <Sticker key={i} barcode={b.barcode} item={b.jewelleryItem} size={size} />

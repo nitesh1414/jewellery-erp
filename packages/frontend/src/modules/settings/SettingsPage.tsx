@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
-import { Save, Settings, Building, Receipt, Percent, Shield, Diamond, Plus, X, Gem, Tag, BadgeCheck } from 'lucide-react';
+import { Save, Settings, Building, Receipt, Percent, Shield, Diamond, Plus, X, Gem, Tag, BadgeCheck, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
@@ -139,6 +139,30 @@ export default function SettingsPage() {
               <div><label className="label">Phone</label><input className="input-field" value={shopForm.shopPhone || ''} onChange={e => setShopForm({ ...shopForm, shopPhone: e.target.value })} /></div>
               <div><label className="label">Email</label><input className="input-field" value={shopForm.shopEmail || ''} onChange={e => setShopForm({ ...shopForm, shopEmail: e.target.value })} /></div>
               <div><label className="label">GSTIN</label><input className="input-field" value={shopForm.shopGstin || ''} onChange={e => setShopForm({ ...shopForm, shopGstin: e.target.value })} /></div>
+              <div className="col-span-1 sm:col-span-2 border-t pt-4">
+                <label className="label">Shop Logo (shown in header, prints & quotations)</label>
+                <div className="flex items-center gap-4">
+                  {shopForm.logo ? (
+                    <img src={shopForm.logo} alt="logo" className="w-14 h-14 rounded-lg border object-cover" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg border border-dashed flex items-center justify-center text-gray-300 text-xs">None</div>
+                  )}
+                  <div className="flex gap-2">
+                    <label className="btn-secondary cursor-pointer">
+                      <Upload className="w-4 h-4" /> Upload
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 300 * 1024) { toast.error('Logo must be under 300 KB'); return; }
+                        const reader = new FileReader();
+                        reader.onload = () => setShopForm({ ...shopForm, logo: reader.result as string });
+                        reader.readAsDataURL(file);
+                      }} />
+                    </label>
+                    {shopForm.logo && <button className="btn-ghost text-red-500 text-sm" onClick={() => setShopForm({ ...shopForm, logo: '' })}>Remove</button>}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

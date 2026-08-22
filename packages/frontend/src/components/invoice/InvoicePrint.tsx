@@ -83,14 +83,17 @@ function A4GST({ bill, shop, hideGst = false }: { bill: Bill; shop: Shop; hideGs
     <div className="invoice-page">
       {/* Header */}
       <div className="invoice-header">
-        <div style={{ flex: 1 }}>
-          <div className="shop-name">{shop.shopName || 'Jewellery Shop'}</div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10 }}>
+          {shop.logo && <img src={shop.logo} alt="logo" style={{ width: 48, height: 48, objectFit: 'contain' }} />}
+          <div>
+            <div className="shop-name">{shop.shopName || 'Jewellery Shop'}</div>
           <div className="shop-details">
             {shop.shopAddress && <div>{shop.shopAddress}</div>}
             {(shop.shopCity || shop.shopState) && <div>{[shop.shopCity, shop.shopState, shop.shopPin].filter(Boolean).join(', ')}</div>}
             {shop.shopPhone && <div>📞 {shop.shopPhone}</div>}
             {shop.shopEmail && <div>✉ {shop.shopEmail}</div>}
             {shop.shopGstin && <div><strong>GSTIN:</strong> {shop.shopGstin}</div>}
+          </div>
           </div>
         </div>
         <div className="invoice-title">
@@ -249,6 +252,7 @@ function Thermal({ bill, shop, width = 80 }: { bill: Bill; shop: Shop; width?: 5
   const scale = width === 58 ? 0.88 : width === 76 ? 0.95 : 1;
   return (
     <div className="thermal-receipt" style={{ width: `${width - 6}mm`, fontSize: `${11 * scale}px` }}>
+      {shop.logo && <div className="center" style={{ marginBottom: 2 }}><img src={shop.logo} alt="logo" style={{ height: 18 * scale, objectFit: 'contain' }} /></div>}
       <div className="center header">{shop.shopName || 'JEWeLLERY'}</div>
       {shop.shopAddress && <div className="center" style={{ fontSize: 10 }}>{shop.shopAddress}</div>}
       {(shop.shopCity || shop.shopState) && <div className="center" style={{ fontSize: 10 }}>{[shop.shopCity, shop.shopState].filter(Boolean).join(', ')}</div>}

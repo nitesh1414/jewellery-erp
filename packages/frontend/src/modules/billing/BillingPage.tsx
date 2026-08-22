@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -43,6 +44,9 @@ export default function BillingPage() {
   const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', address: '', city: '', gstin: '' });
 
   const [billType, setBillType] = useState<'GST' | 'NON_GST'>('GST');
+  const [billKind, setBillKind] = useState<'BILL' | 'ESTIMATE'>('BILL'); // tab 1: bills, tab 2: estimated bills
+  const [editingEstimateId, setEditingEstimateId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState<BillItem[]>([]);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [discount, setDiscount] = useState(0);
@@ -70,6 +74,8 @@ export default function BillingPage() {
   const handleNewBill = () => {
     setItems([]); setCustomer(null); setCustomerSearch('');
     setPayments([]); setDiscount(0); setShowPaymentPanel(false);
+    setEditingEstimateId(null);
+    if (window.location.search.includes('estimate=')) window.history.replaceState({}, '', '/billing');
     barcodeInputRef.current?.focus();
   };
 
@@ -116,6 +122,57 @@ export default function BillingPage() {
     enabled: showInventorySelect,
   });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
+
+  // Load an estimated bill for editing (/billing?estimate=<id>)
+  useEffect(() => {
+    const estId = searchParams.get('estimate');
+    if (!estId) return;
+    api.getSale(estId)
+      .then((sale: any) => {
+        if (!sale || sale.billType !== 'ESTIMATE') {
+          toast.error('This bill is not an estimated bill');
+          return;
+        }
+        if (sale.status !== 'ESTIMATE') {
+          toast.error('Estimate already ' + sale.status.toLowerCase() + ' — not editable');
+          return;
+        }
+        setBillKind('ESTIMATE');
+        setEditingEstimateId(sale.id);
+        setBillType(sale.isGst ? 'GST' : 'NON_GST');
+        setCustomer(sale.customerId ? { id: sale.customerId, name: sale.customerName, mobile: sale.customerMobile } : { name: sale.customerName, mobile: sale.customerMobile });
+        setCustomerSearch(sale.customerName || '');
+        setDiscount(sale.discount || 0);
+        setNarration(sale.narration || '');
+        setItems(
+          (sale.items || []).map((it: any, idx: number) => ({
+            id: 'item-' + Date.now() + '-' + idx,
+            jewelleryItemId: it.jewelleryItemId || undefined,
+            barcode: it.barcode || undefined,
+            particular: it.particular,
+            hsnCode: it.hsnCode,
+            purity: it.purity,
+            quantity: it.quantity,
+            grossWeight: it.grossWeight,
+            netWeight: it.netWeight,
+            ratePerGram: it.ratePerGram,
+            metalValue: it.metalValue,
+            makingCharges: it.makingCharges,
+            chargeDetails: typeof it.chargeDetails === 'string' ? JSON.parse(it.chargeDetails || '[]') : it.chargeDetails || [],
+            hallMarkAmount: it.hallMarkAmount || 0,
+            hallmarkNumber: it.hallmarkNumber || '',
+            discount: it.discount || 0,
+            urd: it.urd || 0,
+            cgst: it.cgst || 0,
+            sgst: it.sgst || 0,
+            totalAmount: it.totalAmount || 0,
+          })),
+        );
+        toast.success('Editing estimate ' + sale.billNumber + ' — changes save back to the same estimate');
+      })
+      .catch(() => toast.error('Estimate not found'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // === CALCULATION ===
   const calculateItem = (item: any) => {
@@ -251,15 +308,24 @@ export default function BillingPage() {
 
   // === CREATE SALE ===
   const createSaleMutation = useMutation({
-    mutationFn: (data: any) => api.createSale(data),
-    onSuccess: (data: any) => {
+    mutationFn: ({ data, kind, estimateId }: { data: any; kind: string; estimateId?: string }) =>
+      kind === 'ESTIMATE' && estimateId ? api.put('/sales/' + estimateId, data) : api.createSale(data),
+    onSuccess: (data: any, vars: any) => {
+      if (vars.kind === 'ESTIMATE') {
+        toast.success((vars.estimateId ? 'Estimated bill ' + data.billNumber + ' updated!' : 'Estimated bill ' + data.billNumber + ' saved!') + ' — confirm it from Bills → Estimated Bills when final');
+        queryClient.invalidateQueries({ queryKey: ['bills'] });
+        window.open('/print/sale/' + data.id + '?format=ESTIMATE&auto=1', '_blank');
+        handleNewBill();
+        setBillKind('BILL');
+        return;
+      }
       toast.success('Bill ' + data.billNumber + ' created!');
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       const billId = data.id;
       handleNewBill();
       window.open('/print/sale/' + billId + '?format=A4_GST&auto=1', '_blank');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to create bill'),
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
 
   const createQuotationMutation = useMutation({
@@ -298,7 +364,7 @@ export default function BillingPage() {
   const handleFinalizeBill = () => {
     if (items.length === 0) { toast.error('Add at least one item'); return; }
     const billData = {
-      billType,
+      billType: billKind === 'ESTIMATE' ? 'ESTIMATE' : billType,
       customerId: customer?.id,
       customerName: customer?.name || 'Walk-in Customer',
       customerMobile: customer?.mobile || '',
@@ -315,9 +381,9 @@ export default function BillingPage() {
       })),
       discount: discountAmount, discountType, isGst: billType === 'GST',
       narration,
-      payments: payments.map(p => ({ amount: p.amount, paymentMode: p.mode, reference: p.reference })),
+      payments: billKind === 'ESTIMATE' ? [] : payments.map(p => ({ amount: p.amount, paymentMode: p.mode, reference: p.reference })),
     };
-    createSaleMutation.mutate(billData);
+    createSaleMutation.mutate({ data: billData, kind: billKind, estimateId: editingEstimateId || undefined });
   };
 
   const handleCreateCustomer = async () => {
@@ -351,7 +417,16 @@ export default function BillingPage() {
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F9</kbd> Inventory
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {editingEstimateId && billKind === 'ESTIMATE' && (
+            <span className="badge badge-warning">✏ Editing estimate — save updates it</span>
+          )}
+          <div className="flex bg-gray-100 rounded-lg p-0.5">
+            <button onClick={() => setBillKind('BILL')}
+              className={'px-4 py-1.5 text-sm font-medium rounded-md transition-all ' + (billKind === 'BILL' ? 'bg-white shadow text-gray-900' : 'text-gray-500')}>Bill</button>
+            <button onClick={() => { setBillKind('ESTIMATE'); setPayments([]); setShowPaymentPanel(false); }}
+              className={'px-4 py-1.5 text-sm font-medium rounded-md transition-all ' + (billKind === 'ESTIMATE' ? 'bg-white shadow text-amber-700' : 'text-gray-500')}>Estimated Bill</button>
+          </div>
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             <button onClick={() => setBillType('GST')}
               className={'px-4 py-1.5 text-sm font-medium rounded-md transition-all ' + (billType === 'GST' ? 'bg-white shadow text-gray-900' : 'text-gray-500')}>GST</button>
@@ -599,17 +674,23 @@ export default function BillingPage() {
 
               {/* Bottom action row */}
               <div className="space-y-2 pt-3 border-t">
-                {!showPaymentPanel && (
+                {billKind !== 'ESTIMATE' && !showPaymentPanel && (
                   <button onClick={() => setShowPaymentPanel(true)} className="btn-secondary w-full py-2 text-sm" title="Payment (F6)">
                     <CreditCard className="w-4 h-4" /> Add Payment
                   </button>
+                )}
+                {billKind === 'ESTIMATE' && (
+                  <p className="text-xs text-center text-amber-700 bg-amber-50 border border-amber-200 rounded-lg py-2">
+                    Estimated bill — payments are taken when it is confirmed into a bill
+                  </p>
                 )}
                 {showPaymentPanel && (
                   <button onClick={() => setShowPaymentPanel(false)} className="btn-ghost w-full text-xs py-1 text-gray-500">Hide</button>
                 )}
                 <div className="flex gap-2">
-                  <button onClick={handleFinalizeBill} disabled={items.length === 0 || createSaleMutation.isPending} className="btn-primary flex-1 py-3 text-base">
-                    {createSaleMutation.isPending ? 'Saving...' : <><Save className="w-4 h-4" /> {balanceAmount <= 0 ? 'Finalize & Save' : 'Save Bill'}</>}
+                  <button onClick={handleFinalizeBill} disabled={items.length === 0 || createSaleMutation.isPending}
+                    className={'flex-1 py-3 text-base ' + (billKind === 'ESTIMATE' ? 'bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors' : 'btn-primary')}>
+                    {createSaleMutation.isPending ? 'Saving...' : <><Save className="w-4 h-4" /> {billKind === 'ESTIMATE' ? 'Save Estimated Bill' : (balanceAmount <= 0 ? 'Finalize & Save' : 'Save Bill')}</>}
                   </button>
                   <button onClick={handleNewBill} className="btn-secondary" title="New Bill (F2)"><X className="w-4 h-4" /></button>
                 </div>

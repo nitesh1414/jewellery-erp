@@ -211,6 +211,16 @@ export class JewelleryService {
       },
     });
 
+    // Link the barcode record to the item so it shows in the Barcodes tab
+    try {
+      await this.prisma.barcode.updateMany({
+        where: { barcode, jewelleryItemId: null },
+        data: { jewelleryItemId: item.id, isAssigned: true },
+      });
+    } catch {
+      /* barcode record optional */
+    }
+
     return item;
   }
 

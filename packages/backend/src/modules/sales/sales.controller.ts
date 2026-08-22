@@ -44,6 +44,16 @@ export class SalesController {
     return this.salesService.create(body, user.id, user.organizationId, user.branchId);
   }
 
+  @Put(':id')
+  async updateEstimate(@Param('id') id: string, @Body() body: any, @CurrentUser() user: any) {
+    return this.salesService.updateEstimate(id, body, user.id, user.organizationId);
+  }
+
+  @Put(':id/confirm')
+  async confirmEstimate(@Param('id') id: string, @Body() body: any, @CurrentUser() user: any) {
+    return this.salesService.confirmEstimate(id, body || {}, user.id, user.organizationId, user.branchId);
+  }
+
   @Put(':id/status')
   async updateStatus(
     @Param('id') id: string,

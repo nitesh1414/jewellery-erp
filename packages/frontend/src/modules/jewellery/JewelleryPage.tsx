@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { Plus, Search, Package } from 'lucide-react';
+import { Plus, Search, Package, Printer } from 'lucide-react';
 
 export default function JewelleryPage() {
   const qc = useQueryClient();
@@ -10,7 +10,15 @@ export default function JewelleryPage() {
   const [status, setStatus] = useState('');
   const [metalType, setMetalType] = useState('');
   const [purity, setPurity] = useState('');
+  const [category, setCategory] = useState('');
+  const [lkGender, setLkGender] = useState('');
+  const [lkOrnament, setLkOrnament] = useState('');
+  const [location, setLocation] = useState('');
+  const [minWt, setMinWt] = useState('');
+  const [maxWt, setMaxWt] = useState('');
+  const [sort, setSort] = useState('');
   const [page, setPage] = useState(1);
+  const [detail, setDetail] = useState<any>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
   const [form, setForm] = useState<any>({
@@ -27,8 +35,15 @@ export default function JewelleryPage() {
   const ornaments = (ornamentsData?.items || []).map((o: any) => o);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['jewellery', search, status, metalType, purity, page],
-    queryFn: () => api.getJewelleryItems({ search, status, metalType, purity, page, limit: 25 }),
+    queryKey: ['jewellery', search, status, metalType, purity, category, lkGender, lkOrnament, location, minWt, maxWt, sort, page],
+    queryFn: () => api.getJewelleryItems({
+      search: search || undefined, status: status || undefined, metalType: metalType || undefined,
+      purity: purity || undefined, category: category || undefined, ornamentGender: lkGender || undefined,
+      ornament: lkOrnament || undefined, location: location || undefined,
+      minNetWeight: minWt || undefined, maxNetWeight: maxWt || undefined, sort: sort || undefined,
+      page, limit: 25,
+    }),
+    placeholderData: (prev: any) => prev,
   });
   const { data: stats } = useQuery({ queryKey: ['jewellery-stats'], queryFn: () => api.get('/jewellery/stats') });
 
@@ -74,44 +89,82 @@ export default function JewelleryPage() {
         <div className="stat-card"><p className="stat-label">Total Value</p><p className="stat-value">₹{(stats?.totalValue || 0).toLocaleString('en-IN')}</p></div>
       </div>
 
-      <div className="flex gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-xs"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Search barcode, SKU, design..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
-        <select className="input-field w-36" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}><option value="">All Status</option><option value="IN_STOCK">In Stock</option><option value="SOLD">Sold</option><option value="RESERVED">Reserved</option><option value="IN_MANUFACTURING">In Mfg</option><option value="IN_REPAIR">In Repair</option></select>
-        <select className="input-field w-32" value={metalType} onChange={e => { setMetalType(e.target.value); setPage(1); }}><option value="">All Metal</option><option value="GOLD">Gold</option><option value="SILVER">Silver</option></select>
+      <div className="flex gap-2 flex-wrap items-center bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+        <div className="relative flex-1 min-w-[200px] max-w-sm"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Barcode, SKU, design, hallmark no…" className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
+        <select className="input-field w-32" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}>
+          <option value="">All Status</option>
+          {['IN_STOCK', 'RESERVED', 'IN_MANUFACTURING', 'IN_REPAIR', 'SOLD', 'SCRAPPED'].map((st) => <option key={st} value={st}>{st.replace(/_/g, ' ')}</option>)}
+        </select>
+        <select className="input-field w-28" value={metalType} onChange={e => { setMetalType(e.target.value); setPage(1); }}><option value="">All Metal</option>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m}</option>)}</select>
         <select className="input-field w-28" value={purity} onChange={e => { setPurity(e.target.value); setPage(1); }}><option value="">Purity</option>{(settings?.allPurities || ['24K','22K','18K','SILVER_925']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', '925 ')}</option>)}</select>
+        <input className="input-field w-28" placeholder="Category" value={category} onChange={e => { setCategory(e.target.value); setPage(1); }} />
+        <select className="input-field w-40" value={lkOrnament} onChange={e => { setLkOrnament(e.target.value); setLkGender(''); setPage(1); }}>
+          <option value="">All ornaments</option>
+          {(ornaments || []).map((o: any) => <option key={o.id} value={o.name}>{o.name}</option>)}
+        </select>
+        <select className="input-field w-32" value={lkGender} onChange={e => { setLkGender(e.target.value); setPage(1); }}>
+          <option value="">Male + Female</option>
+          <option value="MALE">Male ornaments</option>
+          <option value="FEMALE">Female ornaments</option>
+          <option value="UNISEX">Unisex</option>
+        </select>
+        <input className="input-field w-24" placeholder="Location" value={location} onChange={e => { setLocation(e.target.value); setPage(1); }} />
+        <div className="flex items-center gap-1">
+          <input type="number" step="0.1" className="input-field w-20" placeholder="Wt ≥" value={minWt} onChange={e => { setMinWt(e.target.value); setPage(1); }} />
+          <span className="text-gray-400 text-xs">—</span>
+          <input type="number" step="0.1" className="input-field w-20" placeholder="≤" value={maxWt} onChange={e => { setMaxWt(e.target.value); setPage(1); }} />
+        </div>
+        <select className="input-field w-40" value={sort} onChange={e => setSort(e.target.value)}>
+          <option value="">Newest first</option>
+          <option value="netWeight_desc">Weight: high → low</option>
+          <option value="netWeight_asc">Weight: low → high</option>
+          <option value="value_desc">Rate/g: high → low</option>
+        </select>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <table className="w-full">
           <thead><tr className="border-b bg-gray-50">
-            <th className="table-header">Barcode</th><th className="table-header">Design</th><th className="table-header">Purity</th>
-            <th className="table-header text-right">Gross</th><th className="table-header text-right">Net Wt</th>
+            <th className="table-header">Barcode</th><th className="table-header">Design / Ornament</th><th className="table-header">Metal / Purity</th>
+            <th className="table-header text-right">Gross / Stone / Net</th>
             <th className="table-header text-right">Rate/g</th><th className="table-header text-right">Value</th>
+            <th className="table-header">Making</th><th className="table-header">Hallmark</th><th className="table-header">Location</th>
             <th className="table-header">Status</th><th className="table-header"></th>
           </tr></thead>
           <tbody>
             {isLoading ? <tr><td colSpan={9} className="text-center py-12 text-gray-400">Loading...</td></tr> :
              data?.items?.length === 0 ? <tr><td colSpan={9} className="text-center py-12 text-gray-400">No items found</td></tr> :
              data?.items?.map((item: any) => (
-              <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50">
+              <tr key={item.id} className="border-b border-gray-50 hover:bg-primary-50/40 cursor-pointer" onClick={() => setDetail(item)}>
                 <td className="table-cell font-mono text-primary-700 text-xs">{item.barcode}</td>
-                <td className="table-cell"><p className="font-medium">{item.designCode || item.product?.name || '—'}</p><p className="text-xs text-gray-400">{item.category}</p></td>
-                <td className="table-cell">{item.purity}</td>
-                <td className="table-cell text-right">{item.grossWeight?.toFixed(3)}</td>
-                <td className="table-cell text-right font-medium">{item.netWeight?.toFixed(3)}</td>
-                <td className="table-cell text-right">₹{item.currentRate?.toLocaleString('en-IN')}</td>
-                <td className="table-cell text-right font-medium">₹{(item.netWeight * item.currentRate).toLocaleString('en-IN')}</td>
-                <td className="table-cell"><span className={'badge ' + (item.status === 'IN_STOCK' ? 'badge-success' : item.status === 'SOLD' ? 'badge-danger' : item.status === 'RESERVED' ? 'badge-info' : 'badge-warning')}>{item.status}</span></td>
                 <td className="table-cell">
-                  {item.status === 'IN_STOCK' && (
-                    <select onChange={e => handleStatusChange(item.id, e.target.value)} value="" className="text-xs border rounded p-1">
-                      <option value="">Set Status</option>
-                      <option value="RESERVED">Reserve</option>
-                      <option value="IN_MANUFACTURING">To Mfg</option>
-                      <option value="IN_REPAIR">To Repair</option>
-                      <option value="SCRAPPED">Scrap</option>
-                    </select>
-                  )}
+                  <p className="font-medium">{item.designCode || item.product?.name || '—'}</p>
+                  <p className="text-xs text-gray-400">
+                    {item.category || '—'}{item.ornament ? ` · ${item.ornament}` : ''}{item.ornamentGender ? ` (${item.ornamentGender[0]}${item.ornamentGender.slice(1).toLowerCase()})` : ''}
+                  </p>
+                </td>
+                <td className="table-cell text-xs">{item.metalType}<br /><span className="text-gray-400">{item.purity}</span></td>
+                <td className="table-cell text-right text-xs">{item.grossWeight?.toFixed(3)} / {item.stoneWeight?.toFixed(3) ?? '0.000'} / <strong>{item.netWeight?.toFixed(3)}</strong> g</td>
+                <td className="table-cell text-right">₹{item.currentRate?.toLocaleString('en-IN')}</td>
+                <td className="table-cell text-right font-medium">₹{(item.netWeight * item.currentRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                <td className="table-cell text-xs">{item.makingChargeType === 'PERCENTAGE' ? item.makingChargeValue + '%' : item.makingChargeType === 'PER_GRAM' ? '₹' + item.makingChargeValue + '/g' : '₹' + item.makingChargeValue}</td>
+                <td className="table-cell text-xs">{item.hallmarkNumber || '—'}</td>
+                <td className="table-cell text-xs">{item.location || '—'}</td>
+                <td className="table-cell"><span className={'badge ' + (item.status === 'IN_STOCK' ? 'badge-success' : item.status === 'SOLD' ? 'badge-danger' : item.status === 'RESERVED' ? 'badge-info' : 'badge-warning')}>{item.status.replace(/_/g, ' ')}</span></td>
+                <td className="table-cell" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(item.barcode), '_blank')}
+                      className="p-1 text-gray-400 hover:text-primary-600" title="Print barcode sticker"><Printer className="w-4 h-4" /></button>
+                    {item.status === 'IN_STOCK' && (
+                      <select onChange={e => handleStatusChange(item.id, e.target.value)} value="" className="text-xs border rounded p-1">
+                        <option value="">Set Status</option>
+                        <option value="RESERVED">Reserve</option>
+                        <option value="IN_MANUFACTURING">To Mfg</option>
+                        <option value="IN_REPAIR">To Repair</option>
+                        <option value="SCRAPPED">Scrap</option>
+                      </select>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -200,6 +253,53 @@ export default function JewelleryPage() {
           </div>
         </div>
       )}
+    
+      {/* Item detail drawer */}
+      {detail && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDetail(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-lg">{detail.designCode || detail.product?.name || 'Item'}</h3>
+                  <p className="font-mono text-xs text-primary-700">{detail.barcode}</p>
+                </div>
+                <button onClick={() => setDetail(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {[
+                  ['Status', (detail.status || '').replace(/_/g, ' ')],
+                  ['Metal / Purity', `${detail.metalType} · ${detail.purity}`],
+                  ['Category', detail.category || '—'],
+                  ['Sub category', detail.subCategory || '—'],
+                  ['Ornament', detail.ornament ? `${detail.ornament} (${detail.ornamentGender || '—'})` : '—'],
+                  ['Gross weight', detail.grossWeight + ' g'],
+                  ['Stone weight', (detail.stoneWeight ?? 0) + ' g'],
+                  ['Net weight', detail.netWeight + ' g'],
+                  ['Quantity', String(detail.quantity)],
+                  ['Size / Color', `${detail.size || '—'} / ${detail.color || '—'}`],
+                  ['Purchase rate', '₹' + (detail.purchaseRate || 0).toLocaleString('en-IN')],
+                  ['Current rate', '₹' + (detail.currentRate || 0).toLocaleString('en-IN')],
+                  ['Current value', '₹' + (detail.netWeight * detail.currentRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })],
+                  ['Making charge', detail.makingChargeType === 'PERCENTAGE' ? detail.makingChargeValue + '%' : detail.makingChargeType === 'PER_GRAM' ? '₹' + detail.makingChargeValue + '/g' : '₹' + detail.makingChargeValue],
+                  ['Hallmark no.', detail.hallmarkNumber || '—'],
+                  ['Certificate no.', detail.certificateNumber || '—'],
+                  ['HSN', detail.hsnCode],
+                  ['Location', detail.location || '—'],
+                  ['SKU', detail.sku || '—'],
+                  ['Purchase date', detail.purchaseDate ? new Date(detail.purchaseDate).toLocaleDateString('en-IN') : '—'],
+                ].map(([label, value]: any) => (
+                  <div key={label}><p className="text-xs text-gray-400">{label}</p><p className="font-medium">{value}</p></div>
+                ))}
+              </div>
+              <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(detail.barcode), '_blank')} className="btn-primary w-full mt-5">
+                <Printer className="w-4 h-4" /> Print Barcode Sticker
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

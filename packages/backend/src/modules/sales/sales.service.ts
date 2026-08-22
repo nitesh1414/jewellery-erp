@@ -35,6 +35,8 @@ export class SalesService {
         { billNumber: { contains: search } },
         { customerName: { contains: search } },
         { customerMobile: { contains: search } },
+        { customerName: { contains: search } },
+        { customerMobile: { contains: search } },
       ];
     }
 
@@ -90,6 +92,10 @@ export class SalesService {
       throw new BadRequestException('Shop settings not configured');
     }
 
+    // Estimated bills keep their own EST-… id, never touch stock or ledger
+    // (stock/ledger are applied only when the estimate is confirmed to a bill)
+    const isEstimate = data.billType === 'ESTIMATE';
+
     // Generate bill number
     const prefix = data.billType === 'GST' ? 'GST' : 
                    data.billType === 'ESTIMATE' ? 'EST' :
@@ -101,6 +107,8 @@ export class SalesService {
     // Calculate bill using backend engine
     const calculated = this.calculateBill(data.items);
 
+    // Estimates cannot take payments
+    if (isEstimate) data.payments = [];
     // Validate payment
     const totalPaid = (data.payments || []).reduce((sum: number, p: any) => sum + p.amount, 0);
     const balanceAmount = calculated.netAmount - totalPaid;
@@ -114,7 +122,7 @@ export class SalesService {
           branchId,
           billNumber,
           billType: data.billType || 'GST',
-          status: totalPaid >= calculated.netAmount ? 'CONFIRMED' : 'DRAFT',
+          status: isEstimate ? 'ESTIMATE' : (totalPaid >= calculated.netAmount ? 'CONFIRMED' : 'DRAFT'),
           customerId: data.customerId,
           customerName: data.customerName,
           customerMobile: data.customerMobile,
@@ -175,8 +183,8 @@ export class SalesService {
           },
         });
 
-        // Update jewellery item status if barcode is present
-        if (item.jewelleryItemId) {
+        // Update jewellery item status if barcode is present (real bills only)
+        if (item.jewelleryItemId && !isEstimate) {
           await tx.jewelleryItem.update({
             where: { id: item.jewelleryItemId },
             data: { status: 'SOLD' },
@@ -204,8 +212,8 @@ export class SalesService {
         }
       }
 
-      // Create payments
-      if (data.payments && data.payments.length > 0) {
+      // Create payments (estimates never have payments)
+      if (!isEstimate && data.payments && data.payments.length > 0) {
         for (const payment of data.payments) {
           await tx.salePayment.create({
             data: {
@@ -220,8 +228,8 @@ export class SalesService {
         }
       }
 
-      // Update customer ledger if customer exists
-      if (data.customerId) {
+      // Update customer ledger if customer exists (real bills only)
+      if (!isEstimate && data.customerId) {
         await tx.customerLedger.create({
           data: {
             customerId: data.customerId,
@@ -243,8 +251,8 @@ export class SalesService {
         data: { nextBillNumber: settings.nextBillNumber + 1 },
       });
 
-      // Create in-app notification
-      await tx.notification.create({
+      // Create in-app notification (real bills only)
+      if (!isEstimate) await tx.notification.create({
         data: {
           organizationId,
           branchId,
@@ -275,6 +283,145 @@ export class SalesService {
         where: { id: saleRecord.id },
         include: { items: true, payments: true },
       });
+    });
+
+    return sale;
+  }
+
+  /**
+   * Estimated bills stay editable (items, rates, discount, customer) until
+   * they are confirmed into a real bill.
+   */
+  async updateEstimate(id: string, data: any, userId: string, organizationId: string) {
+    const estimate = await this.prisma.sale.findFirst({
+      where: { id, organizationId },
+      include: { items: { orderBy: { sortOrder: 'asc' } } },
+    });
+    if (!estimate) throw new NotFoundException('Estimated bill not found');
+    if (estimate.billType !== 'ESTIMATE') throw new BadRequestException('Only estimated bills can be edited');
+    if (estimate.status !== 'ESTIMATE') throw new BadRequestException('This estimate is already ' + estimate.status + ' and can no longer be edited');
+
+    if (!data.items || data.items.length === 0) throw new BadRequestException('Add at least one item');
+
+    const calculated = this.calculateBill(data.items);
+    const discount = data.discount ?? estimate.discount;
+    const taxable = Math.max(0, calculated.taxableAmount - (calculated.totalDiscount || 0));
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.saleItem.deleteMany({ where: { saleId: id } });
+      for (let i = 0; i < data.items.length; i++) {
+        const item = data.items[i];
+        const itemCalc = calculated.items[i];
+        await tx.saleItem.create({
+          data: {
+            saleId: id,
+            jewelleryItemId: item.jewelleryItemId || null,
+            barcode: item.barcode || null,
+            particular: item.particular,
+            hsnCode: item.hsnCode,
+            purity: item.purity,
+            quantity: item.quantity || 1,
+            grossWeight: item.grossWeight || 0,
+            netWeight: item.netWeight || 0,
+            ratePerGram: item.ratePerGram || 0,
+            metalValue: itemCalc.metalValue,
+            makingCharges: itemCalc.totalCharges,
+            chargeDetails: JSON.stringify(item.chargeDetails || []),
+            hallMarkAmount: itemCalc.hallMarkAmount,
+            hallmarkNumber: item.hallmarkNumber || null,
+            discount: itemCalc.discount,
+            cgst: itemCalc.cgst,
+            sgst: itemCalc.sgst,
+            igst: itemCalc.igst,
+            urd: itemCalc.urd,
+            urdDocNumber: item.urdDocNumber,
+            totalAmount: itemCalc.totalAmount,
+            sortOrder: i,
+          },
+        });
+      }
+      return tx.sale.update({
+        where: { id },
+        data: {
+          customerId: data.customerId || null,
+          customerName: data.customerName || estimate.customerName,
+          customerMobile: data.customerMobile || null,
+          customerGstin: data.customerGstin || null,
+          customerAddress: data.customerAddress || null,
+          taxableAmount: calculated.taxableAmount,
+          cgst: calculated.totalCgst,
+          sgst: calculated.totalSgst,
+          igst: calculated.totalIgst,
+          totalTax: calculated.totalTax,
+          discount: calculated.totalDiscount || discount,
+          grossAmount: calculated.subtotal,
+          netAmount: calculated.netAmount,
+          balanceAmount: calculated.netAmount,
+          isGst: data.isGst !== false,
+          narration: data.narration ?? estimate.narration,
+        },
+      });
+    });
+
+    return updated;
+  }
+
+  /**
+   * Confirm an estimated bill → generates the real GST/Non-GST bill
+   * (new bill number, stock movement, ledger, payments) and marks the
+   * estimate CONVERTED for the audit trail.
+   */
+  async confirmEstimate(id: string, data: { billType?: string; payments?: any[] }, userId: string, organizationId: string, branchId: string) {
+    const estimate = await this.prisma.sale.findFirst({
+      where: { id, organizationId },
+      include: { items: { orderBy: { sortOrder: 'asc' } } },
+    });
+    if (!estimate) throw new NotFoundException('Estimated bill not found');
+    if (estimate.billType !== 'ESTIMATE') throw new BadRequestException('This is not an estimated bill');
+    if (estimate.status !== 'ESTIMATE') throw new BadRequestException('Estimate already ' + estimate.status.toLowerCase());
+
+    if (!estimate.items || estimate.items.length === 0) {
+      throw new BadRequestException('Estimate has no items');
+    }
+
+    const billType = data.billType === 'NON_GST' ? 'NON_GST' : 'GST';
+    const saleData: any = {
+      billType,
+      customerId: estimate.customerId,
+      customerName: estimate.customerName,
+      customerMobile: estimate.customerMobile,
+      customerGstin: billType === 'GST' ? estimate.customerGstin : '',
+      customerAddress: estimate.customerAddress,
+      isGst: billType === 'GST',
+      narration: (estimate.narration ? estimate.narration + ' | ' : '') + 'Confirmed from estimate ' + estimate.billNumber,
+      payments: data.payments || [],
+      items: estimate.items.map((item) => ({
+        jewelleryItemId: item.jewelleryItemId,
+        barcode: item.barcode,
+        particular: item.particular,
+        hsnCode: item.hsnCode,
+        purity: item.purity,
+        quantity: item.quantity,
+        grossWeight: item.grossWeight,
+        netWeight: item.netWeight,
+        ratePerGram: item.ratePerGram,
+        metalValue: item.metalValue,
+        makingCharges: item.makingCharges,
+        chargeDetails: JSON.parse(item.chargeDetails || '[]'),
+        hallMarkAmount: item.hallMarkAmount,
+        hallmarkNumber: item.hallmarkNumber,
+        discount: item.discount,
+        urd: item.urd,
+        urdDocNumber: item.urdDocNumber,
+      })),
+    };
+
+    // create() runs the full bill pipeline (stock, ledger, payments)
+    const sale = await this.create(saleData, userId, organizationId, branchId);
+
+    await this.prisma.sale.update({
+      where: { id },
+      data: { status: 'CONVERTED', balanceAmount: 0, paidAmount: 0 },
     });
 
     return sale;

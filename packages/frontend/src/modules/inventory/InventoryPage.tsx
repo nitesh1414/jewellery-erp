@@ -6,21 +6,7 @@ import { Package, Filter, AlertTriangle, TrendingUp, RotateCcw, ArrowRight, Sear
 
 export default function InventoryPage() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<'balance' | 'lookup' | 'transactions' | 'valuation' | 'alerts'>('balance');
-  // Lookup (full item search) state
-  const [lkSearch, setLkSearch] = useState('');
-  const [lkStatus, setLkStatus] = useState('');
-  const [lkMetal, setLkMetal] = useState('');
-  const [lkPurity, setLkPurity] = useState('');
-  const [lkCategory, setLkCategory] = useState('');
-  const [lkGender, setLkGender] = useState('');
-  const [lkOrnament, setLkOrnament] = useState('');
-  const [lkLocation, setLkLocation] = useState('');
-  const [lkMinWt, setLkMinWt] = useState('');
-  const [lkMaxWt, setLkMaxWt] = useState('');
-  const [lkSort, setLkSort] = useState('');
-  const [lkPage, setLkPage] = useState(1);
-  const [lkDetail, setLkDetail] = useState<any>(null);
+  const [tab, setTab] = useState<'balance' | 'transactions' | 'valuation' | 'alerts'>('balance');
   const [txPage, setTxPage] = useState(1);
   const [txType, setTxType] = useState('');
   const [showAdjust, setShowAdjust] = useState(false);
@@ -31,19 +17,6 @@ export default function InventoryPage() {
   const { data: transactions } = useQuery({ queryKey: ['inv-tx', txPage, txType], queryFn: () => api.getStockTransactions({ page: txPage, limit: 20, transactionType: txType }) });
   const { data: valuation } = useQuery({ queryKey: ['inv-valuation'], queryFn: () => api.get('/inventory/valuation') });
   const { data: alerts } = useQuery({ queryKey: ['inv-alerts'], queryFn: () => api.getLowStockAlerts() });
-  const { data: lkData, isLoading: lkLoading } = useQuery({
-    queryKey: ['inv-lookup', lkSearch, lkStatus, lkMetal, lkPurity, lkCategory, lkGender, lkOrnament, lkLocation, lkMinWt, lkMaxWt, lkSort, lkPage],
-    queryFn: () => api.getJewelleryItems({
-      search: lkSearch || undefined, status: lkStatus || undefined, metalType: lkMetal || undefined,
-      purity: lkPurity || undefined, category: lkCategory || undefined, ornamentGender: lkGender || undefined,
-      ornament: lkOrnament || undefined, location: lkLocation || undefined,
-      minNetWeight: lkMinWt || undefined, maxNetWeight: lkMaxWt || undefined, sort: lkSort || undefined,
-      page: lkPage, limit: 25,
-    }),
-    placeholderData: (prev: any) => prev,
-  });
-  const { data: lkSettings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
-  const { data: lkOrnaments } = useQuery({ queryKey: ['ornaments-active'], queryFn: () => api.getOrnaments({ isActive: 'true' }), staleTime: 60000 });
 
   const adjustMutation = useMutation({
     mutationFn: (b: any) => api.post('/inventory/adjust', b),
@@ -71,10 +44,10 @@ export default function InventoryPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
-        {(['balance', 'lookup', 'transactions', 'valuation', 'alerts'] as const).map(t => (
+        {(['balance', 'transactions', 'valuation', 'alerts'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={'px-4 py-2 text-sm font-medium rounded-md transition-all ' + (tab === t ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
-            {t === 'balance' ? 'Stock Balance' : t === 'lookup' ? 'Item Lookup' : t === 'transactions' ? 'Transactions' : t === 'valuation' ? 'Valuation' : 'Low Stock'}
+            {t === 'balance' ? 'Stock Balance' : t === 'transactions' ? 'Transactions' : t === 'valuation' ? 'Valuation' : 'Low Stock'}
           </button>
         ))}
       </div>
@@ -112,143 +85,6 @@ export default function InventoryPage() {
               )}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Item Lookup Tab */}
-      {tab === 'lookup' && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="relative flex-1 min-w-[220px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input className="input-field pl-10" placeholder="Barcode, SKU, design, hallmark no…" value={lkSearch} onChange={(e) => { setLkSearch(e.target.value); setLkPage(1); }} />
-            </div>
-            <select className="input-field w-32" value={lkStatus} onChange={(e) => { setLkStatus(e.target.value); setLkPage(1); }}>
-              <option value="">All status</option>
-              {['IN_STOCK', 'RESERVED', 'IN_MANUFACTURING', 'IN_REPAIR', 'SOLD', 'SCRAPPED'].map((s2) => <option key={s2} value={s2}>{s2.replace('_', ' ')}</option>)}
-            </select>
-            <select className="input-field w-28" value={lkMetal} onChange={(e) => { setLkMetal(e.target.value); setLkPage(1); }}>
-              <option value="">All metal</option>
-              {(lkSettings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m}</option>)}
-            </select>
-            <select className="input-field w-28" value={lkPurity} onChange={(e) => { setLkPurity(e.target.value); setLkPage(1); }}>
-              <option value="">Purity</option>
-              {(lkSettings?.allPurities || ['24K', '22K', '18K']).map((p: string) => <option key={p} value={p}>{p}</option>)}
-            </select>
-            <input className="input-field w-28" placeholder="Category" value={lkCategory} onChange={(e) => { setLkCategory(e.target.value); setLkPage(1); }} />
-            <select className="input-field w-36" value={lkOrnament} onChange={(e) => { setLkOrnament(e.target.value); setLkGender(''); setLkPage(1); }}>
-              <option value="">All ornaments</option>
-              {(lkOrnaments?.items || []).map((o: any) => <option key={o.id} value={o.name}>{o.name}</option>)}
-            </select>
-            <select className="input-field w-32" value={lkGender} onChange={(e) => { setLkGender(e.target.value); setLkPage(1); }}>
-              <option value="">Male + Female</option>
-              <option value="MALE">Male ornaments</option>
-              <option value="FEMALE">Female ornaments</option>
-              <option value="UNISEX">Unisex</option>
-            </select>
-            <input className="input-field w-24" placeholder="Location" value={lkLocation} onChange={(e) => { setLkLocation(e.target.value); setLkPage(1); }} />
-            <div className="flex items-center gap-1">
-              <input type="number" step="0.1" className="input-field w-20" placeholder="Wt ≥" value={lkMinWt} onChange={(e) => { setLkMinWt(e.target.value); setLkPage(1); }} />
-              <span className="text-gray-400 text-xs">—</span>
-              <input type="number" step="0.1" className="input-field w-20" placeholder="≤" value={lkMaxWt} onChange={(e) => { setLkMaxWt(e.target.value); setLkPage(1); }} />
-            </div>
-            <select className="input-field w-36" value={lkSort} onChange={(e) => setLkSort(e.target.value)}>
-              <option value="">Newest first</option>
-              <option value="netWeight_desc">Weight: high → low</option>
-              <option value="netWeight_asc">Weight: low → high</option>
-              <option value="value_desc">Rate/g: high → low</option>
-            </select>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
-            <table className="w-full">
-              <thead><tr className="border-b bg-gray-50">
-                <th className="table-header">Barcode</th><th className="table-header">Design / Ornament</th>
-                <th className="table-header">Metal / Purity</th>
-                <th className="table-header text-right">Gross / Stone / Net</th>
-                <th className="table-header text-right">Rate/g</th>
-                <th className="table-header text-right">Value</th>
-                <th className="table-header">Making</th><th className="table-header">Hallmark</th>
-                <th className="table-header">Location</th><th className="table-header">Status</th>
-              </tr></thead>
-              <tbody>
-                {lkLoading ? <tr><td colSpan={10} className="text-center py-10 text-gray-400">Loading…</td></tr> :
-                  lkData?.items?.length === 0 ? <tr><td colSpan={10} className="text-center py-10 text-gray-400">No items match these filters</td></tr> :
-                  lkData?.items?.map((item: any) => (
-                    <tr key={item.id} className="border-b border-gray-50 hover:bg-primary-50/40 cursor-pointer" onClick={() => setLkDetail(item)}>
-                      <td className="table-cell font-mono text-xs text-primary-700">{item.barcode}</td>
-                      <td className="table-cell">
-                        <p className="font-medium">{item.designCode || item.product?.name || '—'}</p>
-                        <p className="text-xs text-gray-400">
-                          {item.category || '—'}{item.ornament ? ` · ${item.ornament}` : ''}{item.ornamentGender ? ` (${item.ornamentGender[0] + item.ornamentGender.slice(1).toLowerCase()})` : ''}
-                        </p>
-                      </td>
-                      <td className="table-cell text-xs">{item.metalType}<br /><span className="text-gray-400">{item.purity}</span></td>
-                      <td className="table-cell text-right text-xs">
-                        {item.grossWeight?.toFixed(3)} / {item.stoneWeight?.toFixed(3) ?? '0.000'} / <strong>{item.netWeight?.toFixed(3)}</strong> g
-                      </td>
-                      <td className="table-cell text-right">₹{item.currentRate?.toLocaleString('en-IN')}</td>
-                      <td className="table-cell text-right font-medium">₹{(item.netWeight * item.currentRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                      <td className="table-cell text-xs">{item.makingChargeType === 'PERCENTAGE' ? item.makingChargeValue + '%' : item.makingChargeType === 'PER_GRAM' ? '₹' + item.makingChargeValue + '/g' : '₹' + item.makingChargeValue}</td>
-                      <td className="table-cell text-xs">{item.hallmarkNumber || '—'}</td>
-                      <td className="table-cell text-xs">{item.location || '—'}</td>
-                      <td className="table-cell"><span className={'badge ' + (item.status === 'IN_STOCK' ? 'badge-success' : item.status === 'SOLD' ? 'badge-danger' : item.status === 'RESERVED' ? 'badge-info' : 'badge-warning')}>{item.status.replace('_', ' ')}</span></td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-            {lkData?.totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t">
-                <span className="text-sm text-gray-500">{lkData.total} items · page {lkPage} of {lkData.totalPages}</span>
-                <div className="flex gap-2">
-                  <button disabled={lkPage <= 1} onClick={() => setLkPage((p) => p - 1)} className="btn-secondary text-sm py-1">Prev</button>
-                  <button disabled={lkPage >= lkData.totalPages} onClick={() => setLkPage((p) => p + 1)} className="btn-secondary text-sm py-1">Next</button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {lkDetail && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setLkDetail(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-semibold text-lg">{lkDetail.designCode || lkDetail.product?.name || 'Item'}</h3>
-                  <p className="font-mono text-xs text-primary-700">{lkDetail.barcode}</p>
-                </div>
-                <button onClick={() => setLkDetail(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {[
-                  ['Status', lkDetail.status?.replace('_', ' ')],
-                  ['Metal / Purity', `${lkDetail.metalType} · ${lkDetail.purity}`],
-                  ['Category', lkDetail.category || '—'],
-                  ['Sub category', lkDetail.subCategory || '—'],
-                  ['Ornament', lkDetail.ornament ? `${lkDetail.ornament} (${lkDetail.ornamentGender || '—'})` : '—'],
-                  ['Gross weight', lkDetail.grossWeight + ' g'],
-                  ['Stone weight', (lkDetail.stoneWeight ?? 0) + ' g'],
-                  ['Net weight', lkDetail.netWeight + ' g'],
-                  ['Quantity', String(lkDetail.quantity)],
-                  ['Size / Color', `${lkDetail.size || '—'} / ${lkDetail.color || '—'}`],
-                  ['Purchase rate', '₹' + (lkDetail.purchaseRate || 0).toLocaleString('en-IN')],
-                  ['Current rate', '₹' + (lkDetail.currentRate || 0).toLocaleString('en-IN')],
-                  ['Current value', '₹' + (lkDetail.netWeight * lkDetail.currentRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })],
-                  ['Making charge', lkDetail.makingChargeType === 'PERCENTAGE' ? lkDetail.makingChargeValue + '%' : lkDetail.makingChargeType === 'PER_GRAM' ? '₹' + lkDetail.makingChargeValue + '/g' : '₹' + lkDetail.makingChargeValue],
-                  ['Hallmark no.', lkDetail.hallmarkNumber || '—'],
-                  ['Certificate no.', lkDetail.certificateNumber || '—'],
-                  ['HSN', lkDetail.hsnCode],
-                  ['Location', lkDetail.location || '—'],
-                  ['SKU', lkDetail.sku || '—'],
-                  ['Purchase date', lkDetail.purchaseDate ? new Date(lkDetail.purchaseDate).toLocaleDateString('en-IN') : '—'],
-                ].map(([label, value]: any) => (
-                  <div key={label}><p className="text-xs text-gray-400">{label}</p><p className="font-medium">{value}</p></div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
