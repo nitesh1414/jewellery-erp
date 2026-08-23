@@ -98,6 +98,20 @@ function createWindow(): BrowserWindow {
     },
   });
   win.once('ready-to-show', () => win.show());
+  // Never show a silent blank window — surface load failures
+  win.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    log(`did-fail-load ${code} ${desc} ${url}`);
+    if (code === -3) return; // aborted (navigation replaced)
+    dialog.showMessageBox(win, {
+      type: 'error',
+      title: 'Page failed to load',
+      message: `A page failed to load (${code}: ${desc}).`,
+      detail: `${url}\n\nLogs: ${userDataPaths.appLog()}`,
+      buttons: ['Open logs', 'Ignore'],
+    }).then(({ response }) => {
+      if (response === 0) shell.openPath(userDataPaths.logsDir());
+    });
+  });
   // In-app pages (e.g. print views) open as proper child windows; anything
   // external (https://…) goes to the system browser.
   win.webContents.setWindowOpenHandler(({ url }) => {

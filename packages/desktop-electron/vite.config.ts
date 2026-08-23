@@ -12,6 +12,10 @@ import { resolve } from 'path';
  */
 export default defineConfig({
   plugins: [react()],
+  // relative asset paths: the page is loaded with loadFile() from the app
+  // bundle (file:// / app.asar) — absolute "/assets/..." would point at the
+  // drive root and the window would come up blank.
+  base: './',
   build: {
     target: 'esnext',
     outDir: 'dist',
