@@ -1,5 +1,9 @@
 generator client {
   provider = "prisma-client-js"
+  // Monorepo: this schema gets its OWN generated client so it can't be
+  // overwritten by `prisma generate` for the ERP backend schema (both would
+  // otherwise share node_modules/.prisma/client).
+  output   = "../../../node_modules/.prisma/license-client"
 }
 
 datasource db {
