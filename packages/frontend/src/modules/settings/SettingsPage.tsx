@@ -37,19 +37,19 @@ export default function SettingsPage() {
 
   const addHallmarkMutation = useMutation({
     mutationFn: (body: any) => api.addHallmark(body),
-    onSuccess: () => { toast.success('Hallmark entry added!'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
+    onSuccess: () => { toast.success('Hallmark entry added!'); qc.invalidateQueries({ queryKey: ['settings'] }); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
 
   const updateHallmarkMutation = useMutation({
     mutationFn: ({ id, body }: any) => api.updateHallmark(id, body),
-    onSuccess: () => { toast.success('Hallmark updated!'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
+    onSuccess: () => { toast.success('Hallmark updated!'); qc.invalidateQueries({ queryKey: ['settings'] }); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
 
   const deleteHallmarkMutation = useMutation({
     mutationFn: (id: string) => api.deleteHallmark(id),
-    onSuccess: () => { toast.success('Deleted'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
+    onSuccess: () => { toast.success('Deleted'); qc.invalidateQueries({ queryKey: ['settings'] }); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
 
@@ -205,10 +205,10 @@ export default function SettingsPage() {
             hallmarks={settings.allHallmarks || []}
             hallmarkCharge={settings.hallmarkCharge ?? 45}
             defaultPurities={settings.allPurities || []}
-            onAdd={(body) => addHallmarkMutation.mutate(body)}
-            onUpdate={(id, body) => updateHallmarkMutation.mutate({ id, body })}
-            onDelete={(id) => confirm('Delete this hallmark entry?') && deleteHallmarkMutation.mutate(id)}
-            onSaveDefaultCharge={(charge) => updateMutation.mutate({ hallmarkCharge: charge })}
+            onAdd={(body: any) => addHallmarkMutation.mutate(body)}
+            onUpdate={(id: string, body: any) => updateHallmarkMutation.mutate({ id, body })}
+            onDelete={(id: string) => confirm('Delete this hallmark entry?') && deleteHallmarkMutation.mutate(id)}
+            onSaveDefaultCharge={(charge: number) => updateMutation.mutate({ hallmarkCharge: charge })}
           />
         )}
         {tab === 'metals' && (
@@ -217,8 +217,8 @@ export default function SettingsPage() {
             defaultMetals={settings?.defaultMetals || []}
             newMetal={newMetal}
             setNewMetal={setNewMetal}
-            onAdd={(m) => { setNewMetal(''); addMetalMutation.mutate(m); }}
-            onRemove={(m) => removeMetalMutation.mutate(m)}
+            onAdd={(m: string) => { setNewMetal(''); addMetalMutation.mutate(m); }}
+            onRemove={(m: string) => removeMetalMutation.mutate(m)}
           />
         )}
 
@@ -229,14 +229,14 @@ export default function SettingsPage() {
             defaultPurities={settings?.defaultPurities || []}
             newPurity={newPurity}
             setNewPurity={setNewPurity}
-            onAdd={(p) => { setNewPurity(''); addPurityMutation.mutate(p); }}
-            onRemove={(p) => removePurityMutation.mutate(p)}
+            onAdd={(p: string) => { setNewPurity(''); addPurityMutation.mutate(p); }}
+            onRemove={(p: string) => removePurityMutation.mutate(p)}
           />
         )}
 
         {/* Rates */}
         {tab === 'rates' && (
-          <RatesTab rates={rates || []} onUpdate={(id, rate) => updateRateMutation.mutate({ id, rate })} />
+          <RatesTab rates={rates || []} onUpdate={(id: string, rate: number) => updateRateMutation.mutate({ id, rate })} />
         )}
 
         {/* Roles (placeholder info) */}

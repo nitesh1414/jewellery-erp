@@ -57,22 +57,22 @@ class ApiService {
   }
 
   // Generic helpers
-  async get(url: string, params?: any) {
+  async get<T = any>(url: string, params?: any): Promise<T> {
     const { data } = await this.client.get(url, { params });
     return data;
   }
 
-  async post(url: string, body?: any) {
+  async post<T = any>(url: string, body?: any): Promise<T> {
     const { data } = await this.client.post(url, body);
     return data;
   }
 
-  async put(url: string, body?: any) {
+  async put<T = any>(url: string, body?: any): Promise<T> {
     const { data } = await this.client.put(url, body);
     return data;
   }
 
-  async delete(url: string, params?: any) {
+  async delete<T = any>(url: string, params?: any): Promise<T> {
     const { data } = await this.client.delete(url, { params });
     return data;
   }

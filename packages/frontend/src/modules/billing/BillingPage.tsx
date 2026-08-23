@@ -24,6 +24,7 @@ interface BillItem {
   chargeDetails: any[];
   hallMarkAmount: number;
   hallmarkNumber?: string;
+  gstIncluded?: boolean;
   discount: number;
   urd: number;
   urdDocNumber?: string;
