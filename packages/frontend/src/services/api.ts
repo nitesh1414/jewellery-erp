@@ -445,6 +445,37 @@ class ApiService {
     return data;
   }
 
+  // ====== Roles & Permissions ======
+  async getRoles() {
+    const { data } = await this.client.get('/roles');
+    return data;
+  }
+
+  async getRole(id: string) {
+    const { data } = await this.client.get('/roles/' + id);
+    return data;
+  }
+
+  async getPermissionCatalog() {
+    const { data } = await this.client.get('/roles/catalog');
+    return data;
+  }
+
+  async createRole(body: any) {
+    const { data } = await this.client.post('/roles', body);
+    return data;
+  }
+
+  async updateRole(id: string, body: any) {
+    const { data } = await this.client.put('/roles/' + id, body);
+    return data;
+  }
+
+  async deleteRole(id: string) {
+    const { data } = await this.client.delete('/roles/' + id);
+    return data;
+  }
+
   // ====== Branches ======
   async getBranches() {
     const { data } = await this.client.get('/branches');

@@ -225,14 +225,44 @@ async function main() {
     });
   }
 
-  // Create Roles
-  const roles = ['SUPER_ADMIN', 'OWNER', 'BRANCH_MANAGER', 'ACCOUNTANT', 'SALESMAN', 'CASHIER', 'INVENTORY_MANAGER', 'GOLDSMITH', 'KARIGAR', 'JOB_WORKER'];
+  // Create Roles with their default permission matrix
+  const rolePerms: Record<string, string[]> = {
+    SUPER_ADMIN: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CREATE','BILLING_FINALIZE','BILLING_CANCEL','BILLING_EDIT_DRAFT','INVENTORY_VIEW','INVENTORY_ADJUST','INVENTORY_TRANSFER','CUSTOMERS_VIEW','CUSTOMERS_CREATE','CUSTOMERS_EDIT','REPORTS_VIEW','REPORTS_GST','REPORTS_FINANCIAL','REPORTS_EXPORT','PROFIT_VIEW','EMPLOYEES_VIEW','EMPLOYEES_MANAGE','SALARY_VIEW','JOB_WORK_VIEW','JOB_WORK_CREATE','JOB_WORK_ASSIGN','PURCHASE_COST_VIEW','SETTINGS_MANAGE','USERS_MANAGE','ROLES_MANAGE','BRANCHES_MANAGE','AUDIT_VIEW'],
+    OWNER: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CREATE','BILLING_FINALIZE','BILLING_CANCEL','BILLING_EDIT_DRAFT','INVENTORY_VIEW','INVENTORY_ADJUST','INVENTORY_TRANSFER','CUSTOMERS_VIEW','CUSTOMERS_CREATE','CUSTOMERS_EDIT','REPORTS_VIEW','REPORTS_GST','REPORTS_FINANCIAL','REPORTS_EXPORT','PROFIT_VIEW','EMPLOYEES_VIEW','EMPLOYEES_MANAGE','SALARY_VIEW','JOB_WORK_VIEW','JOB_WORK_CREATE','JOB_WORK_ASSIGN','PURCHASE_COST_VIEW','SETTINGS_MANAGE','USERS_MANAGE','ROLES_MANAGE','BRANCHES_MANAGE','AUDIT_VIEW'],
+    BRANCH_MANAGER: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CREATE','BILLING_FINALIZE','INVENTORY_VIEW','INVENTORY_ADJUST','CUSTOMERS_VIEW','CUSTOMERS_CREATE','REPORTS_VIEW','REPORTS_GST','EMPLOYEES_VIEW','JOB_WORK_VIEW','JOB_WORK_CREATE','JOB_WORK_ASSIGN'],
+    ACCOUNTANT: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CANCEL','CUSTOMERS_VIEW','REPORTS_VIEW','REPORTS_GST','REPORTS_FINANCIAL','REPORTS_EXPORT','PROFIT_VIEW','PURCHASE_COST_VIEW','AUDIT_VIEW'],
+    SALESMAN: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CREATE','BILLING_EDIT_DRAFT','CUSTOMERS_VIEW','CUSTOMERS_CREATE','CUSTOMERS_EDIT'],
+    CASHIER: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CREATE','CUSTOMERS_VIEW','CUSTOMERS_CREATE'],
+    INVENTORY_MANAGER: ['DASHBOARD_VIEW','INVENTORY_VIEW','INVENTORY_ADJUST','INVENTORY_TRANSFER'],
+    GOLDSMITH: ['DASHBOARD_VIEW','JOB_WORK_VIEW'],
+    KARIGAR: ['DASHBOARD_VIEW','JOB_WORK_VIEW'],
+    JOB_WORKER: ['DASHBOARD_VIEW','JOB_WORK_VIEW'],
+  };
+  const roles = Object.keys(rolePerms);
   for (const roleName of roles) {
     await prisma.role.upsert({
       where: { name: roleName },
       update: {},
       create: { name: roleName, description: `${roleName} role`, isSystem: true },
     });
+  }
+  // Upsert permissions and wire them to the roles (read/write access matrix).
+  for (const roleName of roles) {
+    const role = await prisma.role.findUnique({ where: { name: roleName } });
+    if (!role) continue;
+    for (const permName of rolePerms[roleName]) {
+      const perm = await prisma.permission.upsert({
+        where: { name: permName },
+        update: {},
+        create: { name: permName, description: permName.replace(/_/g, ' '), module: permName.split('_')[0] },
+      });
+      const link = await prisma.rolePermission.findUnique({
+        where: { roleId_permissionId: { roleId: role.id, permissionId: perm.id } },
+      });
+      if (!link) {
+        await prisma.rolePermission.create({ data: { roleId: role.id, permissionId: perm.id } });
+      }
+    }
   }
 
 

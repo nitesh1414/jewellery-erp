@@ -23,6 +23,8 @@ const navItems = [
   { to: '/payments', label: 'Payments', icon: CircleDollarSign, permission: null },
   { to: '/ledger/master', label: 'Ledger Master', icon: BookOpen, permission: null },
   { to: '/reports', label: 'Reports', icon: FileBarChart, permission: 'REPORTS_VIEW' },
+  { to: '/users', label: 'Users', icon: Users, permission: 'USERS_MANAGE' },
+  { to: '/roles', label: 'Roles & Access', icon: Users, permission: 'ROLES_MANAGE' },
   { to: '/settings', label: 'Settings', icon: Settings, permission: 'SETTINGS_MANAGE' },
 ];
 

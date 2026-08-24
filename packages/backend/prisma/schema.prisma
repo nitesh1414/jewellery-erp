@@ -74,7 +74,8 @@ model Branch {
   updatedAt       DateTime @updatedAt
 
   organization    Organization @relation(fields: [organizationId], references: [id])
-  users           User[]
+  users           User[] @relation("branchUsers")
+  branchUsers     UserBranch[]
   customers       Customer[]
   suppliers       Supplier[]
   jewelleryItems  JewelleryItem[]
@@ -113,11 +114,25 @@ model User {
   updatedAt       DateTime @updatedAt
 
   organization    Organization @relation(fields: [organizationId], references: [id])
-  branch          Branch?      @relation(fields: [branchId], references: [id])
+  branchRef       Branch?      @relation("branchUsers", fields: [branchId], references: [id])
   assignedJobs       JobAssignment[] @relation("assignedEmployee")
   materialEmployee   JobMaterialIssue[] @relation("materialEmployee")
   materialIssuer     JobMaterialIssue[] @relation("materialIssuer")
   auditLogs          AuditLog[]
+  branchAccess       UserBranch[]
+}
+
+// A user can be given access to several branches (multi-branch operator).
+model UserBranch {
+  id        String   @id @default(uuid())
+  userId    String
+  branchId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId])
 }
 
 model Role {

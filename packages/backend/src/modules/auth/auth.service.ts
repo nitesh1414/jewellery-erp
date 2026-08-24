@@ -28,8 +28,15 @@ export class AuthService {
       data: { lastLogin: new Date() },
     });
 
-    // Get user permissions
+    // Get user permissions (from the role's permission matrix in DB)
     const permissions = await this.getUserPermissions(user.role);
+
+    // Multi-branch: the user can operate in any branch they were granted.
+    const branchAccess = await this.prisma.userBranch.findMany({
+      where: { userId: user.id },
+      select: { branchId: true },
+    });
+    const branchIds = branchAccess.map((b) => b.branchId);
 
     const payload = {
       userId: user.id,
@@ -49,6 +56,7 @@ export class AuthService {
         role: user.role,
         organizationId: user.organizationId,
         branchId: user.branchId,
+        branchIds,
         permissions,
       },
     };

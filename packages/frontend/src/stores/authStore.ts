@@ -8,6 +8,7 @@ interface User {
   role: string;
   organizationId: string;
   branchId?: string;
+  branchIds?: string[];
   permissions: string[];
 }
 

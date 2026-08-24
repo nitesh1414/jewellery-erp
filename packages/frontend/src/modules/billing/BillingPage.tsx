@@ -62,6 +62,8 @@ export default function BillingPage() {
   const [showManualItem, setShowManualItem] = useState(false);
   const [showInventorySelect, setShowInventorySelect] = useState(false);
   const [inventorySearch, setInventorySearch] = useState('');
+  const [scanFlash, setScanFlash] = useState(false);
+  const [showConfirmBill, setShowConfirmBill] = useState(false);
 
   const [manualItem, setManualItem] = useState<any>({
     particular: '', hsnCode: '7113', purity: '22K',
@@ -275,6 +277,9 @@ export default function BillingPage() {
         hallMarkAmount: 0, discount: 0, urd: 0, cgst: 0, sgst: 0, totalAmount: 0,
       });
       setBarcodeInput('');
+      // Flash the scan box so the operator sees the barcode was accepted.
+      setScanFlash(true);
+      setTimeout(() => setScanFlash(false), 350);
       toast.success('Added: ' + item.designCode);
     } catch (err: any) {
       if (err.response?.status === 404) toast.error('Barcode not found. Manual (F5)');
@@ -460,14 +465,16 @@ export default function BillingPage() {
               )}
             </div>
 
-            <div className="relative sm:w-64">
-              <div className="flex items-center gap-2 bg-white border-2 border-primary-200 rounded-xl px-4 py-2.5 shadow-sm focus-within:border-primary-500">
+            <div className="relative sm:w-72">
+              <div className={'flex items-center gap-2 bg-white border-2 rounded-xl px-4 py-2.5 shadow-sm transition-colors ' + (scanFlash ? 'border-green-500 bg-green-50' : 'border-primary-200 focus-within:border-primary-500')}>
                 <Scan className="w-5 h-5 text-primary-500" />
                 <input ref={barcodeInputRef} type="text" className="flex-1 text-sm outline-none bg-transparent font-mono"
                   placeholder="Scan barcode (F4)..." value={barcodeInput}
                   onChange={e => setBarcodeInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleBarcodeLookup(barcodeInput); }} />
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleBarcodeLookup(barcodeInput); } }} />
+                <button onClick={() => handleBarcodeLookup(barcodeInput)} className="text-xs text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap">Scan</button>
               </div>
+              <p className="text-[10px] text-gray-400 mt-1">Point a barcode scanner here — it adds the item automatically.</p>
             </div>
 
             <div className="flex gap-2">
@@ -678,18 +685,64 @@ export default function BillingPage() {
                   <button onClick={() => setShowPaymentPanel(false)} className="btn-ghost w-full text-xs py-1 text-gray-500">Hide</button>
                 )}
                 <div className="flex gap-2">
-                  <button onClick={handleFinalizeBill} disabled={items.length === 0 || createSaleMutation.isPending}
+                  <button onClick={() => { if (items.length === 0) { toast.error('Add at least one item'); return; } setShowConfirmBill(true); }} disabled={items.length === 0 || createSaleMutation.isPending}
                     className={'flex-1 py-3 text-base inline-flex items-center justify-center gap-2 ' + (billKind === 'ESTIMATE' ? 'bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors' : 'btn-primary')}>
                     {createSaleMutation.isPending ? 'Saving...' : <><Save className="w-4 h-4" /> {billKind === 'ESTIMATE' ? 'Save Estimated Bill' : (balanceAmount <= 0 ? 'Finalize & Save' : 'Save Bill')}</>}
                   </button>
                   <button onClick={handleNewBill} className="btn-secondary" title="New Bill (F2)"><X className="w-4 h-4" /></button>
                 </div>
+                {billKind !== 'ESTIMATE' && <p className="text-[10px] text-gray-400 text-center">Review the bill below, then confirm to generate it.</p>}
                 {payments.length > 0 && <button onClick={() => setPayments([])} className="btn-ghost w-full text-xs py-1 text-red-500">Clear payments</button>}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Generate Bill Confirmation Modal */}
+      {showConfirmBill && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirmBill(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">{billKind === 'ESTIMATE' ? 'Save Estimated Bill' : 'Generate Bill'}</h3>
+              <button onClick={() => setShowConfirmBill(false)} className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="px-6 py-4 max-h-[55vh] overflow-y-auto">
+              {customer?.name && <p className="text-sm font-medium mb-2">{customer.name}{customer.mobile ? ` · ${customer.mobile}` : ''}</p>}
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-gray-100"><th className="text-left py-2 text-gray-500">Item</th><th className="text-right py-2 text-gray-500">Wt</th><th className="text-right py-2 text-gray-500">Amount</th></tr></thead>
+                <tbody>
+                  {items.map((it: any, idx: number) => (
+                    <tr key={idx} className="border-b border-gray-50">
+                      <td className="py-2">{it.particular}</td>
+                      <td className="py-2 text-right">{it.netWeight?.toFixed(3)}g</td>
+                      <td className="py-2 text-right">₹{fm(it.totalAmount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="flex justify-end mt-3 space-y-1 text-sm">
+                <div className="w-64 space-y-1">
+                  <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>₹{fm(totals.subtotal)}</span></div>
+                  {discountAmount > 0 && <div className="flex justify-between"><span className="text-gray-500">Discount</span><span className="text-red-600">-₹{fm(discountAmount)}</span></div>}
+                  {billType === 'GST' && <><div className="flex justify-between"><span className="text-gray-500">CGST</span><span className="text-green-600">₹{totals.totalCgst.toFixed(2)}</span></div><div className="flex justify-between"><span className="text-gray-500">SGST</span><span className="text-green-600">₹{totals.totalSgst.toFixed(2)}</span></div></>}
+                  <div className="flex justify-between font-bold border-t pt-2"><span>Net Amount</span><span>₹{fm(netAmount)}</span></div>
+                  {totalPaid > 0 && <div className="flex justify-between text-green-600"><span>Paid</span><span>₹{fm(totalPaid)}</span></div>}
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
+              <span className="text-xs text-gray-400">{billKind === 'ESTIMATE' ? 'Saved as an estimate — stock & GST are applied when you confirm it into a bill.' : 'A bill number is generated and stock/ledger are updated. The invoice opens for printing.'}</span>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => setShowConfirmBill(false)} className="btn-secondary text-sm">Back</button>
+                <button onClick={() => { setShowConfirmBill(false); handleFinalizeBill(); }} disabled={createSaleMutation.isPending} className="btn-primary text-sm">
+                  <Save className="w-4 h-4" /> {createSaleMutation.isPending ? 'Saving...' : billKind === 'ESTIMATE' ? 'Save Estimate' : 'Generate & Print'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Manual Item Modal */}
       {showManualItem && (

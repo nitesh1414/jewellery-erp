@@ -26,6 +26,7 @@ import EntriesPage from './modules/ledger/EntriesPage';
 import ExpensesPage from './modules/expenses/ExpensesPage';
 import IncomePage from './modules/income/IncomePage';
 import UsersPage from './modules/users/UsersPage';
+import RolesPage from './modules/roles/RolesPage';
 import BranchesPage from './modules/branches/BranchesPage';
 import WorkersPage from './modules/workers/WorkersPage';
 import OrnamentMasterPage from './modules/ledger/OrnamentMasterPage';
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="income" element={<IncomePage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="roles" element={<RolesPage />} />
         <Route path="branches" element={<BranchesPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />

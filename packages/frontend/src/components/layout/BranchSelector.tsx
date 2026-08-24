@@ -24,7 +24,12 @@ export function BranchSelector() {
     staleTime: 60000,
   });
 
-  const activeBranches = ((branches as any) || []).filter((b: any) => b.isActive !== false);
+  // Owners/admin can access every branch; other users only the granted ones.
+  const isOwnerLike = user?.role === 'SUPER_ADMIN' || user?.role === 'OWNER';
+  const granted = new Set(user?.branchIds || []);
+  const activeBranches = ((branches as any) || [])
+    .filter((b: any) => b.isActive !== false)
+    .filter((b: any) => isOwnerLike || granted.has(b.id) || b.id === user?.branchId);
 
   // Default to the user's primary branch once branches are loaded.
   useEffect(() => {

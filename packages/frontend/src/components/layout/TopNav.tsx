@@ -67,6 +67,7 @@ const menuItems: MenuItem[] = [
     submenu: [
       { to: '/branches', label: 'Branches', icon: Building },
       { to: '/users', label: 'Users', icon: Users },
+      { to: '/roles', label: 'Roles & Access', icon: Users },
       { to: '/reports', label: 'Reports Center', icon: FileBarChart },
     ],
   },

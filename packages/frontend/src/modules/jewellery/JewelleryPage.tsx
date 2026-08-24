@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { Plus, Search, Package, Printer, Pencil } from 'lucide-react';
+import { Plus, Search, Package, Printer, Pencil, Diamond, X } from 'lucide-react';
 
 export default function JewelleryPage() {
   const qc = useQueryClient();
@@ -190,6 +190,7 @@ export default function JewelleryPage() {
                 <td className="table-cell"><span className={'badge ' + (item.status === 'IN_STOCK' ? 'badge-success' : item.status === 'SOLD' ? 'badge-danger' : item.status === 'RESERVED' ? 'badge-info' : 'badge-warning')}>{item.status.replace(/_/g, ' ')}</span></td>
                 <td className="table-cell" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
+                    <button onClick={() => openEditItem(item)} className="p-1 text-amber-600 hover:text-amber-700" title="Edit item"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(item.barcode), '_blank')}
                       className="p-1 text-gray-400 hover:text-primary-600" title="Print barcode sticker"><Printer className="w-4 h-4" /></button>
                     {item.status === 'IN_STOCK' && (
@@ -295,49 +296,86 @@ export default function JewelleryPage() {
       {/* Item detail drawer */}
       {detail && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDetail(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center">
+                  <Diamond className="w-5 h-5" />
+                </div>
                 <div>
-                  <h3 className="font-semibold text-lg">{detail.designCode || detail.product?.name || 'Item'}</h3>
+                  <h3 className="font-semibold text-lg leading-tight">{detail.designCode || detail.product?.name || 'Item'}</h3>
                   <p className="font-mono text-xs text-primary-700">{detail.barcode}</p>
                 </div>
-                <button onClick={() => setDetail(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {[
-                  ['Status', (detail.status || '').replace(/_/g, ' ')],
-                  ['Metal / Purity', `${detail.metalType} · ${detail.purity}`],
-                  ['Category', detail.category || '—'],
-                  ['Sub category', detail.subCategory || '—'],
-                  ['Ornament', detail.ornament ? `${detail.ornament} (${detail.ornamentGender || '—'})` : '—'],
-                  ['Gross weight', detail.grossWeight + ' g'],
-                  ['Stone weight', (detail.stoneWeight ?? 0) + ' g'],
-                  ['Net weight', detail.netWeight + ' g'],
-                  ['Quantity', String(detail.quantity)],
-                  ['Size / Color', `${detail.size || '—'} / ${detail.color || '—'}`],
-                  ['Purchase rate', '₹' + (detail.purchaseRate || 0).toLocaleString('en-IN')],
-                  ['Current rate', '₹' + (detail.currentRate || 0).toLocaleString('en-IN')],
-                  ['Current value', '₹' + (detail.netWeight * detail.currentRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })],
-                  ['Making charge', detail.makingChargeType === 'PERCENTAGE' ? detail.makingChargeValue + '%' : detail.makingChargeType === 'PER_GRAM' ? '₹' + detail.makingChargeValue + '/g' : '₹' + detail.makingChargeValue],
-                  ['Hallmark no.', detail.hallmarkNumber || '—'],
-                  ['Certificate no.', detail.certificateNumber || '—'],
-                  ['HSN', detail.hsnCode],
-                  ['Location', detail.location || '—'],
-                  ['SKU', detail.sku || '—'],
-                  ['Purchase date', detail.purchaseDate ? new Date(detail.purchaseDate).toLocaleDateString('en-IN') : '—'],
-                ].map(([label, value]: any) => (
-                  <div key={label}><p className="text-xs text-gray-400">{label}</p><p className="font-medium">{value}</p></div>
-                ))}
+              <button onClick={() => setDetail(null)} className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+              {/* Left summary */}
+              <div className="p-6 border-r border-gray-100 bg-gray-50/50 md:rounded-l-2xl">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400">Status</p>
+                    <span className={'badge ' + (detail.status === 'IN_STOCK' ? 'badge-success' : detail.status === 'SOLD' ? 'badge-danger' : detail.status === 'RESERVED' ? 'badge-info' : 'badge-warning')}>{detail.status?.replace(/_/g, ' ')}</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400">Metal / Purity</p>
+                    <p className="font-semibold">{detail.metalType} · {detail.purity}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><p className="text-[10px] uppercase tracking-wide text-gray-400">Net</p><p className="font-semibold">{detail.netWeight} g</p></div>
+                    <div><p className="text-[10px] uppercase tracking-wide text-gray-400">Gross</p><p className="font-semibold">{detail.grossWeight} g</p></div>
+                  </div>
+                  <div className="flex items-center justify-between bg-primary-50 rounded-xl px-4 py-3">
+                    <span className="text-sm text-primary-700">Value at rate</span>
+                    <span className="font-bold text-primary-900">₹{(detail.netWeight * detail.currentRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400">Current rate</p>
+                    <p className="font-semibold">₹{detail.currentRate?.toLocaleString('en-IN')}/g</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-2 mt-5">
-                <button onClick={() => { openEditItem(detail); setDetail(null); }} className="btn-secondary flex-1">
-                  <Pencil className="w-4 h-4" /> Edit Item
-                </button>
-                <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(detail.barcode), '_blank')} className="btn-primary flex-1">
-                  <Printer className="w-4 h-4" /> Print Barcode Sticker
-                </button>
+
+              {/* Right details */}
+              <div className="col-span-2 p-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+                  {[
+                    ['Category', detail.category || '—'],
+                    ['Sub category', detail.subCategory || '—'],
+                    ['Ornament', detail.ornament ? `${detail.ornament}${detail.ornamentGender ? ` (${detail.ornamentGender})` : ''}` : '—'],
+                    ['Stone weight', (detail.stoneWeight ?? 0) + ' g'],
+                    ['Quantity', String(detail.quantity)],
+                    ['Size / Color', `${detail.size || '—'} / ${detail.color || '—'}`],
+                    ['Purchase rate', '₹' + (detail.purchaseRate || 0).toLocaleString('en-IN')],
+                    ['Making charge', detail.makingChargeType === 'PERCENTAGE' ? detail.makingChargeValue + '%' : detail.makingChargeType === 'PER_GRAM' ? '₹' + detail.makingChargeValue + '/g' : '₹' + detail.makingChargeValue],
+                    ['Hallmark no.', detail.hallmarkNumber || '—'],
+                    ['Certificate no.', detail.certificateNumber || '—'],
+                    ['HSN', detail.hsnCode],
+                    ['Location', detail.location || '—'],
+                    ['SKU', detail.sku || '—'],
+                    ['Purchase date', detail.purchaseDate ? new Date(detail.purchaseDate).toLocaleDateString('en-IN') : '—'],
+                  ].map(([label, value]: any) => (
+                    <div key={label} className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-400">{label}</p>
+                      <p className="font-medium truncate">{value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100">
+              <button onClick={() => { openEditItem(detail); setDetail(null); }} className="btn-secondary text-sm">
+                <Pencil className="w-4 h-4" /> Edit Item
+              </button>
+              <button onClick={() => setDetail(null)} className="btn-secondary text-sm">
+                <X className="w-4 h-4" /> Close
+              </button>
+              <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(detail.barcode), '_blank')} className="btn-primary text-sm">
+                <Printer className="w-4 h-4" /> Print Barcode
+              </button>
             </div>
           </div>
         </div>
