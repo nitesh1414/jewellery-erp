@@ -25,6 +25,8 @@ import { EmployeesModule } from './modules/employees/employees.module';
 import { RepairsModule } from './modules/repairs/repairs.module';
 import { PrintingModule } from './modules/printing/printing.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
+import { OrnamentsModule } from './modules/ornaments/ornaments.module';
+import { QuotationsModule } from './modules/quotations/quotations.module';
 
 @Module({
   imports: [
@@ -54,6 +56,8 @@ import { LedgerModule } from './modules/ledger/ledger.module';
     RepairsModule,
     PrintingModule,
     LedgerModule,
+    OrnamentsModule,
+    QuotationsModule,
   ],
 })
 export class AppModule {}

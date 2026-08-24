@@ -263,7 +263,8 @@ export class LedgerService {
   async deleteExpense(id: string, organizationId: string) {
     const expense = await this.prisma.expense.findFirst({ where: { id, organizationId } });
     if (!expense) throw new NotFoundException('Expense not found');
-    if (expense.accountId) {
+    const expenseAccountId = expense.accountId;
+    if (expenseAccountId) {
       // auto-reverse ledger entry
       const entry = await this.prisma.ledgerEntry.findFirst({
         where: { linkedTo: 'EXPENSE', linkedId: id },
@@ -271,7 +272,7 @@ export class LedgerService {
       if (entry) {
         return this.prisma.$transaction(async (tx) => {
           await tx.ledgerAccount.update({
-            where: { id: expense.accountId },
+            where: { id: expenseAccountId },
             data: { currentBalance: { increment: expense.amount } },
           });
           await tx.ledgerEntry.delete({ where: { id: entry.id } });
@@ -356,11 +357,12 @@ export class LedgerService {
   async deleteIncome(id: string, organizationId: string) {
     const income = await this.prisma.income.findFirst({ where: { id, organizationId } });
     if (!income) throw new NotFoundException('Income not found');
-    if (income.accountId) {
+    const incomeAccountId = income.accountId;
+    if (incomeAccountId) {
       const entry = await this.prisma.ledgerEntry.findFirst({ where: { linkedTo: 'INCOME', linkedId: id } });
       if (entry) {
         return this.prisma.$transaction(async (tx) => {
-          await tx.ledgerAccount.update({ where: { id: income.accountId }, data: { currentBalance: { decrement: income.amount } } });
+          await tx.ledgerAccount.update({ where: { id: incomeAccountId }, data: { currentBalance: { decrement: income.amount } } });
           await tx.ledgerEntry.delete({ where: { id: entry.id } });
           await tx.income.delete({ where: { id } });
           return { ok: true };
@@ -389,8 +391,9 @@ export class LedgerService {
         _sum: { amount: true },
       }),
     ]);
-    const sumCr = credits._sum.amount?.toNumber() || 0;
-    const sumDr = debits._sum.amount?.toNumber() || 0;
+    // SQLite returns plain numbers here (not Prisma.Decimal), so use Number()
+    const sumCr = Number(credits._sum.amount ?? 0) || 0;
+    const sumDr = Number(debits._sum.amount ?? 0) || 0;
     const currentBalance = account.openingBalance + sumCr - sumDr;
     if (currentBalance !== account.currentBalance) {
       await this.prisma.ledgerAccount.update({

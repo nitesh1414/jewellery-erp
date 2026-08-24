@@ -3,8 +3,29 @@ node_modules/
 .expo/
 dist/
 build/
+# electron-builder resources are source-controlled (installer script + icons)
+packages/desktop-electron/build/
+packages/desktop-electron/release/
+packages/desktop-electron/dist-electron/
 backend/uploads/*
 !backend/uploads/.gitkeep
 *.log
 .DS_Store
 memstart.mjs
+
+# License server runtime data (auto-created SQLite db + secret keys)
+packages/license-server/data/
+packages/license-server/keys/license-private-key.pem
+packages/license-server/keys/license-public-key.pem
+
+# Desktop electron packaging output
+packages/desktop-electron/staging/
+packages/desktop-electron/release/
+packages/desktop-electron/resources/
+packages/desktop-electron/dist-electron/
+packages/desktop-electron/.electron-cache/
+
+# Template databases generated at build time
+packages/backend/prisma/template.db
+packages/backend/prisma/template.db-journal
+packages/admin-portal/tsconfig.tsbuildinfo

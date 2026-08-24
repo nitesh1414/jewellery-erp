@@ -27,6 +27,11 @@ import ExpensesPage from './modules/expenses/ExpensesPage';
 import IncomePage from './modules/income/IncomePage';
 import UsersPage from './modules/users/UsersPage';
 import BranchesPage from './modules/branches/BranchesPage';
+import WorkersPage from './modules/workers/WorkersPage';
+import OrnamentMasterPage from './modules/ledger/OrnamentMasterPage';
+import QuotationsPage from './modules/quotations/QuotationsPage';
+import PublicQuotePage from './modules/quotations/PublicQuotePage';
+import BarcodePrintPage from './modules/barcodes/BarcodePrintPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -41,7 +46,11 @@ export default function App() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />
 
+      {/* PUBLIC quotation link — no login required (customer-facing) */}
+      <Route path="/q/:token" element={<PublicQuotePage />} />
+
       <Route path="/print/sale/:id" element={<ProtectedRoute><SalePrintPage /></ProtectedRoute>} />
+      <Route path="/print/barcodes" element={<ProtectedRoute><BarcodePrintPage /></ProtectedRoute>} />
       <Route path="/print/customer/:id" element={<ProtectedRoute><CustomerPrintPage /></ProtectedRoute>} />
 
       <Route
@@ -75,6 +84,9 @@ export default function App() {
         <Route path="branches" element={<BranchesPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="workers" element={<WorkersPage />} />
+        <Route path="quotations" element={<QuotationsPage />} />
+        <Route path="ledger/master" element={<OrnamentMasterPage />} />
         <Route path="setup" element={<SetupWizardPage />} />
       </Route>
     </Routes>

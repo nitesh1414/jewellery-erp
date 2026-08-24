@@ -17,12 +17,18 @@ export class JewelleryService {
     location?: string;
     purchaseDateFrom?: string;
     purchaseDateTo?: string;
+    ornament?: string;
+    ornamentGender?: string;
+    minNetWeight?: string;
+    maxNetWeight?: string;
+    sort?: string;
     page?: number;
     limit?: number;
   }) {
     const {
       search, status, metalType, purity, category, designCode,
       supplierId, location, purchaseDateFrom, purchaseDateTo,
+      ornament, ornamentGender, minNetWeight, maxNetWeight, sort,
       page = 1, limit = 20,
     } = query;
     const skip = (page - 1) * limit;
@@ -41,6 +47,17 @@ export class JewelleryService {
       if (purchaseDateFrom) where.purchaseDate.gte = new Date(purchaseDateFrom);
       if (purchaseDateTo) where.purchaseDate.lte = new Date(purchaseDateTo);
     }
+    if (ornament) where.ornament = ornament;
+    if (ornamentGender) where.ornamentGender = ornamentGender;
+    if (minNetWeight || maxNetWeight) {
+      where.netWeight = {};
+      if (minNetWeight) where.netWeight.gte = Number(minNetWeight);
+      if (maxNetWeight) where.netWeight.lte = Number(maxNetWeight);
+    }
+    const orderBy: any = sort === 'netWeight_asc' ? { netWeight: 'asc' }
+      : sort === 'netWeight_desc' ? { netWeight: 'desc' }
+      : sort === 'value_desc' ? { currentRate: 'desc' }
+      : { createdAt: 'desc' };
 
     if (search) {
       where.OR = [
@@ -57,7 +74,7 @@ export class JewelleryService {
         where,
         skip,
         take: +limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           product: { select: { name: true, designCode: true } },
         },
@@ -151,6 +168,8 @@ export class JewelleryService {
         purity: data.purity || '22K',
         grossWeight: data.grossWeight || 0,
         stoneWeight: data.stoneWeight || 0,
+        ornament: data.ornament || null,
+        ornamentGender: data.ornamentGender || null,
         otherWeight: data.otherWeight || 0,
         netWeight: data.netWeight || 0,
         quantity: data.quantity || 1,
@@ -192,6 +211,16 @@ export class JewelleryService {
       },
     });
 
+    // Link the barcode record to the item so it shows in the Barcodes tab
+    try {
+      await this.prisma.barcode.updateMany({
+        where: { barcode, jewelleryItemId: null },
+        data: { jewelleryItemId: item.id, isAssigned: true },
+      });
+    } catch {
+      /* barcode record optional */
+    }
+
     return item;
   }
 
@@ -199,7 +228,7 @@ export class JewelleryService {
    * Bulk material entry (for purchase import)
    */
   async bulkCreate(items: any[], organizationId: string, branchId: string, userId: string) {
-    const created = [];
+    const created: any[] = [];
     for (const item of items) {
       const result = await this.create(item, organizationId, branchId, userId);
       created.push(result);

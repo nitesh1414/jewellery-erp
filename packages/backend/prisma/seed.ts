@@ -168,6 +168,25 @@ async function main() {
     }
   }
 
+  // Create Ornament Master (ledger master — male / female / unisex)
+  const ornaments = [
+    { name: 'Gents Ring', gender: 'MALE', category: 'Ring' },
+    { name: 'Gents Chain', gender: 'MALE', category: 'Chain' },
+    { name: 'Gents Bracelet (Kada)', gender: 'MALE', category: 'Bracelet' },
+    { name: 'Ladies Ring', gender: 'FEMALE', category: 'Ring' },
+    { name: 'Ladies Chain', gender: 'FEMALE', category: 'Chain' },
+    { name: 'Bangle Pair', gender: 'FEMALE', category: 'Bangle' },
+    { name: 'Necklace', gender: 'FEMALE', category: 'Necklace' },
+    { name: 'Ear Ring', gender: 'FEMALE', category: 'Ear Ring' },
+    { name: 'Mangalsutra', gender: 'FEMALE', category: 'Mangalsutra' },
+    { name: 'Pendant', gender: 'UNISEX', category: 'Pendant' },
+    { name: 'Coin', gender: 'UNISEX', category: 'Coin' },
+  ];
+  for (const o of ornaments) {
+    const exists = await prisma.ornamentType.findFirst({ where: { organizationId: org.id, name: o.name } });
+    if (!exists) await prisma.ornamentType.create({ data: { ...o, organizationId: org.id } });
+  }
+
   // Create Shop Settings
   await prisma.shopSettings.upsert({
     where: { organizationId: org.id },
@@ -216,6 +235,42 @@ async function main() {
     });
   }
 
+
+  // Seed default ledger accounts
+  const cashAccount = await prisma.ledgerAccount.upsert({
+    where: { id: 'cash-default' },
+    update: {},
+    create: {
+      id: 'cash-default',
+      organizationId: org.id,
+      branchId: branch.id,
+      name: 'Cash Counter',
+      type: 'CASH',
+      openingBalance: 0,
+      currentBalance: 0,
+      isPrimary: true,
+      notes: 'Default cash account',
+    },
+  });
+
+  const bankAccount = await prisma.ledgerAccount.upsert({
+    where: { id: 'bank-default' },
+    update: {},
+    create: {
+      id: 'bank-default',
+      organizationId: org.id,
+      branchId: branch.id,
+      name: 'Bank Account',
+      type: 'BANK',
+      openingBalance: 0,
+      currentBalance: 0,
+      bankName: 'HDFC Bank',
+      notes: 'Default bank account',
+    },
+  });
+
+  console.log(`✓ Ledger accounts: ${cashAccount.name}, ${bankAccount.name}`);
+
   console.log('Seed completed successfully!');
   console.log('Admin login: admin@jewellery.com / admin123');
   console.log('Cashier login: cashier@jewellery.com / cash123');
@@ -229,37 +284,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-// Seed default ledger accounts
-const cashAccount = await prisma.ledgerAccount.upsert({
-  where: { id: 'cash-default' },
-  update: {},
-  create: {
-    id: 'cash-default',
-    organizationId: org.id,
-    branchId: branch.id,
-    name: 'Cash Counter',
-    type: 'CASH',
-    openingBalance: 0,
-    currentBalance: 0,
-    isPrimary: true,
-    notes: 'Default cash account',
-  },
-});
-
-const bankAccount = await prisma.ledgerAccount.upsert({
-  where: { id: 'bank-default' },
-  update: {},
-  create: {
-    id: 'bank-default',
-    organizationId: org.id,
-    branchId: branch.id,
-    name: 'Bank Account',
-    type: 'BANK',
-    openingBalance: 0,
-    currentBalance: 0,
-    bankName: 'HDFC Bank',
-    notes: 'Default bank account',
-  },
-});
-
-console.log(`✓ Ledger accounts: ${cashAccount.name}, ${bankAccount.name}`);

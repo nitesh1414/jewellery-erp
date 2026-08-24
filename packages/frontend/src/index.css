@@ -26,37 +26,27 @@
 }
 
 /*
- * Print Invoice Styles
+ * Print styles — used by the standalone print pages (/print/*, /q/:token).
+ * Toolbars use .no-print; content prints in normal flow so nothing comes
+ * out blank and no trailing blank pages are produced. Each print page sets
+ * its own @page size (A4/A5/80mm/…) via a <style> tag.
  */
 @media print {
-  @page {
-    size: A4;
-    margin: 12mm;
+  .no-print,
+  .no-print * {
+    display: none !important;
   }
 
-  body * {
-    visibility: hidden;
-  }
-
-  .print-invoice, .print-invoice * {
-    visibility: visible;
-  }
-
-  .print-invoice {
-    position: absolute !important;
-    left: 0;
-    top: 0;
-    width: 100%;
-    background: white !important;
+  html, body {
+    background: #fff !important;
+    margin: 0 !important;
     padding: 0 !important;
   }
 
-  .no-print {
-    display: none !important !important;
-  }
-
-  @page :first {
-    margin-top: 12mm;
+  /* keep invoice colors/badges on paper */
+  .print-invoice, .print-area {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 

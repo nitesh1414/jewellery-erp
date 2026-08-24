@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
-import { Search, Eye, Printer, FileText, MessageCircle, HandCoins, CheckCircle, X } from 'lucide-react';
+import { Search, Eye, Printer, FileText, MessageCircle, HandCoins, CheckCircle, X, Pencil, ArrowRightCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function BillsPage() {
@@ -16,10 +16,32 @@ export default function BillsPage() {
   const [viewBill, setViewBill] = useState<any>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [tab, setTab] = useState<'ALL' | 'BILLS' | 'ESTIMATES'>('ALL');
+  const [confirmingEstimate, setConfirmingEstimate] = useState<any>(null);
+  const [confirmForm, setConfirmForm] = useState({ billType: 'GST', amount: 0, paymentMode: 'CASH' });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['bills', search, status, startDate, endDate, page],
-    queryFn: () => api.getSales({ search, status, startDate: startDate || undefined, endDate: endDate || undefined, page, limit: 20 }),
+    queryKey: ['bills', search, status, tab, startDate, endDate, page],
+    queryFn: () => api.getSales({
+      search,
+      status,
+      billType: tab === 'BILLS' ? 'GST' : tab === 'ESTIMATES' ? 'ESTIMATE' : undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      page, limit: 20,
+    }),
+  });
+
+  const confirmEstimateMutation = useMutation({
+    mutationFn: ({ id, body }: any) => api.put('/sales/' + id + '/confirm', body),
+    onSuccess: (d: any) => {
+      toast.success('Estimate confirmed — bill ' + d.billNumber + ' generated!');
+      qc.invalidateQueries({ queryKey: ['bills'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      setConfirmingEstimate(null);
+      window.open('/print/sale/' + d.id + '?format=A4_GST&auto=1', '_blank');
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
 
   const payMutation = useMutation({
@@ -37,7 +59,7 @@ export default function BillsPage() {
   const getStatusBadge = (status: string) => {
     const map: Record<string, string> = {
       DRAFT: 'badge-gray', CONFIRMED: 'badge-info', FINALIZED: 'badge-success',
-      CANCELLED: 'badge-danger', RETURNED: 'badge-warning',
+      CANCELLED: 'badge-danger', RETURNED: 'badge-warning', ESTIMATE: 'badge-warning', CONVERTED: 'badge-success',
     };
     return map[status] || 'badge-gray';
   };
@@ -72,17 +94,29 @@ export default function BillsPage() {
         </button>
       </div>
 
+      {/* Bills / Estimated Bills tabs */}
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+        {([['ALL', 'All Bills'], ['BILLS', 'Bills'], ['ESTIMATES', 'Estimated Bills']] as const).map(([key, label]) => (
+          <button key={key} onClick={() => { setTab(key); setStatus(''); setPage(1); }}
+            className={'px-4 py-2 text-sm font-medium rounded-md transition-all ' + (tab === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Filters */}
-      <div className="flex gap-3">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex gap-3 flex-wrap">
+        <div className="relative flex-1 max-w-xs min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search by bill no, customer..." className="input-field pl-10" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+          <input type="text" placeholder="Search bill / estimate no, customer, mobile…" className="input-field pl-10" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         </div>
         <select className="input-field w-40" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
           <option value="">All Status</option>
+          <option value="ESTIMATE">Estimate (pending)</option>
           <option value="DRAFT">Draft</option>
           <option value="CONFIRMED">Confirmed</option>
           <option value="FINALIZED">Finalized</option>
+          <option value="CONVERTED">Converted to bill</option>
           <option value="CANCELLED">Cancelled</option>
         </select>
         <input
@@ -163,7 +197,19 @@ export default function BillsPage() {
                     </td>
                     <td className="table-cell text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {bill.balanceAmount > 0 && (
+                        {bill.billType === 'ESTIMATE' && bill.status === 'ESTIMATE' && (
+                          <>
+                            <button onClick={() => navigate('/billing?estimate=' + bill.id)} className="btn-ghost p-1.5 text-amber-600" title="Edit estimated bill">
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => { setConfirmingEstimate(bill); setConfirmForm({ billType: 'GST', amount: bill.netAmount, paymentMode: 'CASH' }); }}
+                              className="btn-ghost p-1.5 text-green-600" title="Confirm → generate bill">
+                              <ArrowRightCircle className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                        {bill.billType !== 'ESTIMATE' && bill.balanceAmount > 0 && (
                           <button onClick={() => { setPayBill(bill); setPayForm({ amount: bill.balanceAmount, paymentMode: 'CASH', reference: '' }); }} className="btn-ghost p-1.5 text-green-600" title="Receive payment">
                             <HandCoins className="w-4 h-4" />
                           </button>
@@ -171,7 +217,14 @@ export default function BillsPage() {
                         <button onClick={() => handlePrint(bill)} className="btn-ghost p-1.5 text-primary-600" title="Print A4 Invoice">
                           <Printer className="w-4 h-4" />
                         </button>
-                        <button onClick={() => navigate('/print/sale/' + bill.id + '?format=THERMAL&auto=1')} className="btn-ghost p-1.5 text-purple-600" title="Thermal receipt">
+                        <button
+                          onClick={() => {
+                            const size = prompt('Thermal roll width:\n\n80 — standard POS\n76 — 3-inch roll\n58 — mini printer\n\nEnter 80, 76 or 58:', '80');
+                            if (size === null) return;
+                            const f = size.trim() === '58' ? 'THERMAL_58' : size.trim() === '76' ? 'THERMAL_76' : 'THERMAL';
+                            navigate('/print/sale/' + bill.id + '?format=' + f + '&auto=1');
+                          }}
+                          className="btn-ghost p-1.5 text-purple-600" title="Thermal receipt (choose 80/76/58 mm)">
                           <FileText className="w-4 h-4" />
                         </button>
                         {bill.customerMobile && (
@@ -362,6 +415,61 @@ export default function BillsPage() {
           </div>
         </div>
       )}
+    
+      {/* Confirm Estimate → Bill modal */}
+      {confirmingEstimate && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setConfirmingEstimate(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-1">Confirm Estimated Bill</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {confirmingEstimate.billNumber} · {confirmingEstimate.customerName} · ₹{confirmingEstimate.netAmount?.toLocaleString('en-IN')}
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="label">Generate as</label>
+                <div className="flex gap-2">
+                  {['GST', 'NON_GST'].map((t) => (
+                    <button key={t} onClick={() => setConfirmForm({ ...confirmForm, billType: t })}
+                      className={'flex-1 py-2 text-sm rounded-lg border transition-all ' + (confirmForm.billType === t ? 'border-primary-500 bg-primary-50 text-primary-700 font-medium' : 'border-gray-200 text-gray-500')}>
+                      {t === 'GST' ? 'GST Bill' : 'Non-GST Bill'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Payment received now (₹)</label>
+                  <input type="number" className="input-field" value={confirmForm.amount || ''} onChange={(e) => setConfirmForm({ ...confirmForm, amount: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="label">Mode</label>
+                  <select className="input-field" value={confirmForm.paymentMode} onChange={(e) => setConfirmForm({ ...confirmForm, paymentMode: e.target.value })}>
+                    {['CASH', 'UPI', 'DEBIT_CARD', 'CREDIT_CARD', 'BANK_TRANSFER', 'CHEQUE'].map((m) => <option key={m}>{m}</option>)}
+                  </select>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">Leave amount 0 to generate the bill with full balance due. Stock and customer ledger are updated now (not for the estimate).</p>
+            </div>
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+              <button onClick={() => setConfirmingEstimate(null)} className="btn-secondary">Cancel</button>
+              <button
+                onClick={() =>
+                  confirmEstimateMutation.mutate({
+                    id: confirmingEstimate.id,
+                    body: {
+                      billType: confirmForm.billType,
+                      payments: confirmForm.amount > 0 ? [{ amount: confirmForm.amount, paymentMode: confirmForm.paymentMode }] : [],
+                    },
+                  })
+                }
+                className="btn-primary" disabled={confirmEstimateMutation.isPending}>
+                {confirmEstimateMutation.isPending ? 'Generating…' : 'Confirm & Generate Bill'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

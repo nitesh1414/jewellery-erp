@@ -1,0 +1,64 @@
+# This is the GitHub Actions workflow for building the desktop installers.
+# Copy (or move) it to .github/workflows/build-electron.yml to activate it
+# (pushing to .github/workflows requires 'workflows' permission on the token).
+# cp ci/build-electron.yml .github/workflows/build-electron.yml
+
+name: Build Desktop Installers (Electron)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows
+            os: windows-latest
+            script: dist:desktop:win
+          - name: macos
+            os: macos-latest
+            script: dist:desktop:mac
+          - name: linux
+            os: ubuntu-22.04
+            script: dist:desktop:linux
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build installers
+        env:
+          # Signing keys for the license baked into the build (falls back to
+          # the committed dev key). Set these secrets for production releases.
+          LICENSE_PUBLIC_KEY_FILE: ${{ secrets.LICENSE_PUBLIC_KEY_FILE_PATH || '' }}
+          LICENSE_SERVER_URL: ${{ secrets.LICENSE_SERVER_URL || 'http://localhost:4010' }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run ${{ matrix.script }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jewellery-erp-${{ matrix.name }}
+          path: |
+            packages/desktop-electron/release/*.exe
+            packages/desktop-electron/release/*.dmg
+            packages/desktop-electron/release/*.AppImage
+            packages/desktop-electron/release/*.deb
+            packages/desktop-electron/release/*.rpm
+            packages/desktop-electron/release/*.zip
+            packages/desktop-electron/release/*.tar.gz
+          if-no-files-found: error

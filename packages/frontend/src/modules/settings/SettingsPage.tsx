@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
-import { Save, Settings, Building, Receipt, Percent, Shield, Diamond, Plus, X, Gem, Tag } from 'lucide-react';
+import { Save, Settings, Building, Receipt, Percent, Shield, Diamond, Plus, X, Gem, Tag, BadgeCheck, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<'shop' | 'invoice' | 'tax' | 'metals' | 'purities' | 'rates' | 'roles'>('shop');
+  const [tab, setTab] = useState<'shop' | 'invoice' | 'tax' | 'metals' | 'purities' | 'hallmark' | 'rates' | 'roles'>('shop');
 
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings() });
   const { data: rates } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates() });
@@ -32,6 +32,24 @@ export default function SettingsPage() {
   const addPurityMutation = useMutation({
     mutationFn: (purity: string) => api.post('/settings/purities', { purity }),
     onSuccess: () => { toast.success('Purity added'); qc.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const addHallmarkMutation = useMutation({
+    mutationFn: (body: any) => api.addHallmark(body),
+    onSuccess: () => { toast.success('Hallmark entry added!'); qc.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const updateHallmarkMutation = useMutation({
+    mutationFn: ({ id, body }: any) => api.updateHallmark(id, body),
+    onSuccess: () => { toast.success('Hallmark updated!'); qc.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const deleteHallmarkMutation = useMutation({
+    mutationFn: (id: string) => api.deleteHallmark(id),
+    onSuccess: () => { toast.success('Deleted'); qc.invalidateQueries({ queryKey: ['settings'] }); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
 
@@ -95,6 +113,7 @@ export default function SettingsPage() {
           ['invoice', 'Invoice', Receipt],
           ['tax', 'Tax', Percent],
           ['metals', 'Metals', Diamond],
+          ['hallmark', 'Hallmark', BadgeCheck],
           ['purities', 'Purities', Tag],
           ['rates', 'Rate Schedule', Gem],
           ['roles', 'Roles', Shield],
@@ -120,6 +139,30 @@ export default function SettingsPage() {
               <div><label className="label">Phone</label><input className="input-field" value={shopForm.shopPhone || ''} onChange={e => setShopForm({ ...shopForm, shopPhone: e.target.value })} /></div>
               <div><label className="label">Email</label><input className="input-field" value={shopForm.shopEmail || ''} onChange={e => setShopForm({ ...shopForm, shopEmail: e.target.value })} /></div>
               <div><label className="label">GSTIN</label><input className="input-field" value={shopForm.shopGstin || ''} onChange={e => setShopForm({ ...shopForm, shopGstin: e.target.value })} /></div>
+              <div className="col-span-1 sm:col-span-2 border-t pt-4">
+                <label className="label">Shop Logo (shown in header, prints & quotations)</label>
+                <div className="flex items-center gap-4">
+                  {shopForm.logo ? (
+                    <img src={shopForm.logo} alt="logo" className="w-14 h-14 rounded-lg border object-cover" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg border border-dashed flex items-center justify-center text-gray-300 text-xs">None</div>
+                  )}
+                  <div className="flex gap-2">
+                    <label className="btn-secondary cursor-pointer">
+                      <Upload className="w-4 h-4" /> Upload
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 300 * 1024) { toast.error('Logo must be under 300 KB'); return; }
+                        const reader = new FileReader();
+                        reader.onload = () => setShopForm({ ...shopForm, logo: reader.result as string });
+                        reader.readAsDataURL(file);
+                      }} />
+                    </label>
+                    {shopForm.logo && <button className="btn-ghost text-red-500 text-sm" onClick={() => setShopForm({ ...shopForm, logo: '' })}>Remove</button>}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -157,14 +200,25 @@ export default function SettingsPage() {
         )}
 
         {/* Metals */}
+        {tab === 'hallmark' && settings && (
+          <HallmarksTab
+            hallmarks={settings.allHallmarks || []}
+            hallmarkCharge={settings.hallmarkCharge ?? 45}
+            defaultPurities={settings.allPurities || []}
+            onAdd={(body: any) => addHallmarkMutation.mutate(body)}
+            onUpdate={(id: string, body: any) => updateHallmarkMutation.mutate({ id, body })}
+            onDelete={(id: string) => confirm('Delete this hallmark entry?') && deleteHallmarkMutation.mutate(id)}
+            onSaveDefaultCharge={(charge: number) => updateMutation.mutate({ hallmarkCharge: charge })}
+          />
+        )}
         {tab === 'metals' && (
           <MetalsTab
             metals={settings?.allMetals || []}
             defaultMetals={settings?.defaultMetals || []}
             newMetal={newMetal}
             setNewMetal={setNewMetal}
-            onAdd={(m) => { setNewMetal(''); addMetalMutation.mutate(m); }}
-            onRemove={(m) => removeMetalMutation.mutate(m)}
+            onAdd={(m: string) => { setNewMetal(''); addMetalMutation.mutate(m); }}
+            onRemove={(m: string) => removeMetalMutation.mutate(m)}
           />
         )}
 
@@ -175,14 +229,14 @@ export default function SettingsPage() {
             defaultPurities={settings?.defaultPurities || []}
             newPurity={newPurity}
             setNewPurity={setNewPurity}
-            onAdd={(p) => { setNewPurity(''); addPurityMutation.mutate(p); }}
-            onRemove={(p) => removePurityMutation.mutate(p)}
+            onAdd={(p: string) => { setNewPurity(''); addPurityMutation.mutate(p); }}
+            onRemove={(p: string) => removePurityMutation.mutate(p)}
           />
         )}
 
         {/* Rates */}
         {tab === 'rates' && (
-          <RatesTab rates={rates || []} onUpdate={(id, rate) => updateRateMutation.mutate({ id, rate })} />
+          <RatesTab rates={rates || []} onUpdate={(id: string, rate: number) => updateRateMutation.mutate({ id, rate })} />
         )}
 
         {/* Roles (placeholder info) */}
@@ -330,6 +384,84 @@ function RatesTab({ rates, onUpdate }: any) {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+
+/* ==================== HALLMARK MASTER TAB ==================== */
+function HallmarksTab({ hallmarks, hallmarkCharge, defaultPurities, onAdd, onUpdate, onDelete, onSaveDefaultCharge }: any) {
+  const [label, setLabel] = useState('');
+  const [purity, setPurity] = useState('22K');
+  const [charge, setCharge] = useState(45);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCharge, setEditCharge] = useState(0);
+  const [defaultChargeInput, setDefaultChargeInput] = useState(hallmarkCharge);
+
+  return (
+    <div className="card p-6 space-y-5">
+      <div>
+        <p className="text-sm text-gray-500">
+          Hallmark master used while billing — each entry maps a purity to a default hallmark charge. The charge is
+          pre-filled on bill lines when an item carries a hallmark number.
+        </p>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-end gap-3">
+        <div className="flex-1">
+          <label className="label">Default hallmark charge (₹ per item)</label>
+          <input type="number" className="input-field max-w-[160px]" value={defaultChargeInput} onChange={(e) => setDefaultChargeInput(Number(e.target.value))} />
+        </div>
+        <button className="btn-primary" onClick={() => onSaveDefaultCharge(defaultChargeInput)}>Save default</button>
+      </div>
+
+      <div className="border-t pt-5">
+        <label className="label">Add / update hallmark entry</label>
+        <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
+          <div><input className="input-field" placeholder="Label — e.g. Hallmark 22K (916)" value={label} onChange={(e) => setLabel(e.target.value)} /></div>
+          <div>
+            <select className="input-field" value={purity} onChange={(e) => setPurity(e.target.value)}>
+              {defaultPurities.map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}
+            </select>
+          </div>
+          <div><input type="number" className="input-field" placeholder="Charge ₹" value={charge || ''} onChange={(e) => setCharge(Number(e.target.value))} /></div>
+          <button className="btn-primary" onClick={() => { if (!label.trim()) return; onAdd({ label, purity, charge }); setLabel(''); }}>Add entry</button>
+        </div>
+      </div>
+
+      <div className="border-t pt-5">
+        <table className="w-full">
+          <thead><tr className="border-b bg-gray-50">
+            <th className="table-header">Label</th><th className="table-header">Purity</th>
+            <th className="table-header text-right">Charge (₹)</th><th className="table-header"></th>
+          </tr></thead>
+          <tbody>
+            {hallmarks.map((h: any) => (
+              <tr key={h.id} className="border-b border-gray-50">
+                <td className="table-cell font-medium">{h.label}</td>
+                <td className="table-cell">{h.purity}</td>
+                <td className="table-cell text-right">
+                  {editingId === h.id ? (
+                    <div className="flex gap-1 justify-end">
+                      <input type="number" className="input-field !py-1 w-24 text-right" value={editCharge || ''} onChange={(e) => setEditCharge(Number(e.target.value))} autoFocus />
+                      <button className="btn-primary !py-1 !px-2 text-xs" onClick={() => { onUpdate(h.id, { charge: editCharge }); setEditingId(null); }}>Save</button>
+                      <button className="btn-secondary !py-1 !px-2 text-xs" onClick={() => setEditingId(null)}>✕</button>
+                    </div>
+                  ) : (
+                    <button onDoubleClick={() => { setEditingId(h.id); setEditCharge(h.charge); }} className="hover:bg-gray-50 px-2 rounded" title="Double-click to edit">₹{h.charge}</button>
+                  )}
+                </td>
+                <td className="table-cell text-right">
+                  <button
+                    onClick={() => { if (confirm(`Delete hallmark entry "${h.label}"?`)) onDelete(h.id); }}
+                    className="text-red-500 hover:text-red-700 text-xs">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="text-xs text-gray-400 mt-2">Tip: double-click a charge to edit it inline. Entries marked as default can be edited but not deleted.</p>
       </div>
     </div>
   );

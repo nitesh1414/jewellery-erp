@@ -69,64 +69,133 @@ export class JobOrdersService {
   }
 
   async create(data: any, organizationId: string, branchId: string) {
+    // JobOrder.branchId is required — fall back to the org's main branch when
+    // the logged-in user has no branch (this was causing 500s)
+    let resolvedBranchId = branchId;
+    if (!resolvedBranchId) {
+      const branch = await this.prisma.branch.findFirst({ where: { organizationId }, orderBy: { createdAt: 'asc' } });
+      if (!branch) throw new BadRequestException('Create a branch first (Settings → setup)');
+      resolvedBranchId = branch.id;
+    }
+
+    // Normalize inputs — empty strings break FKs / dates (was causing 500s)
+    const customerId = data.customerId && data.customerId !== '' ? data.customerId : null;
+    const expectedDelivery = data.expectedDelivery
+      ? new Date(data.expectedDelivery)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    if (isNaN(expectedDelivery.getTime())) {
+      throw new BadRequestException('Expected delivery date is invalid');
+    }
+    const estimatedAmount = Number(data.estimatedAmount) || 0;
+    const advanceAmount = Number(data.advanceAmount) || 0;
+    const expectedWeight = Number(data.expectedWeight) || 0;
+
     // Generate job number
     const count = await this.prisma.jobOrder.count({ where: { organizationId } });
     const year = new Date().getFullYear();
     const jobNumber = `JOB-${year}-${String(count + 1).padStart(5, '0')}`;
 
+    const assignWorker = data.assignTo && data.assignTo.employeeId;
+
     const order = await this.prisma.jobOrder.create({
       data: {
         organizationId,
-        branchId,
+        branchId: resolvedBranchId,
         jobNumber,
-        customerId: data.customerId,
+        customerId,
         customerName: data.customerName,
-        customerMobile: data.customerMobile,
+        customerMobile: data.customerMobile || null,
         productDescription: data.productDescription,
-        purity: data.purity,
-        metalType: data.metalType,
-        expectedWeight: data.expectedWeight || 0,
-        expectedDelivery: new Date(data.expectedDelivery),
-        estimatedAmount: data.estimatedAmount || 0,
-        advanceAmount: data.advanceAmount || 0,
-        balanceAmount: (data.estimatedAmount || 0) - (data.advanceAmount || 0),
-        status: 'ASSIGNED',
-        notes: data.notes,
+        purity: data.purity || '22K',
+        metalType: data.metalType || 'GOLD',
+        expectedWeight,
+        expectedDelivery,
+        estimatedAmount,
+        advanceAmount,
+        balanceAmount: Math.max(0, estimatedAmount - advanceAmount),
+        status: assignWorker ? 'ASSIGNED' : 'CREATED',
+        notes: data.notes || null,
       },
     });
 
-    return order;
+    await this.prisma.jobStatusHistory.create({
+      data: { jobOrderId: order.id, fromStatus: null, toStatus: order.status, changedBy: 'system' },
+    });
+
+    // Optional worker assignment straight from the create form
+    if (assignWorker) {
+      const employee = await this.prisma.employee.findFirst({
+        where: { id: data.assignTo.employeeId, organizationId },
+      });
+      if (employee) {
+        await this.prisma.jobAssignment.create({
+          data: {
+            jobOrderId: order.id,
+            employeeId: employee.id,
+            employeeName: employee.name,
+            dueDate:
+              data.assignTo.dueDate && !isNaN(new Date(data.assignTo.dueDate).getTime())
+                ? new Date(data.assignTo.dueDate)
+                : expectedDelivery,
+            status: 'ASSIGNED',
+            notes: data.assignTo.notes || null,
+          },
+        });
+      }
+    }
+
+    return this.prisma.jobOrder.findUnique({
+      where: { id: order.id },
+      include: { assignments: true },
+    });
   }
 
   async assignEmployee(jobOrderId: string, data: {
     employeeId: string;
-    employeeName: string;
+    employeeName?: string;
     dueDate: string;
     notes?: string;
   }) {
+    const order = await this.prisma.jobOrder.findUnique({ where: { id: jobOrderId } });
+    if (!order) throw new NotFoundException('Job order not found');
+    if (['DELIVERED', 'CANCELLED'].includes(order.status)) {
+      throw new BadRequestException('Cannot assign workers to a delivered/cancelled job');
+    }
+    const employee = await this.prisma.employee.findUnique({ where: { id: data.employeeId } });
+    if (!employee) throw new NotFoundException('Worker not found');
+
     const assignment = await this.prisma.jobAssignment.create({
       data: {
         jobOrderId,
         employeeId: data.employeeId,
-        employeeName: data.employeeName,
+        employeeName: employee.name,
         dueDate: new Date(data.dueDate),
         status: 'ASSIGNED',
         notes: data.notes,
       },
     });
 
+    // creating an assignment moves the order forward
+    if (order.status === 'CREATED') {
+      await this.prisma.jobStatusHistory.create({
+        data: { jobOrderId, fromStatus: 'CREATED', toStatus: 'ASSIGNED', changedBy: 'system' },
+      });
+      await this.prisma.jobOrder.update({ where: { id: jobOrderId }, data: { status: 'ASSIGNED' } });
+    }
+
     return assignment;
   }
 
   async updateStatus(jobOrderId: string, status: string, userId?: string) {
     const validTransitions: Record<string, string[]> = {
-      'ASSIGNED': ['ACCEPTED', 'CANCELLED'],
-      'ACCEPTED': ['IN_PROGRESS', 'CANCELLED'],
-      'IN_PROGRESS': ['QUALITY_CHECK', 'CANCELLED'],
-      'QUALITY_CHECK': ['READY', 'IN_PROGRESS'],
-      'READY': ['DELIVERED', 'CANCELLED'],
+      'CREATED': ['ASSIGNED', 'CANCELLED'],
+      'ASSIGNED': ['IN_PROGRESS', 'CREATED', 'CANCELLED'],
+      'ACCEPTED': ['IN_PROGRESS', 'CANCELLED'], // legacy
+      'IN_PROGRESS': ['READY', 'ASSIGNED', 'CANCELLED'],
+      'QUALITY_CHECK': ['READY', 'IN_PROGRESS'], // legacy
+      'READY': ['DELIVERED', 'IN_PROGRESS', 'CANCELLED'],
       'DELIVERED': [],
-      'CANCELLED': [],
+      'CANCELLED': ['CREATED'],
     };
 
     const order = await this.prisma.jobOrder.findUnique({ where: { id: jobOrderId } });
@@ -135,6 +204,11 @@ export class JobOrdersService {
     const allowedTransitions = validTransitions[order.status] || [];
     if (!allowedTransitions.includes(status)) {
       throw new BadRequestException(`Cannot transition from ${order.status} to ${status}`);
+    }
+
+    // keep assignments in sync with the order status
+    if (['IN_PROGRESS', 'READY', 'DELIVERED', 'CANCELLED'].includes(status)) {
+      await this.prisma.jobAssignment.updateMany({ where: { jobOrderId }, data: { status } });
     }
 
     await this.prisma.jobStatusHistory.create({
@@ -525,7 +599,7 @@ export class JobOrdersService {
     const where = { organizationId };
     const [total, active, ready, delivered, delayed] = await Promise.all([
       this.prisma.jobOrder.count({ where }),
-      this.prisma.jobOrder.count({ where: { ...where, status: { in: ['ASSIGNED', 'ACCEPTED', 'IN_PROGRESS', 'QUALITY_CHECK'] } } }),
+      this.prisma.jobOrder.count({ where: { ...where, status: { in: ['CREATED', 'ASSIGNED', 'ACCEPTED', 'IN_PROGRESS', 'QUALITY_CHECK'] } } }),
       this.prisma.jobOrder.count({ where: { ...where, status: 'READY' } }),
       this.prisma.jobOrder.count({ where: { ...where, status: 'DELIVERED' } }),
       this.prisma.jobOrder.count({

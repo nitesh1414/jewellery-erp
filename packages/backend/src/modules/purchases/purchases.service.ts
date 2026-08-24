@@ -118,8 +118,10 @@ export class PurchasesService {
             : 1;
           const barcodeStr = `G${String(nextSeq).padStart(8, '0')}`;
 
-          // Create barcode
-          await tx.barcode.create({
+          // Create barcode placeholder, linked to the item below
+
+          // Create barcode linked to the item
+          const barcodeRecord = await tx.barcode.create({
             data: {
               organizationId,
               branchId,
@@ -163,6 +165,12 @@ export class PurchasesService {
               purchaseId: record.id,
               purchaseDate: new Date(data.invoiceDate || Date.now()),
             },
+          });
+
+          // link the barcode record to the item (shows in Barcodes tab)
+          await tx.barcode.update({
+            where: { id: barcodeRecord.id },
+            data: { jewelleryItemId: jewelleryItem.id, isAssigned: true },
           });
 
           // Create stock transaction
