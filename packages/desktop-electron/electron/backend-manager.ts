@@ -9,18 +9,33 @@ export interface BackendHandle {
   child: UtilityProcess;
 }
 
-function getFreePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
+function listenOn(port: number): Promise<number> {
+  return new Promise((resolve) => {
     const net = require('net') as typeof import('net');
     const srv = net.createServer();
     srv.unref();
-    srv.on('error', reject);
-    srv.listen(0, '127.0.0.1', () => {
+    srv.once('error', () => resolve(0)); // port busy
+    srv.listen(port, '127.0.0.1', () => {
       const addr = srv.address();
-      const port = typeof addr === 'object' && addr ? addr.port : 0;
-      srv.close(() => resolve(port));
+      const actual = typeof addr === 'object' && addr ? addr.port : 0;
+      srv.close(() => resolve(actual));
     });
   });
+}
+
+/**
+ * Prefer a FIXED port so the app's origin (http://127.0.0.1:<port>) never
+ * changes. localStorage is scoped per origin — a random port would log the
+ * user out on every launch. Falls back to a random port only if the fixed
+ * one is occupied (another program); the next launch reverts to the fixed
+ * port automatically.
+ */
+async function getFreePort(): Promise<number> {
+  const preferred = Number(process.env.DESKTOP_BACKEND_PORT) || 8973;
+  const fixed = await listenOn(preferred);
+  if (fixed) return fixed;
+  const random = await listenOn(0);
+  return random;
 }
 
 /** Copy the pristine database shipped with the installer on first run. */

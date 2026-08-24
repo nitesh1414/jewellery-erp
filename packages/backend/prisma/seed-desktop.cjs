@@ -84,13 +84,15 @@ async function main() {
     if (!exists) await prisma.hsnCode.create({ data: { ...h, organizationId: org.id } });
   }
 
+  // Same starting rates as the web demo seed so both apps behave the same —
+  // shop owners update these in Settings → Rate Schedule on day one.
   const rates = [
-    { metalType: 'GOLD', purity: '24K', rate: 0 },
-    { metalType: 'GOLD', purity: '22K', rate: 0 },
-    { metalType: 'GOLD', purity: '20K', rate: 0 },
-    { metalType: 'GOLD', purity: '18K', rate: 0 },
-    { metalType: 'SILVER', purity: 'SILVER_999', rate: 0 },
-    { metalType: 'SILVER', purity: 'SILVER_925', rate: 0 },
+    { metalType: 'GOLD', purity: '24K', rate: 75000 },
+    { metalType: 'GOLD', purity: '22K', rate: 70000 },
+    { metalType: 'GOLD', purity: '20K', rate: 64000 },
+    { metalType: 'GOLD', purity: '18K', rate: 56000 },
+    { metalType: 'SILVER', purity: 'SILVER_999', rate: 85000 },
+    { metalType: 'SILVER', purity: 'SILVER_925', rate: 78000 },
   ];
   for (const r of rates) {
     const exists = await prisma.rateMaster.findFirst({ where: { metalType: r.metalType, purity: r.purity, organizationId: org.id } });

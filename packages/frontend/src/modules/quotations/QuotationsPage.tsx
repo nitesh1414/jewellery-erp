@@ -29,6 +29,7 @@ export default function QuotationsPage() {
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
 
+  const isDesktop = !!(window as any).desktopBridge?.isDesktop;
   const quoteUrl = (token: string) => `${window.location.origin}/q/${token}`;
 
   const copyLink = async (url: string) => {
@@ -127,11 +128,20 @@ export default function QuotationsPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
             <div className="flex items-center gap-2 text-green-600 mb-2"><CheckCircle className="w-5 h-5" /><h3 className="font-semibold">Quotation created!</h3></div>
-            <p className="text-sm text-gray-500 mb-3">Share this link with your customer (WhatsApp / SMS / email). It opens the quotation page without any login:</p>
-            <div className="bg-gray-50 border rounded-lg px-3 py-2 font-mono text-xs break-all">{quoteLink}</div>
+            {isDesktop ? (
+              <p className="text-sm text-gray-500 mb-3">
+                You're in the desktop app — open the quote and use <strong>Print / Save as PDF</strong> to share it.
+                <span className="block text-xs text-amber-700 mt-1">Links only work while this app is running on this PC.</span>
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 mb-3">Share this link with your customer (WhatsApp / SMS / email). It opens the quotation page without any login:</p>
+                <div className="bg-gray-50 border rounded-lg px-3 py-2 font-mono text-xs break-all">{quoteLink}</div>
+              </>
+            )}
             <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => copyLink(quoteLink)} className="btn-secondary"><Copy className="w-4 h-4" /> Copy link</button>
-              <a href={quoteLink} target="_blank" rel="noreferrer" className="btn-primary"><ExternalLink className="w-4 h-4" /> Open</a>
+              {!isDesktop && <button onClick={() => copyLink(quoteLink)} className="btn-secondary"><Copy className="w-4 h-4" /> Copy link</button>}
+              <a href={quoteLink} target="_blank" rel="noreferrer" className="btn-primary"><ExternalLink className="w-4 h-4" /> Open → Print / PDF</a>
             </div>
             <button onClick={() => setQuoteLink(null)} className="w-full text-center text-sm text-gray-400 hover:text-gray-600 mt-3">Close</button>
           </div>

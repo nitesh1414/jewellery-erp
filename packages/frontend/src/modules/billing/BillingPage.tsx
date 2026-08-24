@@ -35,6 +35,7 @@ interface BillItem {
 
 export default function BillingPage() {
   const queryClient = useQueryClient();
+  const isDesktop = !!(window as any).desktopBridge?.isDesktop;
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const customerInputRef = useRef<HTMLInputElement>(null);
 
@@ -710,13 +711,22 @@ export default function BillingPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
             <h3 className="font-semibold text-lg mb-1">Quotation {quoteQr?.quoteNumber} created!</h3>
-            <p className="text-sm text-gray-500 mb-3">Share this link with your customer — it opens a clean estimate page without any login:</p>
-            <div className="bg-gray-50 border rounded-lg px-3 py-2 font-mono text-xs break-all">{quoteLink}</div>
+            {isDesktop ? (
+              <p className="text-sm text-gray-500 mb-3">
+                This is the desktop app — open the quote and use <strong>Print / Save as PDF</strong>, then share the PDF with your customer.
+                <span className="block text-xs text-amber-700 mt-1">The web link only works while this app is running on this PC.</span>
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500 mb-3">Share this link with your customer — it opens a clean estimate page without any login:</p>
+            )}
+            {!isDesktop && <div className="bg-gray-50 border rounded-lg px-3 py-2 font-mono text-xs break-all">{quoteLink}</div>}
             <div className="flex justify-end gap-2 mt-4">
-              <button className="btn-secondary" onClick={async () => {
-                try { await navigator.clipboard.writeText(quoteLink); toast.success('Link copied!'); } catch { toast.error(quoteLink); }
-              }}>Copy link</button>
-              <a href={quoteLink} target="_blank" rel="noreferrer" className="btn-primary">Open quote</a>
+              {!isDesktop && (
+                <button className="btn-secondary" onClick={async () => {
+                  try { await navigator.clipboard.writeText(quoteLink); toast.success('Link copied!'); } catch { toast.error(quoteLink); }
+                }}>Copy link</button>
+              )}
+              <a href={quoteLink} target="_blank" rel="noreferrer" className="btn-primary">Open quote → Print / PDF</a>
             </div>
             <button onClick={() => setQuoteLink(null)} className="w-full text-center text-sm text-gray-400 hover:text-gray-600 mt-3">Close</button>
           </div>
