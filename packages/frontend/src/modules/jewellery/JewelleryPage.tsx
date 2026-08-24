@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { Plus, Search, Package, Printer } from 'lucide-react';
+import { Plus, Search, Package, Printer, Pencil } from 'lucide-react';
 
 export default function JewelleryPage() {
   const qc = useQueryClient();
@@ -20,6 +20,7 @@ export default function JewelleryPage() {
   const [page, setPage] = useState(1);
   const [detail, setDetail] = useState<any>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showBulk, setShowBulk] = useState(false);
   const [form, setForm] = useState<any>({
     designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0,
@@ -49,9 +50,45 @@ export default function JewelleryPage() {
 
   const createMutation = useMutation({
     mutationFn: (b: any) => api.createJewelleryItem(b),
-    onSuccess: () => { toast.success('Item added!'); qc.invalidateQueries({ queryKey: ['jewellery'] }); setShowAdd(false); },
+    onSuccess: () => { toast.success('Item added!'); qc.invalidateQueries({ queryKey: ['jewellery'] }); setShowAdd(false); setEditingId(null); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: any }) => api.put('/jewellery/' + id, body),
+    onSuccess: () => {
+      toast.success('Item updated!');
+      qc.invalidateQueries({ queryKey: ['jewellery'] });
+      setShowAdd(false);
+      setEditingId(null);
+      setDetail(null);
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const openEditItem = (item: any) => {
+    setForm({
+      designCode: item.designCode || '',
+      metalType: item.metalType || 'GOLD',
+      purity: item.purity || '22K',
+      grossWeight: item.grossWeight || 0,
+      stoneWeight: item.stoneWeight || 0,
+      netWeight: item.netWeight || 0,
+      currentRate: item.currentRate || 0,
+      quantity: item.quantity || 1,
+      hsnCode: item.hsnCode || '7113',
+      makingChargeType: item.makingChargeType || 'PERCENTAGE',
+      makingChargeValue: item.makingChargeValue || 10,
+      category: item.category || '',
+      subCategory: item.subCategory || '',
+      location: item.location || '',
+      ornament: item.ornament || '',
+      ornamentGender: item.ornamentGender || '',
+      purchaseDate: item.purchaseDate ? new Date(item.purchaseDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    });
+    setEditingId(item.id);
+    setShowAdd(true);
+  };
 
   const bulkMutation = useMutation({
     mutationFn: (items: any[]) => api.post('/jewellery/bulk', { items }),
@@ -185,7 +222,7 @@ export default function JewelleryPage() {
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Add Jewellery Item (Material Entry)</h3>
+            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Jewellery Item' : 'Add Jewellery Item (Material Entry)'}</h3>
             <div className="grid grid-cols-3 gap-4">
               <div><label className="label">Design Code</label><input className="input-field" value={form.designCode} onChange={e => setForm({...form, designCode: e.target.value})} placeholder="RING-001" /></div>
               <div><label className="label">Metal Type</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
@@ -221,12 +258,13 @@ export default function JewelleryPage() {
             </div>
             <p className="text-xs text-gray-400 mt-2">* Required fields. Barcode auto-generated.</p>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-              <button onClick={() => setShowAdd(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => { setShowAdd(false); setEditingId(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (!form.designCode || !form.netWeight || !form.currentRate) { toast.error('Fill required fields'); return; }
-                createMutation.mutate(form);
-              }} disabled={createMutation.isPending} className="btn-primary">
-                {createMutation.isPending ? 'Adding...' : 'Add Item'}
+                if (editingId) updateMutation.mutate({ id: editingId, body: form });
+                else createMutation.mutate(form);
+              }} disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary">
+                {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : editingId ? 'Update Item' : 'Add Item'}
               </button>
             </div>
           </div>
@@ -292,9 +330,14 @@ export default function JewelleryPage() {
                   <div key={label}><p className="text-xs text-gray-400">{label}</p><p className="font-medium">{value}</p></div>
                 ))}
               </div>
-              <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(detail.barcode), '_blank')} className="btn-primary w-full mt-5">
-                <Printer className="w-4 h-4" /> Print Barcode Sticker
-              </button>
+              <div className="flex gap-2 mt-5">
+                <button onClick={() => { openEditItem(detail); setDetail(null); }} className="btn-secondary flex-1">
+                  <Pencil className="w-4 h-4" /> Edit Item
+                </button>
+                <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(detail.barcode), '_blank')} className="btn-primary flex-1">
+                  <Printer className="w-4 h-4" /> Print Barcode Sticker
+                </button>
+              </div>
             </div>
           </div>
         </div>

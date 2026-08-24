@@ -34,8 +34,8 @@ export class JobOrdersController {
   }
 
   @Put(':id/status')
-  async updateStatus(@Param('id') id: string, @Body('status') status: string, @CurrentUser() user: any) {
-    return this.jobOrdersService.updateStatus(id, status, user.id);
+  async updateStatus(@Param('id') id: string, @Body() body: any, @CurrentUser() user: any) {
+    return this.jobOrdersService.updateStatus(id, body.status, user.id, body.date, body.notes);
   }
 
   @Post(':id/issue-material')
@@ -55,7 +55,7 @@ export class JobOrdersController {
   @Post(':id/advance')
   async addAdvance(
     @Param('id') id: string,
-    @Body() body: { amount: number; paymentMode?: string; reference?: string },
+    @Body() body: { amount: number; paymentMode?: string; reference?: string; accountId?: string },
     @CurrentUser() user: any,
   ) {
     return this.jobOrdersService.addAdvance(
@@ -64,6 +64,7 @@ export class JobOrdersController {
       body.paymentMode || 'CASH',
       body.reference || '',
       user.id,
+      body.accountId,
     );
   }
 

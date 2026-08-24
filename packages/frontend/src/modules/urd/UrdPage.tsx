@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { Search, Plus, Gem, ArrowUpRight } from 'lucide-react';
+import { Search, Plus, Gem, ArrowUpRight, Eye, Pencil, X } from 'lucide-react';
 
 export default function UrdPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<any>(null);
   const [form, setForm] = useState({ customerName: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, deduction: 0, meltingLoss: 0, notes: '' });
 
   const { data } = useQuery({ queryKey: ['urd', search, page], queryFn: () => api.getUrdTransactions({ search, page, limit: 20 }) });
@@ -19,6 +21,49 @@ export default function UrdPage() {
     onSuccess: () => { toast.success('URD transaction created!'); qc.invalidateQueries({ queryKey: ['urd'] }); setShowForm(false); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: any }) => api.updateUrd(id, body),
+    onSuccess: () => {
+      toast.success('URD transaction updated!');
+      qc.invalidateQueries({ queryKey: ['urd'] });
+      setShowForm(false);
+      setEditingId(null);
+      setViewing(null);
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const openView = async (id: string) => {
+    try {
+      const t = await api.getUrd(id);
+      setViewing(t);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Could not load transaction');
+    }
+  };
+
+  const openEdit = async (u: any) => {
+    try {
+      const t = await api.getUrd(u.id);
+      setForm({
+        customerName: t.customerName || '',
+        metalType: t.metalType || 'GOLD',
+        purity: t.purity || '22K',
+        grossWeight: t.grossWeight || 0,
+        stoneWeight: t.stoneWeight || 0,
+        netWeight: t.netWeight || 0,
+        rate: t.rate || 0,
+        deduction: t.deduction || 0,
+        meltingLoss: t.meltingLoss || 0,
+        notes: t.notes || '',
+      });
+      setEditingId(t.id);
+      setShowForm(true);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Could not load transaction');
+    }
+  };
 
   const grossValue = form.netWeight * form.rate;
   const netValue = grossValue - (form.deduction || 0);
@@ -44,6 +89,7 @@ export default function UrdPage() {
             <th className="table-header">URD No.</th><th className="table-header">Customer</th><th className="table-header">Metal</th><th className="table-header">Purity</th>
             <th className="table-header text-right">Gross</th><th className="table-header text-right">Net</th><th className="table-header text-right">Rate</th>
             <th className="table-header text-right">Value</th><th className="table-header text-right">Final</th><th className="table-header">Status</th>
+            <th className="table-header text-right">Actions</th>
           </tr></thead>
           <tbody>
             {data?.items?.map((u: any) => (
@@ -58,6 +104,12 @@ export default function UrdPage() {
                 <td className="table-cell text-right">{fm(u.value)}</td>
                 <td className="table-cell text-right font-medium">{fm(u.finalValue)}</td>
                 <td className="table-cell"><span className={'badge ' + (u.status === 'ACTIVE' ? 'badge-success' : 'badge-gray')}>{u.status}</span></td>
+                <td className="table-cell text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <button onClick={() => openView(u.id)} className="btn-ghost p-1.5 text-primary-600" title="View"><Eye className="w-4 h-4" /></button>
+                    <button onClick={() => openEdit(u)} className="btn-ghost p-1.5 text-amber-600" title="Edit"><Pencil className="w-4 h-4" /></button>
+                  </div>
+                </td>
               </tr>
             ))}
             {(!data?.items || data.items.length === 0) && <tr><td colSpan={10} className="text-center py-12 text-gray-400">No URD transactions</td></tr>}
@@ -75,7 +127,7 @@ export default function UrdPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">New URD / Old Metal Transaction</h3>
+            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit URD / Old Metal Transaction' : 'New URD / Old Metal Transaction'}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2"><label className="label">Customer Name *</label><input className="input-field" value={form.customerName} onChange={e => setForm({...form, customerName: e.target.value})} /></div>
               <div><label className="label">Metal</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
@@ -98,11 +150,40 @@ export default function UrdPage() {
             )}
 
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-              <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => { setShowForm(false); setEditingId(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (!form.customerName || !form.netWeight || !form.rate) { toast.error('Fill required fields'); return; }
-                createMutation.mutate(form);
-              }} disabled={createMutation.isPending} className="btn-primary"><Gem className="w-4 h-4" /> Create URD</button>
+                if (editingId) updateMutation.mutate({ id: editingId, body: form });
+                else createMutation.mutate(form);
+              }} disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary"><Gem className="w-4 h-4" /> {editingId ? 'Update URD' : 'Create URD'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View URD Modal */}
+      {viewing && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setViewing(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-lg font-semibold">URD {viewing.urdNumber}</h3>
+              <button onClick={() => setViewing(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><p className="text-xs text-gray-400">Customer</p><p className="font-medium">{viewing.customerName}</p></div>
+              <div><p className="text-xs text-gray-400">Status</p><p className="font-medium">{viewing.status}</p></div>
+              <div><p className="text-xs text-gray-400">Metal / Purity</p><p className="font-medium">{viewing.metalType} · {viewing.purity}</p></div>
+              <div><p className="text-xs text-gray-400">Gross / Stone / Net</p><p className="font-medium">{viewing.grossWeight} · {viewing.stoneWeight || 0} · {viewing.netWeight} g</p></div>
+              <div><p className="text-xs text-gray-400">Rate</p><p className="font-medium">{fm(viewing.rate)}/g</p></div>
+              <div><p className="text-xs text-gray-400">Value</p><p className="font-medium">{fm(viewing.value)}</p></div>
+              <div><p className="text-xs text-gray-400">Deduction</p><p className="font-medium">{fm(viewing.deduction || 0)}</p></div>
+              <div><p className="text-xs text-gray-400">Melting Loss</p><p className="font-medium">{viewing.meltingLoss || 0}%</p></div>
+              <div className="col-span-2"><p className="text-xs text-gray-400">Final Value</p><p className="font-bold text-green-700">{fm(viewing.finalValue)}</p></div>
+              {viewing.notes && <div className="col-span-2"><p className="text-xs text-gray-400">Notes</p><p className="font-medium">{viewing.notes}</p></div>}
+            </div>
+            <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+              <button onClick={() => { setViewing(null); openEdit(viewing); }} className="btn-secondary text-sm"><Pencil className="w-4 h-4" /> Edit</button>
+              <button onClick={() => setViewing(null)} className="btn-primary text-sm">Close</button>
             </div>
           </div>
         </div>

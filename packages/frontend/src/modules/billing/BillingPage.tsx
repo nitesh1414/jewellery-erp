@@ -54,10 +54,11 @@ export default function BillingPage() {
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState<'FIXED' | 'PERCENTAGE'>('FIXED');
   const [narration, setNarration] = useState('');
-  const [payments, setPayments] = useState<{ amount: number; mode: string; reference: string }[]>([]);
+  const [payments, setPayments] = useState<{ amount: number; mode: string; reference: string; accountId?: string }[]>([]);
   const [showPaymentPanel, setShowPaymentPanel] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentReference, setPaymentReference] = useState('');
+  const [paymentAccount, setPaymentAccount] = useState('');
   const [showManualItem, setShowManualItem] = useState(false);
   const [showInventorySelect, setShowInventorySelect] = useState(false);
   const [inventorySearch, setInventorySearch] = useState('');
@@ -125,6 +126,8 @@ export default function BillingPage() {
     enabled: showInventorySelect,
   });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
+  const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
+  const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
   const { data: rateMaster } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
 
   // Load an estimated bill for editing (/billing?estimate=<id>)
@@ -355,7 +358,7 @@ export default function BillingPage() {
       })),
       discount: discountAmount, discountType, isGst: billType === 'GST',
       narration,
-      payments: billKind === 'ESTIMATE' ? [] : payments.map(p => ({ amount: p.amount, paymentMode: p.mode, reference: p.reference })),
+      payments: billKind === 'ESTIMATE' ? [] : payments.map(p => ({ amount: p.amount, paymentMode: p.mode, reference: p.reference, accountId: p.accountId })),
     };
     createSaleMutation.mutate({ data: billData, kind: billKind, estimateId: editingEstimateId || undefined });
   };
@@ -616,6 +619,10 @@ export default function BillingPage() {
                     <button onClick={() => setPaymentAmount(balanceAmount)} className="btn-secondary text-xs px-2 py-1 whitespace-nowrap">Full</button>
                   </div>
                   <input type="text" className="input-field text-xs py-1.5 w-full" placeholder="Reference (UPI ID / cheque no)" value={paymentReference} onChange={e => setPaymentReference(e.target.value)} />
+                  <select className="input-field text-xs py-1.5 w-full" value={paymentAccount} onChange={e => setPaymentAccount(e.target.value)}>
+                    <option value="">Receive into — no ledger —</option>
+                    {activeAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
+                  </select>
 
                   {payments.length > 0 && (
                     <div className="space-y-1 pt-1">
@@ -639,9 +646,10 @@ export default function BillingPage() {
                         const amt = paymentAmount > 0 ? paymentAmount : remaining;
                         if (amt > remaining) { toast.error('Amount exceeds balance'); return; }
                         if (amt <= 0) { toast.error('Enter amount'); return; }
-                        setPayments(prev => [...prev, { amount: amt, mode, reference: paymentReference }]);
+                        setPayments(prev => [...prev, { amount: amt, mode, reference: paymentReference, accountId: paymentAccount || undefined }]);
                         setPaymentAmount(0);
                         setPaymentReference('');
+                        setPaymentAccount('');
                       }} className="text-xs py-1.5 px-1 rounded border border-gray-200 text-gray-600 hover:border-gray-300">
                         {mode.replace('_', ' ')}
                       </button>

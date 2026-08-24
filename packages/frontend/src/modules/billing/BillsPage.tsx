@@ -12,7 +12,10 @@ export default function BillsPage() {
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [payBill, setPayBill] = useState<any>(null);
-  const [payForm, setPayForm] = useState({ amount: 0, paymentMode: 'CASH', reference: '' });
+  const [payForm, setPayForm] = useState({ amount: 0, paymentMode: 'CASH', reference: '', accountId: '' });
+
+  const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
+  const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
   const [viewBill, setViewBill] = useState<any>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -51,7 +54,7 @@ export default function BillsPage() {
       qc.invalidateQueries({ queryKey: ['bills'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       setPayBill(null);
-      setPayForm({ amount: 0, paymentMode: 'CASH', reference: '' });
+      setPayForm({ amount: 0, paymentMode: 'CASH', reference: '', accountId: '' });
     },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
@@ -210,7 +213,7 @@ export default function BillsPage() {
                           </>
                         )}
                         {bill.billType !== 'ESTIMATE' && bill.balanceAmount > 0 && (
-                          <button onClick={() => { setPayBill(bill); setPayForm({ amount: bill.balanceAmount, paymentMode: 'CASH', reference: '' }); }} className="btn-ghost p-1.5 text-green-600" title="Receive payment">
+                          <button onClick={() => { setPayBill(bill); setPayForm({ amount: bill.balanceAmount, paymentMode: 'CASH', reference: '', accountId: '' }); }} className="btn-ghost p-1.5 text-green-600" title="Receive payment">
                             <HandCoins className="w-4 h-4" />
                           </button>
                         )}
@@ -368,7 +371,7 @@ export default function BillsPage() {
             <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
               <button onClick={() => handlePrint(viewBill)} className="btn-secondary text-sm"><Printer className="w-4 h-4" /> Print</button>
               {viewBill.balanceAmount > 0 && (
-                <button onClick={() => { setPayBill(viewBill); setPayForm({ amount: viewBill.balanceAmount, paymentMode: 'CASH', reference: '' }); setViewBill(null); }} className="btn-primary text-sm">
+                <button onClick={() => { setPayBill(viewBill); setPayForm({ amount: viewBill.balanceAmount, paymentMode: 'CASH', reference: '', accountId: '' }); setViewBill(null); }} className="btn-primary text-sm">
                   <HandCoins className="w-4 h-4" /> Receive Payment
                 </button>
               )}
@@ -401,6 +404,12 @@ export default function BillsPage() {
                 </select>
               </div>
               <div><label className="label">Reference</label><input className="input-field" value={payForm.reference} onChange={e => setPayForm({...payForm, reference: e.target.value})} placeholder="Optional" /></div>
+              <div><label className="label">Receive Into (Cash / Bank Ledger)</label>
+                <select className="input-field" value={payForm.accountId} onChange={e => setPayForm({...payForm, accountId: e.target.value})}>
+                  <option value="">— no ledger —</option>
+                  {activeAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
+                </select>
+                <p className="text-[10px] text-gray-400 mt-1">Amount is credited to this account in the ledger.</p></div>
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
               <button onClick={() => setPayBill(null)} className="btn-secondary">Cancel</button>

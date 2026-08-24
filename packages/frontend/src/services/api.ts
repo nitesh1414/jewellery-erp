@@ -206,8 +206,18 @@ class ApiService {
     return data;
   }
 
+  async getPurchase(id: string) {
+    const { data } = await this.client.get('/purchases/' + id);
+    return data;
+  }
+
   async createPurchase(body: any) {
     const { data } = await this.client.post('/purchases', body);
+    return data;
+  }
+
+  async updatePurchase(id: string, body: any) {
+    const { data } = await this.client.put('/purchases/' + id, body);
     return data;
   }
 
@@ -270,8 +280,18 @@ class ApiService {
     return data;
   }
 
+  async getUrd(id: string) {
+    const { data } = await this.client.get('/urd/' + id);
+    return data;
+  }
+
   async createUrd(body: any) {
     const { data } = await this.client.post('/urd', body);
+    return data;
+  }
+
+  async updateUrd(id: string, body: any) {
+    const { data } = await this.client.put('/urd/' + id, body);
     return data;
   }
 

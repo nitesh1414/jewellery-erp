@@ -9,10 +9,12 @@ export default function PaymentsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ customerId: '', supplierId: '', amount: 0, paymentMode: 'CASH', reference: '', notes: '' });
+  const [form, setForm] = useState({ customerId: '', supplierId: '', amount: 0, paymentMode: 'CASH', accountId: '', reference: '', notes: '' });
 
   const { data } = useQuery({ queryKey: ['payments', search, page], queryFn: () => api.getPayments({ search, page, limit: 20 }) });
   const { data: customers } = useQuery({ queryKey: ['customers-all'], queryFn: () => api.getCustomers({ limit: 100 }) });
+  const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
+  const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
 
   const createMutation = useMutation({
     mutationFn: (b: any) => api.createPayment(b),
@@ -78,6 +80,12 @@ export default function PaymentsPage() {
                   <option value="CASH">Cash</option><option value="UPI">UPI</option><option value="DEBIT_CARD">Debit Card</option>
                   <option value="CREDIT_CARD">Credit Card</option><option value="BANK_TRANSFER">Bank Transfer</option><option value="CHEQUE">Cheque</option>
                 </select></div>
+              <div><label className="label">Received Into (Cash / Bank Ledger)</label>
+                <select className="input-field" value={form.accountId} onChange={e => setForm({...form, accountId: e.target.value})}>
+                  <option value="">— no ledger —</option>
+                  {activeAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
+                </select>
+                <p className="text-[10px] text-gray-400 mt-1">The amount is credited to this account in the ledger.</p></div>
               <div><label className="label">Reference</label><input className="input-field" value={form.reference} onChange={e => setForm({...form, reference: e.target.value})} placeholder="UPI ref / cheque no" /></div>
               <div><label className="label">Notes</label><input className="input-field" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
             </div>

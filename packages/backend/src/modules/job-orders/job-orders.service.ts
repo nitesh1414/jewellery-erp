@@ -188,7 +188,7 @@ export class JobOrdersService {
     return assignment;
   }
 
-  async updateStatus(jobOrderId: string, status: string, userId?: string) {
+  async updateStatus(jobOrderId: string, status: string, userId?: string, date?: string, notes?: string) {
     const validTransitions: Record<string, string[]> = {
       'CREATED': ['ASSIGNED', 'CANCELLED'],
       'ASSIGNED': ['IN_PROGRESS', 'CREATED', 'CANCELLED'],
@@ -219,6 +219,9 @@ export class JobOrdersService {
         fromStatus: order.status,
         toStatus: status,
         changedBy: userId,
+        notes: notes || null,
+        // Capture the action date (defaults to now when none provided).
+        actionDate: date && !isNaN(new Date(date).getTime()) ? new Date(date) : new Date(),
       },
     });
 
@@ -330,6 +333,7 @@ export class JobOrdersService {
     paymentMode: string,
     reference: string,
     userId: string,
+    accountId?: string,
   ) {
     const order = await this.prisma.jobOrder.findUnique({ where: { id: jobOrderId } });
     if (!order) throw new NotFoundException('Job order not found');
@@ -355,12 +359,40 @@ export class JobOrdersService {
           amount,
           paymentMode,
           reference: reference || undefined,
+          accountId: accountId || undefined,
           employeeId: userId,
           relatedTransactionId: jobOrderId,
           relatedTransactionType: 'JOB_ORDER',
           notes: `Advance for ${order.jobNumber}`,
         },
       });
+
+      // Credit the chosen cash/bank ledger account.
+      if (accountId) {
+        const acc = await tx.ledgerAccount.findFirst({ where: { id: accountId, organizationId: order.organizationId } });
+        if (acc) {
+          await tx.ledgerEntry.create({
+            data: {
+              organizationId: order.organizationId,
+              branchId: order.branchId,
+              accountId,
+              type: 'CREDIT',
+              amount,
+              date: new Date(),
+              description: `Advance for ${order.jobNumber} (${paymentMode})`,
+              reference: transactionId,
+              linkedTo: 'JOB_ADVANCE',
+              linkedId: payment.id,
+              employeeId: userId,
+              employeeName: 'System',
+            },
+          });
+          await tx.ledgerAccount.update({
+            where: { id: accountId },
+            data: { currentBalance: { increment: amount } },
+          });
+        }
+      }
 
       // Update customer ledger (debit = money customer owes)
       if (order.customerId) {

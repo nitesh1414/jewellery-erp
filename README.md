@@ -76,6 +76,15 @@ npm run build          # compile every package
   income, URD, payment…) are recorded against the selected branch; the default
   is the user's primary branch. Estimated bills never affect sales,
   outstanding, today's totals or GST until confirmed into a real bill.
+- **Purchase → inventory**: a purchase is a material entry. It uses the same
+  fields as the inventory "Add Item" form (metal, purity, category,
+  sub-category, ornament, HSN, making charge, hallmark, certificate no.) and can
+  hold **many metals/purities in one purchase**. The supplier's invoice number
+  is optional. Purchases, inventory items, URD and users all have View + Edit.
+- **Job order actions**: marking a job READY / DELIVERED / IN PROGRESS etc.
+  asks for the **action date + note** and appends it to the Action Log
+  (status history) in the job detail. Advance and bill payments can be taken
+  into a specific cash/bank ledger account.
 - **Job work**: New Job Order picks customers from the database (or prompts to
   add new), assigns a worker, and walks CREATED → ASSIGNED → IN PROGRESS →
   READY → DELIVERED; generate the final bill when READY.

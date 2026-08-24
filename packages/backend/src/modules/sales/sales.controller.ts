@@ -75,7 +75,7 @@ export class SalesController {
   @Post(':id/payment')
   async addPayment(
     @Param('id') id: string,
-    @Body() body: { amount: number; paymentMode: string; reference?: string },
+    @Body() body: { amount: number; paymentMode: string; reference?: string; accountId?: string },
     @CurrentUser() user: any,
   ) {
     return this.salesService.addPayment(id, body, user.id, user.organizationId);

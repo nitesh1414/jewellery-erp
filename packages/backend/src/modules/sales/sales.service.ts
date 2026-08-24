@@ -218,16 +218,43 @@ export class SalesService {
       // Create payments (estimates never have payments)
       if (!isEstimate && data.payments && data.payments.length > 0) {
         for (const payment of data.payments) {
-          await tx.salePayment.create({
+          const created = await tx.salePayment.create({
             data: {
               saleId: saleRecord.id,
               amount: payment.amount,
               paymentMode: payment.paymentMode,
               reference: payment.reference,
+              accountId: payment.accountId || null,
               date: new Date(),
               employeeId: userId,
             },
           });
+          // Record the money into the chosen cash/bank ledger account.
+          if (payment.accountId) {
+            const acc = await tx.ledgerAccount.findFirst({ where: { id: payment.accountId, organizationId } });
+            if (acc) {
+              await tx.ledgerEntry.create({
+                data: {
+                  organizationId,
+                  branchId,
+                  accountId: payment.accountId,
+                  type: 'CREDIT',
+                  amount: payment.amount,
+                  date: new Date(),
+                  description: `Payment on ${billNumber}`,
+                  reference: billNumber,
+                  linkedTo: 'SALE_PAYMENT',
+                  linkedId: created.id,
+                  employeeId: userId,
+                  employeeName: 'System',
+                },
+              });
+              await tx.ledgerAccount.update({
+                where: { id: payment.accountId },
+                data: { currentBalance: { increment: payment.amount } },
+              });
+            }
+          }
         }
       }
 
@@ -600,7 +627,7 @@ export class SalesService {
   /**
    * Add a payment to an existing bill (settle outstanding / half-payment flow)
    */
-  async addPayment(id: string, data: { amount: number; paymentMode: string; reference?: string }, userId: string, organizationId: string) {
+  async addPayment(id: string, data: { amount: number; paymentMode: string; reference?: string; accountId?: string }, userId: string, organizationId: string) {
     const sale = await this.prisma.sale.findFirst({ where: { id, organizationId } });
     if (!sale) throw new NotFoundException('Bill not found');
     if (['CANCELLED', 'RETURNED'].includes(sale.status)) {
@@ -618,16 +645,44 @@ export class SalesService {
 
     return this.prisma.$transaction(async (tx) => {
       // Add sale payment
-      await tx.salePayment.create({
+      const salePayment = await tx.salePayment.create({
         data: {
           saleId: id,
           amount: data.amount,
           paymentMode: data.paymentMode,
           reference: data.reference || '',
+          accountId: data.accountId || null,
           date: new Date(),
           employeeId: userId,
         },
       });
+
+      // Record the money into the chosen cash/bank ledger account.
+      if (data.accountId) {
+        const acc = await tx.ledgerAccount.findFirst({ where: { id: data.accountId, organizationId } });
+        if (acc) {
+          await tx.ledgerEntry.create({
+            data: {
+              organizationId,
+              branchId: sale.branchId,
+              accountId: data.accountId,
+              type: 'CREDIT',
+              amount: data.amount,
+              date: new Date(),
+              description: `Payment received on ${sale.billNumber} (${data.paymentMode})`,
+              reference: sale.billNumber,
+              linkedTo: 'SALE_PAYMENT',
+              linkedId: salePayment.id,
+              employeeId: userId,
+              employeeName: 'System',
+            },
+          });
+          await tx.ledgerAccount.update({
+            where: { id: data.accountId },
+            data: { currentBalance: { increment: data.amount } },
+          });
+        }
+      }
 
       const newPaid = Math.round((sale.paidAmount + data.amount) * 100) / 100;
       const newBalance = Math.round((sale.netAmount - newPaid) * 100) / 100;

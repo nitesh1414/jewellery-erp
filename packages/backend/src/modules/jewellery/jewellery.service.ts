@@ -240,7 +240,18 @@ export class JewelleryService {
     const item = await this.prisma.jewelleryItem.findFirst({ where: { id, organizationId } });
     if (!item) throw new NotFoundException('Jewellery item not found');
 
-    return this.prisma.jewelleryItem.update({ where: { id }, data });
+    // Convert date strings to Date objects so Prisma accepts them.
+    const updateData: any = { ...data };
+    if (updateData.purchaseDate && !(updateData.purchaseDate instanceof Date)) {
+      updateData.purchaseDate = new Date(updateData.purchaseDate);
+    }
+    // Changing the barcode is not allowed here (uniqueness protections).
+    delete updateData.barcode;
+    delete updateData.id;
+    delete updateData.organizationId;
+    delete updateData.branchId;
+
+    return this.prisma.jewelleryItem.update({ where: { id }, data: updateData });
   }
 
   /**
