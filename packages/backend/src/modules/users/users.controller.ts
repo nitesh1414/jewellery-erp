@@ -94,12 +94,12 @@ export class UsersController {
           branchId: body.branchId || (Array.isArray(branchIds) && branchIds[0]) || user.branchId,
         },
       });
-      // Replace multi-branch access.
+      // Replace multi-branch access (avoid createMany for SQLite compat).
       if (Array.isArray(branchIds)) {
         await tx.userBranch.deleteMany({ where: { userId: id } });
-        await tx.userBranch.createMany({
-          data: branchIds.map((bid) => ({ userId: id, branchId: bid })),
-        });
+        for (const bid of branchIds) {
+          await tx.userBranch.create({ data: { userId: id, branchId: bid } });
+        }
       }
       return result;
     });
