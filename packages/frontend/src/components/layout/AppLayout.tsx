@@ -43,8 +43,10 @@ export function AppLayout() {
       <TopNav />
       <ScrollToTop />
       <SetupRedirect />
-      <main className="flex-1 overflow-auto p-6">
-        <Outlet />
+      <main className="flex-1 overflow-auto">
+        <div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8">
+          <Outlet />
+        </div>
       </main>
       <QuickActionFAB />
       <KeyboardShortcutsHelp />

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
-import { Save, Settings, Building, Receipt, Percent, Shield, Diamond, Plus, X, Gem, Tag, BadgeCheck, Upload } from 'lucide-react';
+import { Save, Building, Receipt, Percent, Diamond, Plus, X, Gem, Tag, BadgeCheck, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<'shop' | 'invoice' | 'tax' | 'metals' | 'purities' | 'hallmark' | 'rates' | 'roles'>('shop');
+  const [tab, setTab] = useState<'shop' | 'invoice' | 'tax' | 'metals' | 'purities' | 'hallmark' | 'rates'>('shop');
 
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings() });
   const { data: rates } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates() });
@@ -97,11 +97,14 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h1 className="page-title">Settings</h1><p className="text-gray-500 text-sm mt-1">Shop, taxes, metals, purities, rates</p></div>
+        <div>
+          <h1 className="page-title">Settings</h1>
+          <p className="text-gray-500 text-sm mt-1">Shop, invoice, taxes, metals, purities, hallmarks & rates</p>
+        </div>
         <button
           onClick={() => updateMutation.mutate({ ...shopForm, ...taxForm, ...invoiceForm })}
-          disabled={updateMutation.isPending}
-          className="btn-primary"
+          disabled={updateMutation.isPending || !shopForm}
+          className="btn-primary inline-flex items-center gap-2"
         >
           <Save className="w-4 h-4" /> Save All
         </button>
@@ -116,10 +119,9 @@ export default function SettingsPage() {
           ['hallmark', 'Hallmark', BadgeCheck],
           ['purities', 'Purities', Tag],
           ['rates', 'Rate Schedule', Gem],
-          ['roles', 'Roles', Shield],
         ] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key as any)}
-            className={'px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ' + (tab === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
+            className={'px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 whitespace-nowrap ' + (tab === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
             <Icon className="w-4 h-4" />{label}
           </button>
         ))}
@@ -237,22 +239,6 @@ export default function SettingsPage() {
         {/* Rates */}
         {tab === 'rates' && (
           <RatesTab rates={rates || []} onUpdate={(id: string, rate: number) => updateRateMutation.mutate({ id, rate })} />
-        )}
-
-        {/* Roles (placeholder info) */}
-        {tab === 'roles' && (
-          <div className="card space-y-4">
-            <h3 className="section-title">Roles & Permissions</h3>
-            <p className="text-sm text-gray-500">System-registered roles with default permission sets:</p>
-            <div className="space-y-2">
-              {['SUPER_ADMIN', 'OWNER', 'BRANCH_MANAGER', 'ACCOUNTANT', 'SALESMAN', 'CASHIER', 'INVENTORY_MANAGER', 'GOLDSMITH', 'KARIGAR', 'JOB_WORKER'].map(r => (
-                <div key={r} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="font-medium text-sm">{r.replace('_', ' ')}</span>
-                  <span className="text-xs text-gray-400">System role</span>
-                </div>
-              ))}
-            </div>
-          </div>
         )}
       </div>
     </div>
@@ -418,7 +404,7 @@ function HallmarksTab({ hallmarks, hallmarkCharge, defaultPurities, onAdd, onUpd
 
       <div className="border-t pt-5">
         <label className="label">Add / update hallmark entry</label>
-        <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
           <div><input className="input-field" placeholder="Label — e.g. Hallmark 22K (916)" value={label} onChange={(e) => setLabel(e.target.value)} /></div>
           <div>
             <select className="input-field" value={purity} onChange={(e) => setPurity(e.target.value)}>

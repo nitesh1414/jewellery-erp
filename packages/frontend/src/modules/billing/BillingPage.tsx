@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
 import {
   Search, Scan, Plus, Trash2, Save, X, User,
-  CreditCard, Diamond, Package, ShoppingCart, UserPlus, Pencil,
+  CreditCard, Diamond, Package, ShoppingCart, UserPlus, Pencil, Receipt,
 } from 'lucide-react';
 
 interface BillItem {
@@ -127,6 +127,20 @@ export default function BillingPage() {
   useAppShortcut('app:add', () => setShowManualItem(true));
   useAppShortcut('app:new', () => handleNewBill());
 
+  // Press Enter to confirm the bill (like standard billing software).
+  useEffect(() => {
+    if (!showConfirmBill) return;
+    const fn = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleFinalizeBill();
+      }
+    };
+    window.addEventListener('keydown', fn);
+    return () => window.removeEventListener('keydown', fn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showConfirmBill]);
+
   // === DATA QUERIES ===
   const { data: customerResults } = useQuery({
     queryKey: ['customer-search', customerSearch],
@@ -134,9 +148,15 @@ export default function BillingPage() {
     enabled: customerSearch.length >= 1,
   });
 
+  // Debounce the inventory search so a request happens only after typing pauses.
+  const [inventorySearchDebounced, setInventorySearchDebounced] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setInventorySearchDebounced(inventorySearch), 250);
+    return () => clearTimeout(t);
+  }, [inventorySearch]);
   const { data: inventoryItems } = useQuery({
-    queryKey: ['inventory-select', inventorySearch],
-    queryFn: () => api.getJewelleryItems({ search: inventorySearch, status: 'IN_STOCK', limit: 20 }),
+    queryKey: ['inventory-select', inventorySearchDebounced],
+    queryFn: () => api.getJewelleryItems({ search: inventorySearchDebounced, status: 'IN_STOCK', limit: 30 }),
     enabled: showInventorySelect,
   });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
@@ -489,12 +509,14 @@ export default function BillingPage() {
               <p className="text-[10px] text-gray-400 mt-1">Point a barcode scanner here — it adds the item automatically.</p>
             </div>
 
-            <div className="flex gap-2">
-              <button onClick={() => setShowManualItem(true)} className="btn-secondary whitespace-nowrap" title="Manual Item (F5)">
-                <Plus className="w-4 h-4" /> Manual
+            <div className="flex gap-2 shrink-0">
+              <button onClick={() => setShowManualItem(true)} title="Manual Item (F5)"
+                className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:border-primary-300 hover:text-primary-700 transition-all whitespace-nowrap">
+                <Plus className="w-4 h-4 text-primary-500" /> Manual
               </button>
-              <button onClick={() => setShowInventorySelect(true)} className="btn-secondary whitespace-nowrap" title="From Inventory (F9)">
-                <Package className="w-4 h-4" /> Inventory
+              <button onClick={() => setShowInventorySelect(true)} title="From Inventory (F9)"
+                className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:border-primary-300 hover:text-primary-700 transition-all whitespace-nowrap">
+                <Package className="w-4 h-4 text-primary-500" /> Inventory
               </button>
             </div>
           </div>
@@ -714,40 +736,61 @@ export default function BillingPage() {
       {/* Generate Bill Confirmation Modal */}
       {showConfirmBill && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirmBill(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">{billKind === 'ESTIMATE' ? 'Save Estimated Bill' : 'Generate Bill'}</h3>
-              <button onClick={() => setShowConfirmBill(false)} className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
-            </div>
-            <div className="px-6 py-4 max-h-[55vh] overflow-y-auto">
-              {customer?.name && <p className="text-sm font-medium mb-2">{customer.name}{customer.mobile ? ` · ${customer.mobile}` : ''}</p>}
-              <table className="w-full text-sm">
-                <thead><tr className="border-b border-gray-100"><th className="text-left py-2 text-gray-500">Item</th><th className="text-right py-2 text-gray-500">Wt</th><th className="text-right py-2 text-gray-500">Amount</th></tr></thead>
-                <tbody>
-                  {items.map((it: any, idx: number) => (
-                    <tr key={idx} className="border-b border-gray-50">
-                      <td className="py-2">{it.particular}</td>
-                      <td className="py-2 text-right">{it.netWeight?.toFixed(3)}g</td>
-                      <td className="py-2 text-right">₹{fm(it.totalAmount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="flex justify-end mt-3 space-y-1 text-sm">
-                <div className="w-64 space-y-1">
-                  <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>₹{fm(totals.subtotal)}</span></div>
-                  {discountAmount > 0 && <div className="flex justify-between"><span className="text-gray-500">Discount</span><span className="text-red-600">-₹{fm(discountAmount)}</span></div>}
-                  {billType === 'GST' && <><div className="flex justify-between"><span className="text-gray-500">CGST</span><span className="text-green-600">₹{totals.totalCgst.toFixed(2)}</span></div><div className="flex justify-between"><span className="text-gray-500">SGST</span><span className="text-green-600">₹{totals.totalSgst.toFixed(2)}</span></div></>}
-                  <div className="flex justify-between font-bold border-t pt-2"><span>Net Amount</span><span>₹{fm(netAmount)}</span></div>
-                  {totalPaid > 0 && <div className="flex justify-between text-green-600"><span>Paid</span><span>₹{fm(totalPaid)}</span></div>}
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 flex flex-col max-h-[88vh]" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center"><Receipt className="w-5 h-5" /></div>
+                <div>
+                  <h3 className="text-lg font-semibold leading-tight">{billKind === 'ESTIMATE' ? 'Save Estimated Bill' : 'Confirm & Generate Bill'}</h3>
+                  <p className="text-xs text-gray-400">{items.length} item{items.length === 1 ? '' : 's'}{customer?.name ? ` · ${customer.name}` : ''}</p>
                 </div>
               </div>
+              <button onClick={() => setShowConfirmBill(false)} className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
+
+            {/* Body: items + totals side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-0 flex-1 min-h-0">
+              <div className="overflow-y-auto px-6 py-4 border-r border-gray-100">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-gray-100 text-gray-500"><th className="text-left py-2 font-medium">Item</th><th className="text-right py-2 font-medium">Wt</th><th className="text-right py-2 font-medium">Amount</th></tr></thead>
+                  <tbody>
+                    {items.map((it: any, idx: number) => (
+                      <tr key={idx} className="border-b border-gray-50">
+                        <td className="py-2.5">{it.particular}<span className="block text-[11px] text-gray-400">{it.purity}{it.barcode ? ` · #${it.barcode}` : ''}</span></td>
+                        <td className="py-2.5 text-right">{it.netWeight?.toFixed(3)}g</td>
+                        <td className="py-2.5 text-right font-medium">₹{fm(it.totalAmount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Totals */}
+              <div className="p-6 bg-gray-50/50 space-y-2 text-sm">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bill Summary</p>
+                <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span className="font-medium">₹{fm(totals.subtotal)}</span></div>
+                {discountAmount > 0 && <div className="flex justify-between text-red-600"><span>Discount</span><span>-₹{fm(discountAmount)}</span></div>}
+                <div className="flex justify-between"><span className="text-gray-600">Taxable</span><span className="font-medium">₹{fm(taxableAmount)}</span></div>
+                {billType === 'GST' && <>
+                  <div className="flex justify-between text-green-700"><span>CGST ({(Number(settings?.defaultCgstRate ?? 1.5)).toFixed(1)}%)</span><span>₹{totals.totalCgst.toFixed(2)}</span></div>
+                  <div className="flex justify-between text-green-700"><span>SGST ({(Number(settings?.defaultSgstRate ?? 1.5)).toFixed(1)}%)</span><span>₹{totals.totalSgst.toFixed(2)}</span></div>
+                </>}
+                <div className="flex justify-between text-gray-500"><span>Round Off</span><span>{roundOff.toFixed(2)}</span></div>
+                <div className="flex justify-between items-center bg-primary-600 rounded-xl px-4 py-3 text-white mt-2">
+                  <span className="font-semibold">Net Amount</span><span className="text-lg font-bold">₹{fm(netAmount)}</span>
+                </div>
+                {totalPaid > 0 && <div className="flex justify-between text-green-700 font-medium"><span>Paid</span><span>₹{fm(totalPaid)}</span></div>}
+                {balanceAmount > 0 && <div className="flex justify-between text-red-600 font-medium"><span>Balance</span><span>₹{fm(balanceAmount)}</span></div>}
+              </div>
+            </div>
+
+            {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
-              <span className="text-xs text-gray-400">{billKind === 'ESTIMATE' ? 'Saved as an estimate — stock & GST are applied when you confirm it into a bill.' : 'A bill number is generated and stock/ledger are updated. The invoice opens for printing.'}</span>
+              <span className="text-xs text-gray-400 max-w-sm">{billKind === 'ESTIMATE' ? 'Saved as an estimate — stock & GST are applied when you confirm it into a bill.' : 'A bill number is generated and stock/ledger are updated. The invoice opens for printing.'}</span>
               <div className="flex gap-2 shrink-0">
                 <button onClick={() => setShowConfirmBill(false)} className="btn-secondary text-sm">Back</button>
-                <button onClick={() => { setShowConfirmBill(false); handleFinalizeBill(); }} disabled={createSaleMutation.isPending} className="btn-primary text-sm">
+                <button onClick={() => { setShowConfirmBill(false); handleFinalizeBill(); }} disabled={createSaleMutation.isPending} className="btn-primary text-sm inline-flex items-center gap-2">
                   <Save className="w-4 h-4" /> {createSaleMutation.isPending ? 'Saving...' : billKind === 'ESTIMATE' ? 'Save Estimate' : 'Generate & Print'}
                 </button>
               </div>
@@ -817,46 +860,50 @@ export default function BillingPage() {
       {/* Inventory Select Modal */}
       {showInventorySelect && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowInventorySelect(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Select from Inventory <span className="text-xs text-gray-400 font-normal">(F9)</span></h3>
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input type="text" placeholder="Search by barcode, design, SKU..." className="input-field pl-10" value={inventorySearch} onChange={e => setInventorySearch(e.target.value)} autoFocus />
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+            <div className="px-6 pt-6 pb-3">
+              <h3 className="text-lg font-semibold">Select from Inventory <span className="text-xs text-gray-400 font-normal">(F9)</span></h3>
+              <div className="relative mt-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input type="text" placeholder="Search by barcode, design, SKU..." className="input-field pl-10" value={inventorySearch} onChange={e => setInventorySearch(e.target.value)} autoFocus />
+              </div>
             </div>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {inventoryItems?.items?.map((item: any) => (
-                <div key={item.id} onClick={() => {
-                  if (item.status !== 'IN_STOCK') { toast.error('Item not available'); return; }
-                  addItemToBill({
-                    jewelleryItemId: item.id, barcode: item.barcode,
-                    particular: item.designCode + ' - ' + item.purity, hsnCode: item.hsnCode, purity: item.purity,
-                    quantity: 1, grossWeight: item.grossWeight, netWeight: item.netWeight,
-                    ratePerGram: item.currentRate, metalValue: item.netWeight * item.currentRate,
-                    makingCharges: 0, chargeDetails: [{ type: 'MAKING', calculationType: item.makingChargeType, value: item.makingChargeValue, amount: 0 }],
-                    hallMarkAmount: 0, discount: 0, urd: 0, cgst: 0, sgst: 0, totalAmount: 0,
-                  });
-                  setShowInventorySelect(false);
-                  toast.success('Added: ' + item.designCode);
-                  barcodeInputRef.current?.focus();
-                }} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-primary-200 hover:bg-primary-50 cursor-pointer transition-all">
-                  <div className="flex items-center gap-3">
-                    <Diamond className="w-5 h-5 text-gray-300" />
-                    <div>
-                      <p className="font-medium text-sm">{item.designCode}</p>
-                      <p className="text-xs text-gray-400">#{item.barcode} | {item.purity}</p>
+            <div className="flex-1 min-h-0 overflow-y-auto px-6">
+              <div className="space-y-2 pb-2">
+                {inventoryItems?.items?.map((item: any) => (
+                  <div key={item.id} onClick={() => {
+                    if (item.status !== 'IN_STOCK') { toast.error('Item not available'); return; }
+                    addItemToBill({
+                      jewelleryItemId: item.id, barcode: item.barcode,
+                      particular: item.designCode + ' - ' + item.purity, hsnCode: item.hsnCode, purity: item.purity,
+                      quantity: 1, grossWeight: item.grossWeight, netWeight: item.netWeight,
+                      ratePerGram: item.currentRate, metalValue: item.netWeight * item.currentRate,
+                      makingCharges: 0, chargeDetails: [{ type: 'MAKING', calculationType: item.makingChargeType, value: item.makingChargeValue, amount: 0 }],
+                      hallMarkAmount: 0, discount: 0, urd: 0, cgst: 0, sgst: 0, totalAmount: 0,
+                    });
+                    setShowInventorySelect(false);
+                    toast.success('Added: ' + item.designCode);
+                    barcodeInputRef.current?.focus();
+                  }} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-primary-200 hover:bg-primary-50 cursor-pointer transition-all">
+                    <div className="flex items-center gap-3">
+                      <Diamond className="w-5 h-5 text-gray-300" />
+                      <div>
+                        <p className="font-medium text-sm">{item.designCode}</p>
+                        <p className="text-xs text-gray-400">#{item.barcode} | {item.purity}</p>
+                      </div>
+                    </div>
+                    <div className="text-right text-sm">
+                      <p className="font-medium">₹{fm(item.currentRate)}/g</p>
+                      <p className="text-xs text-gray-400">{item.netWeight}g</p>
                     </div>
                   </div>
-                  <div className="text-right text-sm">
-                    <p className="font-medium">₹{fm(item.currentRate)}/g</p>
-                    <p className="text-xs text-gray-400">{item.netWeight}g</p>
-                  </div>
-                </div>
-              ))}
-              {(!inventoryItems?.items || inventoryItems.items.length === 0) && (
-                <p className="text-center py-8 text-gray-400">No items found in inventory</p>
-              )}
+                ))}
+                {(!inventoryItems?.items || inventoryItems.items.length === 0) && (
+                  <p className="text-center py-8 text-gray-400">No items found in inventory</p>
+                )}
+              </div>
             </div>
-            <div className="flex justify-end mt-4 pt-3 border-t">
+            <div className="flex justify-end px-6 py-4 border-t border-gray-100">
               <button onClick={() => setShowInventorySelect(false)} className="btn-secondary">Close (Esc)</button>
             </div>
           </div>
