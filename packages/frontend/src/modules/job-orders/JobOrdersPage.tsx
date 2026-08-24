@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import {
   Search, Plus, Briefcase, Clock, CheckCircle, AlertCircle,
   User, Calendar, HandCoins, FileText, ChevronRight, HardHat, UserPlus, X, History,
@@ -14,6 +15,9 @@ export default function JobOrdersPage() {
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any>(null);
+
+  // Ctrl/Cmd+A → new job order
+  useAppShortcut('app:add', () => { setForm({ customerId: '', customerName: '', customerMobile: '', productDescription: '', purity: '22K', metalType: 'GOLD', expectedWeight: 0, expectedDelivery: '', estimatedAmount: 0, advanceAmount: 0, notes: '', assignEmployeeId: '', assignDueDate: '' }); setShowCreate(true); });
   const [showAdvance, setShowAdvance] = useState(false);
   const [showBill, setShowBill] = useState(false);
   const [form, setForm] = useState<any>({ customerId: '', customerName: '', customerMobile: '', productDescription: '', purity: '22K', metalType: 'GOLD', expectedWeight: 0, expectedDelivery: '', estimatedAmount: 0, advanceAmount: 0, notes: '', assignEmployeeId: '', assignDueDate: '' });

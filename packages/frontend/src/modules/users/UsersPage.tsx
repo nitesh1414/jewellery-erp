@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Plus, Edit2, Power, X } from 'lucide-react';
 
 const DEFAULT_ROLES = ['SUPER_ADMIN', 'OWNER', 'BRANCH_MANAGER', 'ACCOUNTANT', 'SALESMAN', 'CASHIER', 'INVENTORY_MANAGER', 'GOLDSMITH', 'KARIGAR', 'JOB_WORKER'];
@@ -34,6 +35,9 @@ export default function UsersPage() {
   });
 
   function resetForm() { setForm({ name: '', email: '', password: '', role: 'SALESMAN', branchId: '', branchIds: [] as string[] }); setEditing(null); }
+
+  // Ctrl/Cmd+A → add user
+  useAppShortcut('app:add', () => { resetForm(); setShowForm(true); });
   function openEdit(u: any) {
     setEditing(u);
     setForm({

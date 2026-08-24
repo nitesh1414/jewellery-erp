@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Plus, Search, HardHat, IndianRupee, Wallet, Pencil, Trash2, X } from 'lucide-react';
 
 const ROLES = ['GOLDSMITH', 'WORKER', 'POLISHER', 'STONE_SETTER', 'DESIGNER', 'SALESMAN', 'ACCOUNTANT', 'MANAGER'];
@@ -13,6 +14,9 @@ export default function WorkersPage() {
   const [editing, setEditing] = useState<any>(null);
   const [selected, setSelected] = useState<any>(null);
   const [showPay, setShowPay] = useState(false);
+
+  // Ctrl/Cmd+A → add worker
+  useAppShortcut('app:add', () => { setEditing(null); setForm({ name: '', mobile: '', role: 'GOLDSMITH', designation: '', salary: 0, employeeCode: '' }); setShowAdd(true); });
   const [form, setForm] = useState({ name: '', mobile: '', role: 'GOLDSMITH', designation: '', salary: 0, employeeCode: '' });
   const [payForm, setPayForm] = useState({ type: 'PAYMENT', amount: 0, periodMonth: '', paymentMode: 'CASH', reference: '', notes: '' });
 

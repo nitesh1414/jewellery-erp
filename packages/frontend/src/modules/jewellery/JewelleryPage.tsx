@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Plus, Search, Package, Printer, Pencil, Diamond, X } from 'lucide-react';
 
 export default function JewelleryPage() {
@@ -89,6 +90,9 @@ export default function JewelleryPage() {
     setEditingId(item.id);
     setShowAdd(true);
   };
+
+  // Ctrl/Cmd+A → add item
+  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
 
   const bulkMutation = useMutation({
     mutationFn: (items: any[]) => api.post('/jewellery/bulk', { items }),

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import {
   Search, Scan, Plus, Trash2, Save, X, User,
   CreditCard, Diamond, Package, ShoppingCart, UserPlus, Pencil,
@@ -87,6 +88,12 @@ export default function BillingPage() {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       const inInput = ['INPUT', 'SELECT', 'TEXTAREA'].includes(tag);
+      // Ctrl/Cmd+Enter saves/finalizes anywhere on the billing screen.
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleFinalizeBill();
+        return;
+      }
       // Function keys (F2–F9) & Escape must work even while an input is
       // focused (e.g. the barcode box), like in Tally/Busy billing software.
       if (inInput && e.key !== 'Escape' && !/^F[0-9]+$/.test(e.key)) return;
@@ -106,6 +113,7 @@ export default function BillingPage() {
           else if (showInventorySelect) setShowInventorySelect(false);
           else if (showNewCustomer) setShowNewCustomer(false);
           else if (showPaymentPanel) setShowPaymentPanel(false);
+          else if (showConfirmBill) setShowConfirmBill(false);
           break;
       }
     };
@@ -114,6 +122,10 @@ export default function BillingPage() {
   });
 
   useEffect(() => { barcodeInputRef.current?.focus(); }, []);
+
+  // Global shortcuts: Ctrl/Cmd+A = add manual item, Ctrl/Cmd+N = new bill
+  useAppShortcut('app:add', () => setShowManualItem(true));
+  useAppShortcut('app:new', () => handleNewBill());
 
   // === DATA QUERIES ===
   const { data: customerResults } = useQuery({

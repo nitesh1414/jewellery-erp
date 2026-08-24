@@ -63,6 +63,11 @@ npm run build          # compile every package
 
 ### Daily use cheatsheet
 
+- **Keyboard shortcuts** (web + desktop): `Ctrl+A` add/new (context-aware),
+  `Ctrl+N` new bill (POS), `Ctrl+Enter` save/finalize bill, `Esc` cancel/close
+  any modal, `Alt+N` quick-action menu, `F1` or `?` for the full list. Billing
+  uses F2 new bill, F3 customer, F4 scan, F5 manual, F6 payment, F7 save,
+  F8 discount, F9 inventory.
 - **Billing** (`/billing`): scan barcodes (F4) or manual items (F5); switch the
   top-right tabs between **Bill** and **Estimated Bill**. Estimates get their
   own `EST-…` number, stay editable (Bills → Estimated Bills → ✏) and are

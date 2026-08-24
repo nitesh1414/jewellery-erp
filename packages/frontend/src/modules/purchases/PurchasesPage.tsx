@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Plus, Search, Truck, Trash2, Package, Eye, Pencil, X } from 'lucide-react';
 
 interface PurchaseItem {
@@ -138,6 +139,9 @@ export default function PurchasesPage() {
     setItemForm(emptyItem());
     setForm({ supplierId: '', invoiceNumber: '', invoiceDate: new Date().toISOString().split('T')[0], paidAmount: 0, paymentMode: 'CASH', accountId: '', notes: '', location: '' });
   };
+
+  // Ctrl/Cmd+A → new purchase
+  useAppShortcut('app:add', () => { resetForm(); setShowCreate(true); });
 
   const fm = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 

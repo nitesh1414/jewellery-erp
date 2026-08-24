@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { Plus, Shield, Pencil, Trash2, X, Check, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 
 export default function RolesPage() {
   const qc = useQueryClient();
@@ -40,6 +41,9 @@ export default function RolesPage() {
     setForm({ name: '', description: '', permissions: [] });
     setShowForm(true);
   }
+
+  // Ctrl/Cmd+A → new custom role
+  useAppShortcut('app:add', () => openNew());
 
   function hasPerm(name: string) { return form.permissions.includes(name); }
   function togglePerm(name: string) {

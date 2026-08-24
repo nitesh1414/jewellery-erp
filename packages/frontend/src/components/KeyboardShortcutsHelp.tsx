@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react';
 import { Keyboard, X } from 'lucide-react';
 
 const shortcuts = [
+  { section: 'Global (anywhere)', items: [
+    { key: 'Ctrl+A', desc: 'Add / new (bill, item, customer…)' },
+    { key: 'Ctrl+N', desc: 'New bill (reset POS)' },
+    { key: 'Esc', desc: 'Cancel / close open modal' },
+    { key: 'Alt+N', desc: 'Open Quick Action menu' },
+    { key: 'F1 / ?', desc: 'Show this shortcuts help' },
+    { key: 'Ctrl+P', desc: 'Print current page' },
+  ]},
   { section: 'Billing / POS', items: [
     { key: 'F2', desc: 'New bill (reset current)' },
     { key: 'F3', desc: 'Focus customer search' },
@@ -11,16 +19,8 @@ const shortcuts = [
     { key: 'F7', desc: 'Save / finalize bill' },
     { key: 'F8', desc: 'Focus discount field' },
     { key: 'F9', desc: 'Pick from inventory' },
-    { key: 'Esc', desc: 'Close any modal' },
+    { key: 'Ctrl+Enter', desc: 'Save / finalize bill' },
     { key: 'Enter', desc: 'Confirm / submit / scan' },
-  ]},
-  { section: 'Navigation', items: [
-    { key: 'Alt+N', desc: 'Open Quick Action menu' },
-    { key: 'F1 / ?', desc: 'Show this shortcuts help' },
-    { key: 'Ctrl+K', desc: 'Global search (top bar)' },
-  ]},
-  { section: 'Reports & Jobs', items: [
-    { key: 'Ctrl+P', desc: 'Print current page' },
   ]},
 ];
 

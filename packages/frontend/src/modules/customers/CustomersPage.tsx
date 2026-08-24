@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { api } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Search, Plus, Phone, Edit2, Trash2, ChevronLeft, ChevronRight, Users as UsersIcon } from 'lucide-react';
 
 export default function CustomersPage() {
@@ -35,6 +36,9 @@ export default function CustomersPage() {
   });
 
   const resetForm = () => setForm({ name: '', mobile: '', email: '', address: '', city: '', state: '', gstin: '', notes: '' });
+
+  // Ctrl/Cmd+A → add customer
+  useAppShortcut('app:add', () => { setEditingCustomer(null); resetForm(); setShowAdd(true); });
 
   // Search debounce
   const [searchInput, setSearchInput] = useState('');

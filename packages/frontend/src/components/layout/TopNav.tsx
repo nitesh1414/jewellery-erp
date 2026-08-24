@@ -8,7 +8,7 @@ import { BranchSelector } from './BranchSelector';
 import {
   LayoutDashboard, ShoppingCart, Receipt, Users, Diamond, Package, Barcode,
   ShoppingBag, Truck, Briefcase, Gem, Wrench, FileBarChart, Settings, LogOut,
-  Bell, ChevronDown, Search, HandCoins, Clock, Wallet, CreditCard,
+  Bell, ChevronDown, HandCoins, Clock, Wallet, CreditCard,
   Building, Users as UsersIcon,
 } from 'lucide-react';
 
@@ -81,7 +81,6 @@ export function TopNav() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [showUser, setShowUser] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   // company details from Settings (shop name + logo shown everywhere)
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
   // live date-time in the header bar (updates every second, no separate bar)
@@ -145,17 +144,6 @@ export function TopNav() {
     return false;
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    const q = searchQuery.trim();
-    if (/^JOB-\d+/i.test(q)) navigate(`/job-orders`);
-    else if (/^GST-\d+/i.test(q) || /^NG-\d+/i.test(q)) navigate(`/bills?search=${q}`);
-    else if (/^G\d{8,}/i.test(q)) navigate(`/jewellery?search=${q}`);
-    else navigate(`/bills?search=${q}`);
-    setSearchQuery('');
-  };
-
   const fmt = (n: number) => '₹' + (n || 0).toLocaleString('en-IN');
   const goldRate = (rates || []).find((r: any) => r.metalType === 'GOLD' && r.purity === '22K');
   const silverRate = (rates || []).find((r: any) => r.metalType === 'SILVER');
@@ -179,20 +167,6 @@ export function TopNav() {
               <p className="text-[10px] text-gray-500 leading-tight">ERP & POS</p>
             </div>
           </NavLink>
-
-          {/* Quick search */}
-          <form onSubmit={handleSearch} className="hidden md:flex items-center gap-1 flex-1 max-w-xs">
-            <div className="relative w-full">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search bill # / barcode / job #..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-          </form>
 
           {/* Main menu items */}
           <nav className="hidden lg:flex items-center gap-1 flex-1">

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Search, Plus, Gem, ArrowUpRight, Eye, Pencil, X } from 'lucide-react';
 
 export default function UrdPage() {
@@ -9,6 +10,9 @@ export default function UrdPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
+
+  // Ctrl/Cmd+A → new URD
+  useAppShortcut('app:add', () => { setEditingId(null); setForm({ customerName: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, deduction: 0, meltingLoss: 0, notes: '' }); setShowForm(true); });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewing, setViewing] = useState<any>(null);
   const [form, setForm] = useState({ customerName: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, deduction: 0, meltingLoss: 0, notes: '' });

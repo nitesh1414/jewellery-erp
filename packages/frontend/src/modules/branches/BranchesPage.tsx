@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Plus, Edit2, MapPin, Phone } from 'lucide-react';
 
 export default function BranchesPage() {
@@ -24,6 +25,9 @@ export default function BranchesPage() {
   });
 
   function resetForm() { setForm({ name: '', code: '', address: '', city: '', state: '', pin: '', phone: '', isPrimary: false }); setEditing(null); }
+
+  // Ctrl/Cmd+A → add branch
+  useAppShortcut('app:add', () => { resetForm(); setShowForm(true); });
   function openEdit(b: any) { setEditing(b); setForm({ name: b.name, code: b.code, address: b.address || '', city: b.city || '', state: b.state || '', pin: b.pin || '', phone: b.phone || '', isPrimary: b.isPrimary }); }
   function submit() {
     if (!form.name) return;

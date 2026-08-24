@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Plus, Trash2 } from 'lucide-react';
 
 const SOURCES = ['Rent Received', 'Interest', 'Commission', 'Old Gold Scrap', 'Misc Income', 'Refund', 'Other'];
@@ -8,6 +9,12 @@ const SOURCES = ['Rent Received', 'Interest', 'Commission', 'Old Gold Scrap', 'M
 export default function IncomePage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+
+  // Ctrl/Cmd+A → add income
+  useAppShortcut('app:add', () => {
+    setForm({ source: 'Misc Income', amount: 0, accountId: '', description: '', date: new Date().toISOString().split('T')[0], receivedInMode: 'CASH', reference: '' });
+    setShowForm(true);
+  });
   const [form, setForm] = useState<any>({ source: 'Misc Income', amount: 0, accountId: '', description: '', date: new Date().toISOString().split('T')[0], receivedInMode: 'CASH', reference: '' });
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.get<any>('/ledger/accounts') });
   const { data: incData, isLoading } = useQuery({ queryKey: ['income'], queryFn: () => api.get<any>('/ledger/income') });

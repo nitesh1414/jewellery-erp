@@ -5,6 +5,7 @@ import { KeyboardShortcutsHelp } from '../KeyboardShortcutsHelp';
 import { useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../services/api';
+import { useGlobalShortcuts } from '../../hooks/useGlobalShortcuts';
 
 // Scroll to top on route change (legacy software behavior)
 function ScrollToTop() {
@@ -36,6 +37,7 @@ function SetupRedirect() {
 }
 
 export function AppLayout() {
+  useGlobalShortcuts();
   return (
     <div className="flex flex-col min-h-screen bg-[#faf9f7]">
       <TopNav />

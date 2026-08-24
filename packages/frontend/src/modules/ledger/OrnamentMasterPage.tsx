@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Plus, Search, Pencil, Trash2, User, Heart, Users } from 'lucide-react';
 
 const GENDERS = [
@@ -16,6 +17,9 @@ export default function OrnamentMasterPage() {
   const [genderFilter, setGenderFilter] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+
+  // Ctrl/Cmd+A → add ornament
+  useAppShortcut('app:add', () => { setEditing(null); setForm({ name: '', gender: 'FEMALE', category: '', notes: '' }); setShowAdd(true); });
   const [form, setForm] = useState({ name: '', gender: 'FEMALE', category: '', notes: '' });
 
   const { data, isLoading } = useQuery({
