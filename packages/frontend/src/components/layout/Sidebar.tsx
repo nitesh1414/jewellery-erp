@@ -4,7 +4,7 @@ import {
   LayoutDashboard, ShoppingCart, Users, Package, Barcode,
   Briefcase, ShoppingBag, Truck, HandCoins,
   FileBarChart, Settings, LogOut, Diamond, ChevronLeft, ChevronRight,
-  Receipt, CircleDollarSign, Gem, HardHat, FileText, BookOpen,
+  Receipt, CircleDollarSign, Gem, HardHat, BookOpen,
 } from 'lucide-react';
 
 const navItems = [
@@ -21,7 +21,6 @@ const navItems = [
   { to: '/workers', label: 'Workers', icon: HardHat, permission: null },
   { to: '/urd', label: 'URD / Old Gold', icon: Gem, permission: null },
   { to: '/payments', label: 'Payments', icon: CircleDollarSign, permission: null },
-  { to: '/quotations', label: 'Quotations', icon: FileText, permission: null },
   { to: '/ledger/master', label: 'Ledger Master', icon: BookOpen, permission: null },
   { to: '/reports', label: 'Reports', icon: FileBarChart, permission: 'REPORTS_VIEW' },
   { to: '/settings', label: 'Settings', icon: Settings, permission: 'SETTINGS_MANAGE' },

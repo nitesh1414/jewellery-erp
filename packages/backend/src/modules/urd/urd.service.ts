@@ -4,10 +4,12 @@ import { PrismaService } from '../../common/prisma.service';
 export class UrdService {
   constructor(private prisma: PrismaService) {}
   async findAll(orgId: string, q: any) {
-    const { page = 1, limit = 20 } = q;
+    const { page = 1, limit = 20, branchId } = q;
+    const where: any = { organizationId: orgId };
+    if (branchId) where.branchId = branchId;
     const [items, total] = await Promise.all([
-      this.prisma.urdTransaction.findMany({ where: { organizationId: orgId }, skip: (page-1)*limit, take: +limit, orderBy: { createdAt: 'desc' }, include: { customer: { select: { name: true } } } }),
-      this.prisma.urdTransaction.count({ where: { organizationId: orgId } }),
+      this.prisma.urdTransaction.findMany({ where, skip: (page-1)*limit, take: +limit, orderBy: { createdAt: 'desc' }, include: { customer: { select: { name: true } } } }),
+      this.prisma.urdTransaction.count({ where }),
     ]);
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }

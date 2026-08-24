@@ -9,13 +9,15 @@ export class JobOrdersService {
     search?: string;
     status?: string;
     employeeId?: string;
+    branchId?: string;
     page?: number;
     limit?: number;
   }) {
-    const { search, status, employeeId, page = 1, limit = 20 } = query;
+    const { search, status, employeeId, branchId, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
     const where: any = { organizationId };
+    if (branchId) where.branchId = branchId;
 
     if (status) where.status = status;
     

@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { getActiveBranchId } from '../stores/branchStore';
 
 const API_BASE = '/api';
 
@@ -16,6 +17,11 @@ class ApiService {
       const token = localStorage.getItem('accessToken');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+      }
+      // Multi-branch support: scope the request to the active branch.
+      const branchId = getActiveBranchId();
+      if (branchId) {
+        config.headers['x-branch-id'] = branchId;
       }
       return config;
     });
@@ -494,32 +500,6 @@ class ApiService {
 
   async deleteOrnament(id: string) {
     const { data } = await this.client.delete('/ornaments/' + id);
-    return data;
-  }
-
-  // ====== Quotations (shareable estimate links) ======
-  async getQuotations(params?: any) {
-    const { data } = await this.client.get('/quotations', { params });
-    return data;
-  }
-
-  async getQuotation(id: string) {
-    const { data } = await this.client.get('/quotations/' + id);
-    return data;
-  }
-
-  async createQuotation(body: any) {
-    const { data } = await this.client.post('/quotations', body);
-    return data;
-  }
-
-  async updateQuotationStatus(id: string, status: string) {
-    const { data } = await this.client.put(`/quotations/${id}/status`, { status });
-    return data;
-  }
-
-  async deleteQuotation(id: string) {
-    const { data } = await this.client.delete('/quotations/' + id);
     return data;
   }
 

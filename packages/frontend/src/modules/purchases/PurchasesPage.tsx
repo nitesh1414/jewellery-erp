@@ -36,6 +36,7 @@ export default function PurchasesPage() {
     queryFn: () => api.getPurchases({ search, page, limit: 20 }),
   });
   const { data: suppliers } = useQuery({ queryKey: ['suppliers-all'], queryFn: () => api.getSuppliers({ limit: 100 }) });
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
 
   const createMutation = useMutation({
     mutationFn: (b: any) => api.createPurchase(b),
@@ -133,12 +134,11 @@ export default function PurchasesPage() {
                 <input type="date" className="input-field" value={form.invoiceDate} onChange={e => setForm({...form, invoiceDate: e.target.value})} /></div>
               <div><label className="label">Metal Type</label>
                 <select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}>
-                  <option value="GOLD">Gold</option><option value="SILVER">Silver</option>
+                  {(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
                 </select></div>
               <div><label className="label">Default Purity</label>
                 <select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}>
-                  <option value="24K">24K</option><option value="22K">22K</option><option value="18K">18K</option>
-                  <option value="SILVER_999">Silver 999</option><option value="SILVER_925">Silver 925</option>
+                  {(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_999', 'SILVER_925']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}
                 </select></div>
               <div><label className="label">Default Rate/g (₹)</label>
                 <input type="number" className="input-field" value={form.rate || ''} onChange={e => setForm({...form, rate: Number(e.target.value)})} /></div>

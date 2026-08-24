@@ -5,10 +5,11 @@ import { v4 as uuid } from 'uuid';
 export class PaymentsService {
   constructor(private prisma: PrismaService) {}
   async findAll(orgId: string, q: any) {
-    const { customerId, supplierId, page = 1, limit = 20 } = q;
+    const { customerId, supplierId, branchId, page = 1, limit = 20 } = q;
     const where: any = { organizationId: orgId };
     if (customerId) where.customerId = customerId;
     if (supplierId) where.supplierId = supplierId;
+    if (branchId) where.branchId = branchId;
     const [items, total] = await Promise.all([
       this.prisma.payment.findMany({ where, skip: (page-1)*limit, take: +limit, orderBy: { date: 'desc' } }),
       this.prisma.payment.count({ where }),

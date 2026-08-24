@@ -10,7 +10,7 @@ export class PurchasesController {
 
   @Get()
   async findAll(@CurrentUser() user: any, @Query() query: any) {
-    return this.purchasesService.findAll(user.organizationId, query);
+    return this.purchasesService.findAll(user.organizationId, { ...query, branchId: query.branchId || user.branchId || undefined });
   }
 
   @Get(':id')

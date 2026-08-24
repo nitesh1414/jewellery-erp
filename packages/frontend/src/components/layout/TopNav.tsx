@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
+import { useBranchStore } from '../../stores/branchStore';
 import { api } from '../../services/api';
+import { BranchSelector } from './BranchSelector';
 import {
   LayoutDashboard, ShoppingCart, Receipt, Users, Diamond, Package, Barcode,
   ShoppingBag, Truck, Briefcase, Gem, Wrench, FileBarChart, Settings, LogOut,
@@ -74,6 +76,7 @@ export function TopNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const clearBranch = useBranchStore((s) => s.clearBranch);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [showUser, setShowUser] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
@@ -130,6 +133,7 @@ export function TopNav() {
 
 
   const handleLogout = () => {
+    clearBranch();
     logout();
     navigate('/login');
   };
@@ -261,6 +265,9 @@ export function TopNav() {
               {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           </div>
+
+          {/* Branch selector (multi-branch) */}
+          <BranchSelector />
 
           {/* Notifications */}
           <div className="relative">

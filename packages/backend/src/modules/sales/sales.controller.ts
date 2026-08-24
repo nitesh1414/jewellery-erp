@@ -20,7 +20,7 @@ export class SalesController {
     @Query('limit') limit?: number,
   ) {
     return this.salesService.findAll(user.organizationId, {
-      search, status, billType, startDate, endDate, page, limit,
+      search, status, billType, branchId: user.branchId || undefined, startDate, endDate, page, limit,
     });
   }
 

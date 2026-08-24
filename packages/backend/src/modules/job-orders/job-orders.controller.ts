@@ -10,7 +10,7 @@ export class JobOrdersController {
 
   @Get()
   async findAll(@CurrentUser() user: any, @Query() query: any) {
-    return this.jobOrdersService.findAll(user.organizationId, query);
+    return this.jobOrdersService.findAll(user.organizationId, { ...query, branchId: query.branchId || user.branchId || undefined });
   }
 
   @Get('my-jobs')

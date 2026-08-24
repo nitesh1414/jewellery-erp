@@ -12,6 +12,7 @@ export default function UrdPage() {
   const [form, setForm] = useState({ customerName: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, deduction: 0, meltingLoss: 0, notes: '' });
 
   const { data } = useQuery({ queryKey: ['urd', search, page], queryFn: () => api.getUrdTransactions({ search, page, limit: 20 }) });
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
 
   const createMutation = useMutation({
     mutationFn: (b: any) => api.createUrd(b),
@@ -77,8 +78,8 @@ export default function UrdPage() {
             <h3 className="text-lg font-semibold mb-4">New URD / Old Metal Transaction</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2"><label className="label">Customer Name *</label><input className="input-field" value={form.customerName} onChange={e => setForm({...form, customerName: e.target.value})} /></div>
-              <div><label className="label">Metal</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}><option value="GOLD">Gold</option><option value="SILVER">Silver</option></select></div>
-              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}><option value="24K">24K</option><option value="22K">22K</option><option value="18K">18K</option><option value="SILVER_999">Silver 999</option><option value="SILVER_925">Silver 925</option></select></div>
+              <div><label className="label">Metal</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
+              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}>{(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_999', 'SILVER_925']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
               <div><label className="label">Gross Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.grossWeight || ''} onChange={e => setForm({...form, grossWeight: Number(e.target.value)})} /></div>
               <div><label className="label">Stone Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.stoneWeight || ''} onChange={e => setForm({...form, stoneWeight: Number(e.target.value)})} /></div>
               <div><label className="label">Net Weight (g) *</label><input type="number" step="0.001" className="input-field" value={form.netWeight || ''} onChange={e => setForm({...form, netWeight: Number(e.target.value)})} /></div>

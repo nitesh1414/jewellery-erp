@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { useBranchStore } from '../../stores/branchStore';
 import toast from 'react-hot-toast';
 import { Diamond, Eye, EyeOff } from 'lucide-react';
 
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
+  const setSelectedBranch = useBranchStore((s) => s.setSelectedBranch);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,6 +26,8 @@ export default function LoginPage() {
     try {
       const data = await api.login(email, password);
       setAuth(data.user, data.accessToken, data.refreshToken);
+      // Start with the user's primary branch.
+      setSelectedBranch(data.user?.branchId || null);
       toast.success(`Welcome, ${data.user.name}!`);
       navigate('/dashboard');
     } catch (err: any) {

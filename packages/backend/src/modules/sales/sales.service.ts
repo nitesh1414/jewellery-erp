@@ -10,16 +10,19 @@ export class SalesService {
     search?: string;
     status?: string;
     billType?: string;
+    branchId?: string;
     startDate?: string;
     endDate?: string;
     page?: number;
     limit?: number;
   }) {
-    const search = query.search; const status = query.status; const billType = query.billType; const startDate = query.startDate; const endDate = query.endDate; const page = Number(query.page ?? 1) || 1; const limit = Number(query.limit ?? 20) || 20;
+    const search = query.search; const status = query.status; const billType = query.billType; const branchId = query.branchId; const startDate = query.startDate; const endDate = query.endDate; const page = Number(query.page ?? 1) || 1; const limit = Number(query.limit ?? 20) || 20;
     const skip = (page - 1) * limit;
 
     const where: any = { organizationId };
 
+    // Scope to the active branch (selected in the header) when one is set.
+    if (branchId) where.branchId = branchId;
     if (status) where.status = status;
     if (billType) where.billType = billType;
     
@@ -104,8 +107,8 @@ export class SalesService {
     const year = new Date().getFullYear();
     const billNumber = `${prefix}-${year}-${String(settings.nextBillNumber).padStart(6, '0')}`;
 
-    // Calculate bill using backend engine
-    const calculated = this.calculateBill(data.items);
+    // Calculate bill using backend engine (GST rate from admin settings)
+    const calculated = this.calculateBill(data.items, settings.defaultGstRate ?? 3, data.isGst !== false);
 
     // Estimates cannot take payments
     if (isEstimate) data.payments = [];
@@ -245,6 +248,48 @@ export class SalesService {
         });
       }
 
+      // Sales ledger (real bills only) — credit the organisation's Sales
+      // account so a confirmed sale is reflected in the ledger & accounts,
+      // just like in a standard billing/tally software. Estimates never touch
+      // the ledger until they are confirmed into a bill.
+      if (!isEstimate) {
+        let salesAccount = await tx.ledgerAccount.findFirst({
+          where: { organizationId, name: 'Sales' },
+        });
+        if (!salesAccount) {
+          salesAccount = await tx.ledgerAccount.create({
+            data: {
+              organizationId,
+              name: 'Sales',
+              type: 'INCOME',
+              isPrimary: false,
+              isActive: true,
+              notes: 'Auto-created Sales account for billing ledger',
+            },
+          });
+        }
+        await tx.ledgerEntry.create({
+          data: {
+            organizationId,
+            branchId,
+            accountId: salesAccount.id,
+            type: 'CREDIT',
+            amount: calculated.netAmount,
+            date: data.billDate ? new Date(data.billDate) : new Date(),
+            description: `Sales ${billNumber} - ${data.customerName}`,
+            reference: billNumber,
+            linkedTo: 'SALE',
+            linkedId: saleRecord.id,
+            employeeId: userId,
+            employeeName: data.salesmanName || 'System',
+          },
+        });
+        await tx.ledgerAccount.update({
+          where: { id: salesAccount.id },
+          data: { currentBalance: { increment: calculated.netAmount } },
+        });
+      }
+
       // Update bill number sequence
       await tx.shopSettings.update({
         where: { organizationId },
@@ -303,7 +348,8 @@ export class SalesService {
 
     if (!data.items || data.items.length === 0) throw new BadRequestException('Add at least one item');
 
-    const calculated = this.calculateBill(data.items);
+    const settings = await this.prisma.shopSettings.findUnique({ where: { organizationId } });
+    const calculated = this.calculateBill(data.items, settings?.defaultGstRate ?? 3, data.isGst !== false);
     const discount = data.discount ?? estimate.discount;
     const taxable = Math.max(0, calculated.taxableAmount - (calculated.totalDiscount || 0));
 
@@ -497,6 +543,41 @@ export class SalesService {
         }
       }
 
+      // Reverse the sales ledger entry so a cancelled bill drops out of the
+      // sales/accounts ledger.
+      const salesLedgerEntry = await tx.ledgerEntry.findFirst({
+        where: { linkedTo: 'SALE', linkedId: id },
+      });
+      if (salesLedgerEntry) {
+        await tx.ledgerAccount.update({
+          where: { id: salesLedgerEntry.accountId },
+          data: { currentBalance: { decrement: salesLedgerEntry.amount } },
+        });
+        await tx.ledgerEntry.delete({ where: { id: salesLedgerEntry.id } });
+      }
+
+      // Reverse the customer ledger (offset the sale debit).
+      if (sale.customerId) {
+        const last = await tx.customerLedger.findFirst({
+          where: { customerId: sale.customerId },
+          orderBy: { createdAt: 'desc' },
+        });
+        const balance = Math.round(((last?.balance || 0) - sale.netAmount) * 100) / 100;
+        await tx.customerLedger.create({
+          data: {
+            customerId: sale.customerId,
+            transactionType: 'SALE_CANCELLED',
+            transactionId: id,
+            transactionNo: sale.billNumber,
+            date: new Date(),
+            debit: 0,
+            credit: sale.netAmount,
+            balance,
+            description: `Bill cancelled ${sale.billNumber}${reason ? ' - ' + reason : ''}`,
+          },
+        });
+      }
+
       // Audit log
       await tx.auditLog.create({
         data: {
@@ -616,7 +697,8 @@ export class SalesService {
     const where: any = {
       organizationId,
       billDate: { gte: today },
-      status: { notIn: ['CANCELLED', 'DRAFT'] },
+      status: { notIn: ['CANCELLED', 'DRAFT', 'ESTIMATE'] },
+      billType: { not: 'ESTIMATE' },
     };
 
     if (branchId) where.branchId = branchId;
@@ -647,7 +729,7 @@ export class SalesService {
   /**
    * Backend billing calculation engine
    */
-  private calculateBill(items: any[]) {
+  private calculateBill(items: any[], defaultGstRate = 3, isGst = true) {
     let subtotal = 0;
     let totalDiscount = 0;
     let totalUrd = 0;
@@ -700,8 +782,9 @@ export class SalesService {
       // Taxable amount
       const taxableAmount = this.roundMoney(metalValue + makingCharges - discount - urd);
 
-      // GST (3% total - 1.5% each for intra-state)
-      const gstRate = item.gstRate || 3;
+      // GST rate comes from admin-configured settings (DB), never hard-coded.
+      // A line can opt out of GST (e.g. URD/old gold) via item.gstIncluded.
+      const gstRate = item.gstRate || (item.gstIncluded === false ? 0 : (isGst ? defaultGstRate : 0));
       const halfRate = gstRate / 2;
       const cgst = this.roundMoney(taxableAmount * (halfRate / 100));
       const sgst = this.roundMoney(taxableAmount * (halfRate / 100));

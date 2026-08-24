@@ -5,7 +5,7 @@ import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   Search, Scan, Plus, Trash2, Save, X, User,
-  CreditCard, Diamond, Package, ShoppingCart, UserPlus, Pencil, Link2,
+  CreditCard, Diamond, Package, ShoppingCart, UserPlus, Pencil,
 } from 'lucide-react';
 
 interface BillItem {
@@ -35,9 +35,9 @@ interface BillItem {
 
 export default function BillingPage() {
   const queryClient = useQueryClient();
-  const isDesktop = !!(window as any).desktopBridge?.isDesktop;
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const customerInputRef = useRef<HTMLInputElement>(null);
+  const discountInputRef = useRef<HTMLInputElement>(null);
 
   const [customer, setCustomer] = useState<any>(null);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -59,8 +59,6 @@ export default function BillingPage() {
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentReference, setPaymentReference] = useState('');
   const [showManualItem, setShowManualItem] = useState(false);
-  const [quoteLink, setQuoteLink] = useState<string | null>(null);
-  const [quoteQr, setQuoteQr] = useState<any>(null);
   const [showInventorySelect, setShowInventorySelect] = useState(false);
   const [inventorySearch, setInventorySearch] = useState('');
 
@@ -86,7 +84,9 @@ export default function BillingPage() {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       const inInput = ['INPUT', 'SELECT', 'TEXTAREA'].includes(tag);
-      if (inInput && e.key !== 'Escape') return;
+      // Function keys (F2–F9) & Escape must work even while an input is
+      // focused (e.g. the barcode box), like in Tally/Busy billing software.
+      if (inInput && e.key !== 'Escape' && !/^F[0-9]+$/.test(e.key)) return;
 
       switch (e.key) {
         case 'F2': e.preventDefault(); handleNewBill(); break;
@@ -95,6 +95,7 @@ export default function BillingPage() {
         case 'F5': e.preventDefault(); setShowManualItem(true); break;
         case 'F6': e.preventDefault(); setShowPaymentPanel(p => !p); break;
         case 'F7': e.preventDefault(); handleFinalizeBill(); break;
+        case 'F8': e.preventDefault(); discountInputRef.current?.focus(); break;
         case 'F9': e.preventDefault(); setShowInventorySelect(true); break;
         case 'Escape':
           e.preventDefault();
@@ -124,6 +125,7 @@ export default function BillingPage() {
     enabled: showInventorySelect,
   });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
+  const { data: rateMaster } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
 
   // Load an estimated bill for editing (/billing?estimate=<id>)
   useEffect(() => {
@@ -192,8 +194,10 @@ export default function BillingPage() {
     const hallMarkAmount = (item.chargeDetails || []).filter((c: any) => c.type === 'HALLMARK').reduce((s2: number, c: any) => s2 + (c.amount || c.value || 0), 0);
     const discount = item.discount || 0;
     const urd = item.urd || 0;
+    // GST rate comes from admin-configured settings (DB), never hard-coded.
+    // A line can opt out of GST (e.g. URD/old gold) via item.gstIncluded = false.
     const taxableAmount = Math.round((metalValue + makingCharges - discount - urd) * 100) / 100;
-    const gstRate = billType === 'GST' ? 3 : 0;
+    const gstRate = (billType === 'GST' && item.gstIncluded !== false) ? Number(settings?.defaultGstRate ?? 3) : 0;
     const halfRate = gstRate / 2;
     const cgst = Math.round(taxableAmount * (halfRate / 100) * 100) / 100;
     const sgst = Math.round(taxableAmount * (halfRate / 100) * 100) / 100;
@@ -330,39 +334,6 @@ export default function BillingPage() {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to save'),
   });
 
-  const createQuotationMutation = useMutation({
-    mutationFn: (body: any) => api.createQuotation(body),
-    onSuccess: (q: any) => {
-      const url = `${window.location.origin}/q/${q.token}`;
-      setQuoteLink(url);
-      setQuoteQr(q);
-      toast.success('Quotation ' + q.quoteNumber + ' created');
-      queryClient.invalidateQueries({ queryKey: ['quotations'] });
-    },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to create quotation'),
-  });
-
-  const handleSaveAsQuotation = () => {
-    if (items.length === 0) { toast.error('Add at least one item'); return; }
-    createQuotationMutation.mutate({
-      customerId: customer?.id,
-      customerName: customer?.name || 'Walk-in Customer',
-      customerMobile: customer?.mobile || '',
-      isGst: billType === 'GST',
-      discount: discountAmount,
-      notes: narration,
-      validUntil: new Date(Date.now() + 15 * 86400000).toISOString(),
-      items: items.map(item => ({
-        particular: item.particular, hsnCode: item.hsnCode, purity: item.purity,
-        quantity: item.quantity, grossWeight: item.grossWeight, netWeight: item.netWeight,
-        ratePerGram: item.ratePerGram, metalValue: item.metalValue,
-        makingCharges: item.makingCharges, hallmarkNumber: item.hallmarkNumber,
-        hallMarkAmount: item.hallMarkAmount, discount: item.discount,
-        totalAmount: item.totalAmount,
-      })),
-    });
-  };
-
   const handleFinalizeBill = () => {
     if (items.length === 0) { toast.error('Add at least one item'); return; }
     const billData = {
@@ -380,6 +351,7 @@ export default function BillingPage() {
         makingCharges: item.makingCharges, chargeDetails: item.chargeDetails,
         hallmarkNumber: item.hallmarkNumber || undefined, hallMarkAmount: item.hallMarkAmount || 0,
         discount: item.discount, urd: item.urd, urdDocNumber: item.urdDocNumber,
+        gstIncluded: item.gstIncluded !== false,
       })),
       discount: discountAmount, discountType, isGst: billType === 'GST',
       narration,
@@ -403,6 +375,13 @@ export default function BillingPage() {
 
   const fm = (n: number) => (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
+  // Admin-managed rate for a given purity (from DB rate master, never static).
+  const getRateForPurity = (purity: string): number => {
+    const rows: any[] = (rateMaster as any) || [];
+    const exact = rows.find((r: any) => (r.purity || '').toUpperCase() === (purity || '').toUpperCase());
+    return exact ? Number(exact.rate) || 0 : 0;
+  };
+
   return (
     <div className="space-y-3 pb-6 lg:pb-4 print:hidden">
       {/* Header */}
@@ -416,6 +395,7 @@ export default function BillingPage() {
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F5</kbd> Manual ·
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F6</kbd> Payment ·
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F7</kbd> Save ·
+            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F8</kbd> Discount ·
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F9</kbd> Inventory
           </p>
         </div>
@@ -587,7 +567,7 @@ export default function BillingPage() {
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{discountType === 'PERCENTAGE' ? '%' : '₹'}</span>
-                  <input type="number" placeholder="Discount" className="input-field text-sm py-1.5 pl-6 w-full" value={discount || ''}
+                  <input ref={discountInputRef} type="number" placeholder="Discount" className="input-field text-sm py-1.5 pl-6 w-full" value={discount || ''}
                     onChange={e => setDiscount(Number(e.target.value) || 0)} />
                 </div>
                 <select value={discountType} onChange={e => setDiscountType(e.target.value as any)} className="input-field py-1.5 w-20 text-sm">
@@ -691,47 +671,17 @@ export default function BillingPage() {
                 )}
                 <div className="flex gap-2">
                   <button onClick={handleFinalizeBill} disabled={items.length === 0 || createSaleMutation.isPending}
-                    className={'flex-1 py-3 text-base ' + (billKind === 'ESTIMATE' ? 'bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors' : 'btn-primary')}>
+                    className={'flex-1 py-3 text-base inline-flex items-center justify-center gap-2 ' + (billKind === 'ESTIMATE' ? 'bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors' : 'btn-primary')}>
                     {createSaleMutation.isPending ? 'Saving...' : <><Save className="w-4 h-4" /> {billKind === 'ESTIMATE' ? 'Save Estimated Bill' : (balanceAmount <= 0 ? 'Finalize & Save' : 'Save Bill')}</>}
                   </button>
                   <button onClick={handleNewBill} className="btn-secondary" title="New Bill (F2)"><X className="w-4 h-4" /></button>
                 </div>
-                <button onClick={handleSaveAsQuotation} disabled={items.length === 0 || createQuotationMutation.isPending} className="btn-secondary w-full py-2 text-sm">
-                  <Link2 className="w-4 h-4" /> Save as Quotation (get shareable link)
-                </button>
                 {payments.length > 0 && <button onClick={() => setPayments([])} className="btn-ghost w-full text-xs py-1 text-red-500">Clear payments</button>}
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Quotation Link Modal */}
-      {quoteLink && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
-            <h3 className="font-semibold text-lg mb-1">Quotation {quoteQr?.quoteNumber} created!</h3>
-            {isDesktop ? (
-              <p className="text-sm text-gray-500 mb-3">
-                This is the desktop app — open the quote and use <strong>Print / Save as PDF</strong>, then share the PDF with your customer.
-                <span className="block text-xs text-amber-700 mt-1">The web link only works while this app is running on this PC.</span>
-              </p>
-            ) : (
-              <p className="text-sm text-gray-500 mb-3">Share this link with your customer — it opens a clean estimate page without any login:</p>
-            )}
-            {!isDesktop && <div className="bg-gray-50 border rounded-lg px-3 py-2 font-mono text-xs break-all">{quoteLink}</div>}
-            <div className="flex justify-end gap-2 mt-4">
-              {!isDesktop && (
-                <button className="btn-secondary" onClick={async () => {
-                  try { await navigator.clipboard.writeText(quoteLink); toast.success('Link copied!'); } catch { toast.error(quoteLink); }
-                }}>Copy link</button>
-              )}
-              <a href={quoteLink} target="_blank" rel="noreferrer" className="btn-primary">Open quote → Print / PDF</a>
-            </div>
-            <button onClick={() => setQuoteLink(null)} className="w-full text-center text-sm text-gray-400 hover:text-gray-600 mt-3">Close</button>
-          </div>
-        </div>
-      )}
 
       {/* Manual Item Modal */}
       {showManualItem && (
@@ -742,8 +692,12 @@ export default function BillingPage() {
               <div className="col-span-2"><label className="label">Particular</label><input className="input-field" value={manualItem.particular} onChange={e => setManualItem({ ...manualItem, particular: e.target.value })} placeholder="Gold Ring" autoFocus /></div>
               <div><label className="label">HSN</label><input className="input-field" value={manualItem.hsnCode} onChange={e => setManualItem({ ...manualItem, hsnCode: e.target.value })} /></div>
               <div><label className="label">Purity</label>
-                <select className="input-field" value={manualItem.purity} onChange={e => setManualItem({ ...manualItem, purity: e.target.value })}>
-                  <option value="24K">24K</option><option value="22K">22K</option><option value="18K">18K</option><option value="SILVER_925">Silver 925</option>
+                <select className="input-field" value={manualItem.purity} onChange={e => {
+                  const purity = e.target.value;
+                  const autoRate = getRateForPurity(purity);
+                  setManualItem((prev: any) => ({ ...prev, purity, ratePerGram: prev.ratePerGram || autoRate }));
+                }}>
+                  {(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_925']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
                 </select></div>
               <div><label className="label">Gross Wt (g)</label><input type="number" step="0.001" className="input-field" value={manualItem.grossWeight || ''} onChange={e => setManualItem({ ...manualItem, grossWeight: Number(e.target.value) })} /></div>
               <div><label className="label">Stone Wt (g)</label><input type="number" step="0.001" className="input-field" value={manualItem.stoneWeight || ''} onChange={e => setManualItem({ ...manualItem, stoneWeight: Number(e.target.value) })} placeholder="0" /></div>
@@ -866,8 +820,12 @@ export default function BillingPage() {
             <p className="text-xs text-gray-500 mb-4">Override gold rate, making charge, URD value, or exclude GST for this line only</p>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="label">Purity</label>
-                <select className="input-field" value={editForm.purity} onChange={e => setEditForm({ ...editForm, purity: e.target.value })}>
-                  {(settings?.allPurities || ['24K','22K','18K']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
+                <select className="input-field" value={editForm.purity} onChange={e => {
+                  const purity = e.target.value;
+                  const autoRate = getRateForPurity(purity);
+                  setEditForm((prev: any) => ({ ...prev, purity, ratePerGram: prev.ratePerGram || autoRate }));
+                }}>
+                  {(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_925']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
                 </select></div>
               <div><label className="label">Rate / g (₹)</label><input type="number" className="input-field" value={editForm.ratePerGram} onChange={e => setEditForm({ ...editForm, ratePerGram: Number(e.target.value) })} /></div>
               <div><label className="label">Gross Wt (g)</label><input type="number" step="0.001" className="input-field" value={editForm.grossWeight} onChange={e => setEditForm({ ...editForm, grossWeight: Number(e.target.value) })} /></div>

@@ -71,8 +71,11 @@ npm run build          # compile every package
   thermal 80 / 76 / 58 mm / estimate.
 - **Barcodes**: Barcodes → print stickers on every common label size; item
   rows in *Jewellery Items* have a 🖨 print-barcode button too.
-- **Quotations**: Billing → *Save as Quotation* gives a public link
-  (`/q/<token>`) customers can open without login.
+- **Multi-branch**: if the user has access to more than one branch, a branch
+  selector appears in the top bar. All actions (sale, purchase, expense,
+  income, URD, payment…) are recorded against the selected branch; the default
+  is the user's primary branch. Estimated bills never affect sales,
+  outstanding, today's totals or GST until confirmed into a real bill.
 - **Job work**: New Job Order picks customers from the database (or prompts to
   add new), assigns a worker, and walks CREATED → ASSIGNED → IN PROGRESS →
   READY → DELIVERED; generate the final bill when READY.

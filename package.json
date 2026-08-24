@@ -5,7 +5,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "node scripts/ensure-env.mjs && concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "node scripts/ensure-env.mjs && npm run db:generate && concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "npm run dev -w packages/backend",
     "dev:frontend": "npm run dev -w packages/frontend",
     "dev:desktop": "npm run dev -w packages/desktop-electron",

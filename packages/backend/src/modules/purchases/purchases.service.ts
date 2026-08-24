@@ -10,15 +10,17 @@ export class PurchasesService {
     supplierId?: string;
     metalType?: string;
     purity?: string;
+    branchId?: string;
     startDate?: string;
     endDate?: string;
     page?: number;
     limit?: number;
   }) {
-    const { search, supplierId, metalType, purity, startDate, endDate, page = 1, limit = 20 } = query;
+    const { search, supplierId, metalType, purity, branchId, startDate, endDate, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
     const where: any = { organizationId };
+    if (branchId) where.branchId = branchId;
 
     if (supplierId) where.supplierId = supplierId;
     if (metalType) where.metalType = metalType;

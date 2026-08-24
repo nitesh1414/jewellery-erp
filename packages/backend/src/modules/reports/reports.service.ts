@@ -4,7 +4,8 @@ import { PrismaService } from '../../common/prisma.service';
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
   async salesReport(orgId: string, q: { startDate?: string; endDate?: string; billType?: string; branchId?: string }) {
-    const where: any = { organizationId: orgId, status: { notIn: ['DRAFT', 'CANCELLED'] } };
+    // Estimated bills are not treated as confirmed sales anywhere.
+    const where: any = { organizationId: orgId, status: { notIn: ['DRAFT', 'CANCELLED', 'ESTIMATE'] }, billType: { not: 'ESTIMATE' } };
     if (q.startDate) where.billDate = { ...where.billDate, gte: new Date(q.startDate) };
     if (q.endDate) where.billDate = { ...where.billDate, lte: new Date(q.endDate) };
     if (q.billType) where.billType = q.billType;
@@ -24,8 +25,9 @@ export class ReportsService {
     };
     return { summary, sales };
   }
-  async hsnSummary(orgId: string, q: { startDate?: string; endDate?: string }) {
-    const where: any = { organizationId: orgId, status: { notIn: ['DRAFT', 'CANCELLED'] } };
+  async hsnSummary(orgId: string, q: { startDate?: string; endDate?: string; branchId?: string }) {
+    const where: any = { organizationId: orgId, status: { notIn: ['DRAFT', 'CANCELLED', 'ESTIMATE'] }, billType: { not: 'ESTIMATE' } };
+    if (q.branchId) where.branchId = q.branchId;
     if (q.startDate) where.billDate = { ...where.billDate, gte: new Date(q.startDate) };
     if (q.endDate) where.billDate = { ...where.billDate, lte: new Date(q.endDate) };
     const sales = await this.prisma.sale.findMany({ where, include: { items: true } });
@@ -59,8 +61,9 @@ export class ReportsService {
       }, {})).map(([metal, data]) => ({ metal, ...data as any })),
     };
   }
-  async jobWorkReport(orgId: string, q: { status?: string; employeeId?: string }) {
+  async jobWorkReport(orgId: string, q: { status?: string; employeeId?: string; branchId?: string }) {
     const where: any = { organizationId: orgId };
+    if (q.branchId) where.branchId = q.branchId;
     if (q.status) where.status = q.status;
     if (q.employeeId) where.assignments = { some: { employeeId: q.employeeId } };
     return this.prisma.jobOrder.findMany({ where, include: { assignments: { include: { materials: true, materialReturns: true } } }, orderBy: { createdAt: 'desc' } });

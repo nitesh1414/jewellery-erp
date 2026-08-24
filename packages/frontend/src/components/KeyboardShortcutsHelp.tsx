@@ -9,6 +9,7 @@ const shortcuts = [
     { key: 'F5', desc: 'Add manual item' },
     { key: 'F6', desc: 'Open payment panel' },
     { key: 'F7', desc: 'Save / finalize bill' },
+    { key: 'F8', desc: 'Focus discount field' },
     { key: 'F9', desc: 'Pick from inventory' },
     { key: 'Esc', desc: 'Close any modal' },
     { key: 'Enter', desc: 'Confirm / submit / scan' },

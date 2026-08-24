@@ -6,6 +6,6 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @Controller('urd')
 export class UrdController {
   constructor(private urdService: UrdService) {}
-  @Get() async findAll(@CurrentUser() u: any, @Query() q: any) { return this.urdService.findAll(u.organizationId, q); }
+  @Get() async findAll(@CurrentUser() u: any, @Query() q: any) { return this.urdService.findAll(u.organizationId, { ...q, branchId: q.branchId || u.branchId || undefined }); }
   @Post() async create(@Body() b: any, @CurrentUser() u: any) { return this.urdService.create(b, u.organizationId, u.branchId); }
 }
