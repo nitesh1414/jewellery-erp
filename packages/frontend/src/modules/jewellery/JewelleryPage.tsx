@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { Plus, Search, Package, Printer } from 'lucide-react';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
+import { Plus, Search, Package, Printer, Pencil, Diamond, X } from 'lucide-react';
 
 export default function JewelleryPage() {
   const qc = useQueryClient();
@@ -20,6 +21,7 @@ export default function JewelleryPage() {
   const [page, setPage] = useState(1);
   const [detail, setDetail] = useState<any>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showBulk, setShowBulk] = useState(false);
   const [form, setForm] = useState<any>({
     designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0,
@@ -49,9 +51,48 @@ export default function JewelleryPage() {
 
   const createMutation = useMutation({
     mutationFn: (b: any) => api.createJewelleryItem(b),
-    onSuccess: () => { toast.success('Item added!'); qc.invalidateQueries({ queryKey: ['jewellery'] }); setShowAdd(false); },
+    onSuccess: () => { toast.success('Item added!'); qc.invalidateQueries({ queryKey: ['jewellery'] }); setShowAdd(false); setEditingId(null); },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: any }) => api.put('/jewellery/' + id, body),
+    onSuccess: () => {
+      toast.success('Item updated!');
+      qc.invalidateQueries({ queryKey: ['jewellery'] });
+      setShowAdd(false);
+      setEditingId(null);
+      setDetail(null);
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const openEditItem = (item: any) => {
+    setForm({
+      designCode: item.designCode || '',
+      metalType: item.metalType || 'GOLD',
+      purity: item.purity || '22K',
+      grossWeight: item.grossWeight || 0,
+      stoneWeight: item.stoneWeight || 0,
+      netWeight: item.netWeight || 0,
+      currentRate: item.currentRate || 0,
+      quantity: item.quantity || 1,
+      hsnCode: item.hsnCode || '7113',
+      makingChargeType: item.makingChargeType || 'PERCENTAGE',
+      makingChargeValue: item.makingChargeValue || 10,
+      category: item.category || '',
+      subCategory: item.subCategory || '',
+      location: item.location || '',
+      ornament: item.ornament || '',
+      ornamentGender: item.ornamentGender || '',
+      purchaseDate: item.purchaseDate ? new Date(item.purchaseDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    });
+    setEditingId(item.id);
+    setShowAdd(true);
+  };
+
+  // Ctrl/Cmd+A → add item
+  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
 
   const bulkMutation = useMutation({
     mutationFn: (items: any[]) => api.post('/jewellery/bulk', { items }),
@@ -153,6 +194,7 @@ export default function JewelleryPage() {
                 <td className="table-cell"><span className={'badge ' + (item.status === 'IN_STOCK' ? 'badge-success' : item.status === 'SOLD' ? 'badge-danger' : item.status === 'RESERVED' ? 'badge-info' : 'badge-warning')}>{item.status.replace(/_/g, ' ')}</span></td>
                 <td className="table-cell" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
+                    <button onClick={() => openEditItem(item)} className="p-1 text-amber-600 hover:text-amber-700" title="Edit item"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(item.barcode), '_blank')}
                       className="p-1 text-gray-400 hover:text-primary-600" title="Print barcode sticker"><Printer className="w-4 h-4" /></button>
                     {item.status === 'IN_STOCK' && (
@@ -185,10 +227,10 @@ export default function JewelleryPage() {
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Add Jewellery Item (Material Entry)</h3>
+            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Jewellery Item' : 'Add Jewellery Item (Material Entry)'}</h3>
             <div className="grid grid-cols-3 gap-4">
               <div><label className="label">Design Code</label><input className="input-field" value={form.designCode} onChange={e => setForm({...form, designCode: e.target.value})} placeholder="RING-001" /></div>
-              <div><label className="label">Metal Type</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}><option value="GOLD">Gold</option><option value="SILVER">Silver</option></select></div>
+              <div><label className="label">Metal Type</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
               <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}>{(settings?.allPurities || ['24K','22K','18K']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
               <div><label className="label">Category</label><input className="input-field" value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="Ring" /></div>
               <div><label className="label">Sub Category</label><input className="input-field" value={form.subCategory} onChange={e => setForm({...form, subCategory: e.target.value})} /></div>
@@ -221,12 +263,13 @@ export default function JewelleryPage() {
             </div>
             <p className="text-xs text-gray-400 mt-2">* Required fields. Barcode auto-generated.</p>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-              <button onClick={() => setShowAdd(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => { setShowAdd(false); setEditingId(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (!form.designCode || !form.netWeight || !form.currentRate) { toast.error('Fill required fields'); return; }
-                createMutation.mutate(form);
-              }} disabled={createMutation.isPending} className="btn-primary">
-                {createMutation.isPending ? 'Adding...' : 'Add Item'}
+                if (editingId) updateMutation.mutate({ id: editingId, body: form });
+                else createMutation.mutate(form);
+              }} disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary">
+                {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : editingId ? 'Update Item' : 'Add Item'}
               </button>
             </div>
           </div>
@@ -257,43 +300,85 @@ export default function JewelleryPage() {
       {/* Item detail drawer */}
       {detail && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDetail(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center">
+                  <Diamond className="w-5 h-5" />
+                </div>
                 <div>
-                  <h3 className="font-semibold text-lg">{detail.designCode || detail.product?.name || 'Item'}</h3>
+                  <h3 className="font-semibold text-lg leading-tight">{detail.designCode || detail.product?.name || 'Item'}</h3>
                   <p className="font-mono text-xs text-primary-700">{detail.barcode}</p>
                 </div>
-                <button onClick={() => setDetail(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {[
-                  ['Status', (detail.status || '').replace(/_/g, ' ')],
-                  ['Metal / Purity', `${detail.metalType} · ${detail.purity}`],
-                  ['Category', detail.category || '—'],
-                  ['Sub category', detail.subCategory || '—'],
-                  ['Ornament', detail.ornament ? `${detail.ornament} (${detail.ornamentGender || '—'})` : '—'],
-                  ['Gross weight', detail.grossWeight + ' g'],
-                  ['Stone weight', (detail.stoneWeight ?? 0) + ' g'],
-                  ['Net weight', detail.netWeight + ' g'],
-                  ['Quantity', String(detail.quantity)],
-                  ['Size / Color', `${detail.size || '—'} / ${detail.color || '—'}`],
-                  ['Purchase rate', '₹' + (detail.purchaseRate || 0).toLocaleString('en-IN')],
-                  ['Current rate', '₹' + (detail.currentRate || 0).toLocaleString('en-IN')],
-                  ['Current value', '₹' + (detail.netWeight * detail.currentRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })],
-                  ['Making charge', detail.makingChargeType === 'PERCENTAGE' ? detail.makingChargeValue + '%' : detail.makingChargeType === 'PER_GRAM' ? '₹' + detail.makingChargeValue + '/g' : '₹' + detail.makingChargeValue],
-                  ['Hallmark no.', detail.hallmarkNumber || '—'],
-                  ['Certificate no.', detail.certificateNumber || '—'],
-                  ['HSN', detail.hsnCode],
-                  ['Location', detail.location || '—'],
-                  ['SKU', detail.sku || '—'],
-                  ['Purchase date', detail.purchaseDate ? new Date(detail.purchaseDate).toLocaleDateString('en-IN') : '—'],
-                ].map(([label, value]: any) => (
-                  <div key={label}><p className="text-xs text-gray-400">{label}</p><p className="font-medium">{value}</p></div>
-                ))}
+              <button onClick={() => setDetail(null)} className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+              {/* Left summary */}
+              <div className="p-6 border-r border-gray-100 bg-gray-50/50 md:rounded-l-2xl">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400">Status</p>
+                    <span className={'badge ' + (detail.status === 'IN_STOCK' ? 'badge-success' : detail.status === 'SOLD' ? 'badge-danger' : detail.status === 'RESERVED' ? 'badge-info' : 'badge-warning')}>{detail.status?.replace(/_/g, ' ')}</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400">Metal / Purity</p>
+                    <p className="font-semibold">{detail.metalType} · {detail.purity}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><p className="text-[10px] uppercase tracking-wide text-gray-400">Net</p><p className="font-semibold">{detail.netWeight} g</p></div>
+                    <div><p className="text-[10px] uppercase tracking-wide text-gray-400">Gross</p><p className="font-semibold">{detail.grossWeight} g</p></div>
+                  </div>
+                  <div className="flex items-center justify-between bg-primary-50 rounded-xl px-4 py-3">
+                    <span className="text-sm text-primary-700">Value at rate</span>
+                    <span className="font-bold text-primary-900">₹{(detail.netWeight * detail.currentRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400">Current rate</p>
+                    <p className="font-semibold">₹{detail.currentRate?.toLocaleString('en-IN')}/g</p>
+                  </div>
+                </div>
               </div>
-              <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(detail.barcode), '_blank')} className="btn-primary w-full mt-5">
-                <Printer className="w-4 h-4" /> Print Barcode Sticker
+
+              {/* Right details */}
+              <div className="col-span-2 p-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+                  {[
+                    ['Category', detail.category || '—'],
+                    ['Sub category', detail.subCategory || '—'],
+                    ['Ornament', detail.ornament ? `${detail.ornament}${detail.ornamentGender ? ` (${detail.ornamentGender})` : ''}` : '—'],
+                    ['Stone weight', (detail.stoneWeight ?? 0) + ' g'],
+                    ['Quantity', String(detail.quantity)],
+                    ['Size / Color', `${detail.size || '—'} / ${detail.color || '—'}`],
+                    ['Purchase rate', '₹' + (detail.purchaseRate || 0).toLocaleString('en-IN')],
+                    ['Making charge', detail.makingChargeType === 'PERCENTAGE' ? detail.makingChargeValue + '%' : detail.makingChargeType === 'PER_GRAM' ? '₹' + detail.makingChargeValue + '/g' : '₹' + detail.makingChargeValue],
+                    ['Hallmark no.', detail.hallmarkNumber || '—'],
+                    ['Certificate no.', detail.certificateNumber || '—'],
+                    ['HSN', detail.hsnCode],
+                    ['Location', detail.location || '—'],
+                    ['SKU', detail.sku || '—'],
+                    ['Purchase date', detail.purchaseDate ? new Date(detail.purchaseDate).toLocaleDateString('en-IN') : '—'],
+                  ].map(([label, value]: any) => (
+                    <div key={label} className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-400">{label}</p>
+                      <p className="font-medium truncate">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100">
+              <button onClick={() => { openEditItem(detail); setDetail(null); }} className="btn-secondary text-sm">
+                <Pencil className="w-4 h-4" /> Edit Item
+              </button>
+              <button onClick={() => setDetail(null)} className="btn-secondary text-sm">
+                <X className="w-4 h-4" /> Close
+              </button>
+              <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(detail.barcode), '_blank')} className="btn-primary text-sm">
+                <Printer className="w-4 h-4" /> Print Barcode
               </button>
             </div>
           </div>

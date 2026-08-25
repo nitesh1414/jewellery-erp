@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Plus, Trash2 } from 'lucide-react';
 
 const CATEGORIES = ['Inventory', 'Salary', 'Rent', 'Utilities', 'Marketing', 'Maintenance', 'Office', 'Travel', 'Insurance', 'Tax', 'Misc'];
@@ -8,6 +9,12 @@ const CATEGORIES = ['Inventory', 'Salary', 'Rent', 'Utilities', 'Marketing', 'Ma
 export default function ExpensesPage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+
+  // Ctrl/Cmd+A → add expense
+  useAppShortcut('app:add', () => {
+    setForm({ category: 'Misc', amount: 0, accountId: '', vendor: '', description: '', date: new Date().toISOString().split('T')[0], paymentMode: 'CASH', reference: '' });
+    setShowForm(true);
+  });
   const [form, setForm] = useState<any>({ category: 'Misc', amount: 0, accountId: '', vendor: '', description: '', date: new Date().toISOString().split('T')[0], paymentMode: 'CASH', reference: '' });
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.get<any>('/ledger/accounts') });
   const { data: expData, isLoading } = useQuery({ queryKey: ['expenses'], queryFn: () => api.get<any>('/ledger/expenses') });

@@ -20,7 +20,7 @@ export class SalesController {
     @Query('limit') limit?: number,
   ) {
     return this.salesService.findAll(user.organizationId, {
-      search, status, billType, startDate, endDate, page, limit,
+      search, status, billType, branchId: user.branchId || undefined, startDate, endDate, page, limit,
     });
   }
 
@@ -75,7 +75,7 @@ export class SalesController {
   @Post(':id/payment')
   async addPayment(
     @Param('id') id: string,
-    @Body() body: { amount: number; paymentMode: string; reference?: string },
+    @Body() body: { amount: number; paymentMode: string; reference?: string; accountId?: string },
     @CurrentUser() user: any,
   ) {
     return this.salesService.addPayment(id, body, user.id, user.organizationId);

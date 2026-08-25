@@ -10,12 +10,12 @@ export class JewelleryController {
 
   @Get()
   async findAll(@CurrentUser() user: any, @Query() query: any) {
-    return this.jewelleryService.findAll(user.organizationId, query);
+    return this.jewelleryService.findAll(user.organizationId, { ...query, branchId: query.branchId || user.branchId || undefined });
   }
 
   @Get('stats')
   async getStats(@CurrentUser() user: any) {
-    return this.jewelleryService.getStats(user.organizationId);
+    return this.jewelleryService.getStats(user.organizationId, user.branchId);
   }
 
   @Get('categories')
@@ -25,7 +25,7 @@ export class JewelleryController {
 
   @Get('barcode/:barcode')
   async findByBarcode(@Param('barcode') barcode: string, @CurrentUser() user: any) {
-    return this.jewelleryService.findByBarcode(barcode, user.organizationId);
+    return this.jewelleryService.findByBarcode(barcode, user.organizationId, user.branchId);
   }
 
   @Get(':id')

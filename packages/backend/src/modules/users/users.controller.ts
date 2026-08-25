@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../common/prisma.service';
 
-const VALID_ROLES = new Set(['SUPER_ADMIN', 'OWNER', 'BRANCH_MANAGER', 'ACCOUNTANT', 'SALESMAN', 'CASHIER', 'INVENTORY_MANAGER', 'GOLDSMITH', 'KARIGAR', 'JOB_WORKER']);
+const DEFAULT_ROLES = ['SUPER_ADMIN', 'OWNER', 'BRANCH_MANAGER', 'ACCOUNTANT', 'SALESMAN', 'CASHIER', 'INVENTORY_MANAGER', 'GOLDSMITH', 'KARIGAR', 'JOB_WORKER'];
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -26,39 +26,51 @@ export class UsersController {
     const users = await this.prisma.user.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: { branchAccess: { select: { branchId: true } } },
     });
-    return users.map(({ password, ...rest }) => rest);
+    return users.map(({ password, branchAccess, ...rest }) => ({
+      ...rest,
+      branchIds: branchAccess.map((b) => b.branchId),
+    }));
   }
 
   @Get(':id')
   async getOne(@Param('id') id: string, @CurrentUser() u: any) {
-    const user = await this.prisma.user.findFirst({ where: { id, organizationId: u.organizationId } });
+    const user = await this.prisma.user.findFirst({
+      where: { id, organizationId: u.organizationId },
+      include: { branchAccess: { select: { branchId: true } } },
+    });
     if (!user) throw new Error('User not found');
-    const { password, ...rest } = user;
-    return rest;
+    const { password, branchAccess, ...rest } = user;
+    return { ...rest, branchIds: branchAccess.map((b) => b.branchId) };
   }
 
   @Post()
   async create(@CurrentUser() u: any, @Body() body: any) {
     if (!body?.email || !body?.name || !body?.password) throw new Error('Email, name, password required');
-    if (!VALID_ROLES.has(body.role || 'SALESMAN')) throw new Error('Invalid role');
+    if (body.role && !(await this.roleExists(body.role))) throw new Error('Invalid role');
     const exists = await this.prisma.user.findFirst({ where: { email: body.email } });
     if (exists) throw new Error('Email already exists');
     const hashed = await bcrypt.hash(body.password, 10);
+    const branchIds: string[] = Array.isArray(body.branchIds) ? body.branchIds : (body.branchId ? [body.branchId] : []);
     const user = await this.prisma.user.create({
       data: {
         organizationId: u.organizationId,
-        branchId: body.branchId || u.branchId || null,
+        branchId: body.branchId || branchIds[0] || u.branchId || null,
         name: body.name,
         email: body.email.toLowerCase(),
         password: hashed,
         role: body.role || 'SALESMAN',
         isActive: body.isActive !== false,
         employeeId: body.employeeId,
+        branchAccess: {
+          create: branchIds.map((bid) => ({ branchId: bid })),
+        },
       },
+      include: { branchAccess: true },
     });
-    const { password, ...rest } = user;
-    return rest;
+    const { password, branchAccess, ...rest } = user;
+    return { ...rest, branchIds: branchAccess.map((b) => b.branchId) };
   }
 
   @Put(':id')
@@ -66,11 +78,38 @@ export class UsersController {
     const user = await this.prisma.user.findFirst({ where: { id, organizationId: u.organizationId } });
     if (!user) throw new Error('User not found');
     if (body.password) body.password = await bcrypt.hash(body.password, 10);
-    if (body.role && !VALID_ROLES.has(body.role)) throw new Error('Invalid role');
+    if (body.role && !(await this.roleExists(body.role))) throw new Error('Invalid role');
     if (body.email) body.email = body.email.toLowerCase();
-    const updated = await this.prisma.user.update({ where: { id }, data: { ...body } });
-    const { password, ...rest } = updated;
-    return rest;
+
+    const { branchIds, ...updateData } = body;
+    // Remove branch-related temp fields the schema doesn't have.
+    const cleanData: any = { ...updateData };
+    delete cleanData.branchId;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.user.update({
+        where: { id },
+        data: {
+          ...cleanData,
+          branchId: body.branchId || (Array.isArray(branchIds) && branchIds[0]) || user.branchId,
+        },
+      });
+      // Replace multi-branch access (avoid createMany for SQLite compat).
+      if (Array.isArray(branchIds)) {
+        await tx.userBranch.deleteMany({ where: { userId: id } });
+        for (const bid of branchIds) {
+          await tx.userBranch.create({ data: { userId: id, branchId: bid } });
+        }
+      }
+      return result;
+    });
+
+    const withBranches = await this.prisma.user.findUnique({
+      where: { id },
+      include: { branchAccess: { select: { branchId: true } } },
+    });
+    const { password, branchAccess, ...rest } = withBranches as any;
+    return { ...rest, branchIds: branchAccess.map((b) => b.branchId) };
   }
 
   @Post(':id/branch')
@@ -90,5 +129,12 @@ export class UsersController {
     if (!user) throw new Error('User not found');
     await this.prisma.user.update({ where: { id }, data: { isActive: false } });
     return { ok: true, deactivated: true };
+  }
+
+  /** A role is valid if it is one of the built-in defaults or a custom role. */
+  private async roleExists(name: string): Promise<boolean> {
+    if (DEFAULT_ROLES.includes(name)) return true;
+    const role = await this.prisma.role.findFirst({ where: { name } });
+    return !!role;
   }
 }

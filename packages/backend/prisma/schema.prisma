@@ -74,7 +74,8 @@ model Branch {
   updatedAt       DateTime @updatedAt
 
   organization    Organization @relation(fields: [organizationId], references: [id])
-  users           User[]
+  users           User[] @relation("branchUsers")
+  branchUsers     UserBranch[]
   customers       Customer[]
   suppliers       Supplier[]
   jewelleryItems  JewelleryItem[]
@@ -113,11 +114,25 @@ model User {
   updatedAt       DateTime @updatedAt
 
   organization    Organization @relation(fields: [organizationId], references: [id])
-  branch          Branch?      @relation(fields: [branchId], references: [id])
+  branchRef       Branch?      @relation("branchUsers", fields: [branchId], references: [id])
   assignedJobs       JobAssignment[] @relation("assignedEmployee")
   materialEmployee   JobMaterialIssue[] @relation("materialEmployee")
   materialIssuer     JobMaterialIssue[] @relation("materialIssuer")
   auditLogs          AuditLog[]
+  branchAccess       UserBranch[]
+}
+
+// A user can be given access to several branches (multi-branch operator).
+model UserBranch {
+  id        String   @id @default(uuid())
+  userId    String
+  branchId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId])
 }
 
 model Role {
@@ -507,6 +522,7 @@ model SalePayment {
   amount      Float
   paymentMode String
   reference   String?
+  accountId   String?  // cash / bank ledger account the money was received into
   date        DateTime @default(now())
   employeeId  String?
   notes       String?
@@ -580,7 +596,39 @@ model Purchase {
   organization Organization @relation(fields: [organizationId], references: [id])
   branch       Branch       @relation(fields: [branchId], references: [id])
   supplier     Supplier     @relation(fields: [supplierId], references: [id])
+  items        PurchaseItem[]
   payments     PurchasePayment[]
+}
+
+// Line-item detail for a purchase — each purchased ornament/piece has its own
+// metal, purity, category, ornament & weights (multiple metals per purchase).
+model PurchaseItem {
+  id                 String   @id @default(uuid())
+  purchaseId         String
+  designCode         String
+  category           String?
+  subCategory        String?
+  ornament           String?
+  ornamentGender     String?
+  hsnCode            String   @default("7113")
+  metalType          String   @default("GOLD")
+  purity             String   @default("22K")
+  grossWeight        Float    @default(0)
+  stoneWeight        Float    @default(0)
+  otherWeight        Float    @default(0)
+  netWeight          Float    @default(0)
+  quantity           Int      @default(1)
+  rate               Float    @default(0)
+  makingChargeType   String   @default("PERCENTAGE")
+  makingChargeValue  Float    @default(10)
+  hallmarkNumber     String?
+  certificateNumber  String?
+  stoneCharges       Float    @default(0)
+  otherCharges       Float    @default(0)
+  lineAmount         Float    @default(0)
+  createdAt          DateTime @default(now())
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 }
 
 model PurchasePayment {
@@ -719,13 +767,14 @@ model JobMaterialReturn {
 }
 
 model JobStatusHistory {
-  id        String   @id @default(uuid())
+  id         String    @id @default(uuid())
   jobOrderId String
   fromStatus String?
   toStatus   String
   changedBy  String?
   notes      String?
-  createdAt  DateTime @default(now())
+  actionDate DateTime?  // the date the action (READY/DELIVERED…) was performed
+  createdAt  DateTime  @default(now())
 
   jobOrder JobOrder @relation(fields: [jobOrderId], references: [id])
 }

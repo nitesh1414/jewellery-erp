@@ -63,6 +63,11 @@ npm run build          # compile every package
 
 ### Daily use cheatsheet
 
+- **Keyboard shortcuts** (web + desktop): `Ctrl+A` add/new (context-aware),
+  `Ctrl+N` new bill (POS), `Ctrl+Enter` save/finalize bill, `Esc` cancel/close
+  any modal, `Alt+N` quick-action menu, `F1` or `?` for the full list. Billing
+  uses F2 new bill, F3 customer, F4 scan, F5 manual, F6 payment, F7 save,
+  F8 discount, F9 inventory.
 - **Billing** (`/billing`): scan barcodes (F4) or manual items (F5); switch the
   top-right tabs between **Bill** and **Estimated Bill**. Estimates get their
   own `EST-…` number, stay editable (Bills → Estimated Bills → ✏) and are
@@ -71,8 +76,20 @@ npm run build          # compile every package
   thermal 80 / 76 / 58 mm / estimate.
 - **Barcodes**: Barcodes → print stickers on every common label size; item
   rows in *Jewellery Items* have a 🖨 print-barcode button too.
-- **Quotations**: Billing → *Save as Quotation* gives a public link
-  (`/q/<token>`) customers can open without login.
+- **Multi-branch**: if the user has access to more than one branch, a branch
+  selector appears in the top bar. All actions (sale, purchase, expense,
+  income, URD, payment…) are recorded against the selected branch; the default
+  is the user's primary branch. Estimated bills never affect sales,
+  outstanding, today's totals or GST until confirmed into a real bill.
+- **Purchase → inventory**: a purchase is a material entry. It uses the same
+  fields as the inventory "Add Item" form (metal, purity, category,
+  sub-category, ornament, HSN, making charge, hallmark, certificate no.) and can
+  hold **many metals/purities in one purchase**. The supplier's invoice number
+  is optional. Purchases, inventory items, URD and users all have View + Edit.
+- **Job order actions**: marking a job READY / DELIVERED / IN PROGRESS etc.
+  asks for the **action date + note** and appends it to the Action Log
+  (status history) in the job detail. Advance and bill payments can be taken
+  into a specific cash/bank ledger account.
 - **Job work**: New Job Order picks customers from the database (or prompts to
   add new), assigns a worker, and walks CREATED → ASSIGNED → IN PROGRESS →
   READY → DELIVERED; generate the final bill when READY.

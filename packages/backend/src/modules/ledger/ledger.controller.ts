@@ -53,7 +53,7 @@ export class LedgerController {
   // ===== Expenses =====
   @Get('expenses')
   async listExpenses(@CurrentUser() u: any, @Query() q: any) {
-    return this.service.listExpenses(u.organizationId, q);
+    return this.service.listExpenses(u.organizationId, { ...q, branchId: q.branchId || u.branchId || undefined });
   }
 
   @Post('expenses')
@@ -69,7 +69,7 @@ export class LedgerController {
   // ===== Income =====
   @Get('income')
   async listIncome(@CurrentUser() u: any, @Query() q: any) {
-    return this.service.listIncome(u.organizationId, q);
+    return this.service.listIncome(u.organizationId, { ...q, branchId: q.branchId || u.branchId || undefined });
   }
 
   @Post('income')

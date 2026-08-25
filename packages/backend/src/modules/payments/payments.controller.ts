@@ -6,6 +6,6 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @Controller('payments')
 export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}
-  @Get() async findAll(@CurrentUser() u: any, @Query() q: any) { return this.paymentsService.findAll(u.organizationId, q); }
+  @Get() async findAll(@CurrentUser() u: any, @Query() q: any) { return this.paymentsService.findAll(u.organizationId, { ...q, branchId: q.branchId || u.branchId || undefined }); }
   @Post() async create(@Body() b: any, @CurrentUser() u: any) { return this.paymentsService.create(b, u.organizationId, u.branchId, u.id); }
 }

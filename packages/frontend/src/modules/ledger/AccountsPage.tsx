@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Wallet, Plus, Edit2, Trash2, IndianRupee } from 'lucide-react';
 
 export default function AccountsPage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+
+  // Ctrl/Cmd+A → add account
+  useAppShortcut('app:add', () => { setEditing(null); setForm({ name: '', type: 'CASH', openingBalance: 0, accountNumber: '', bankName: '', ifscCode: '', notes: '' }); setShowForm(true); });
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState<any>({ name: '', type: 'CASH', openingBalance: 0, accountNumber: '', bankName: '', ifscCode: '', notes: '' });
 

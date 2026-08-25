@@ -22,6 +22,7 @@ export class JewelleryService {
     minNetWeight?: string;
     maxNetWeight?: string;
     sort?: string;
+    branchId?: string;
     page?: number;
     limit?: number;
   }) {
@@ -29,11 +30,12 @@ export class JewelleryService {
       search, status, metalType, purity, category, designCode,
       supplierId, location, purchaseDateFrom, purchaseDateTo,
       ornament, ornamentGender, minNetWeight, maxNetWeight, sort,
-      page = 1, limit = 20,
+      branchId, page = 1, limit = 20,
     } = query;
     const skip = (page - 1) * limit;
 
     const where: any = { organizationId };
+    if (branchId) where.branchId = branchId;
 
     if (status) where.status = status;
     if (metalType) where.metalType = metalType;
@@ -94,9 +96,11 @@ export class JewelleryService {
     return item;
   }
 
-  async findByBarcode(barcode: string, organizationId: string) {
+  async findByBarcode(barcode: string, organizationId: string, branchId?: string) {
+    const where: any = { barcode, organizationId };
+    if (branchId) where.branchId = branchId;
     const item = await this.prisma.jewelleryItem.findFirst({
-      where: { barcode, organizationId },
+      where,
       include: { product: { select: { name: true, designCode: true } } },
     });
     if (!item) throw new NotFoundException('Jewellery item not found with this barcode');
@@ -240,7 +244,18 @@ export class JewelleryService {
     const item = await this.prisma.jewelleryItem.findFirst({ where: { id, organizationId } });
     if (!item) throw new NotFoundException('Jewellery item not found');
 
-    return this.prisma.jewelleryItem.update({ where: { id }, data });
+    // Convert date strings to Date objects so Prisma accepts them.
+    const updateData: any = { ...data };
+    if (updateData.purchaseDate && !(updateData.purchaseDate instanceof Date)) {
+      updateData.purchaseDate = new Date(updateData.purchaseDate);
+    }
+    // Changing the barcode is not allowed here (uniqueness protections).
+    delete updateData.barcode;
+    delete updateData.id;
+    delete updateData.organizationId;
+    delete updateData.branchId;
+
+    return this.prisma.jewelleryItem.update({ where: { id }, data: updateData });
   }
 
   /**
@@ -309,9 +324,11 @@ export class JewelleryService {
     return Array.from(categories);
   }
 
-  async getStats(organizationId: string) {
+  async getStats(organizationId: string, branchId?: string) {
+    const where: any = { organizationId };
+    if (branchId) where.branchId = branchId;
     const items = await this.prisma.jewelleryItem.findMany({
-      where: { organizationId },
+      where,
     });
 
     const inStock = items.filter(i => i.status === 'IN_STOCK');

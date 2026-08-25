@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { PurchasesService } from './purchases.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -10,7 +10,7 @@ export class PurchasesController {
 
   @Get()
   async findAll(@CurrentUser() user: any, @Query() query: any) {
-    return this.purchasesService.findAll(user.organizationId, query);
+    return this.purchasesService.findAll(user.organizationId, { ...query, branchId: query.branchId || user.branchId || undefined });
   }
 
   @Get(':id')
@@ -21,5 +21,10 @@ export class PurchasesController {
   @Post()
   async create(@Body() body: any, @CurrentUser() user: any) {
     return this.purchasesService.create({ ...body, createdById: user.id }, user.organizationId, user.branchId, user.id);
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() body: any, @CurrentUser() user: any) {
+    return this.purchasesService.update(id, body, user.organizationId, user.branchId, user.id);
   }
 }

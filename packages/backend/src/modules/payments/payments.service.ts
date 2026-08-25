@@ -5,10 +5,11 @@ import { v4 as uuid } from 'uuid';
 export class PaymentsService {
   constructor(private prisma: PrismaService) {}
   async findAll(orgId: string, q: any) {
-    const { customerId, supplierId, page = 1, limit = 20 } = q;
+    const { customerId, supplierId, branchId, page = 1, limit = 20 } = q;
     const where: any = { organizationId: orgId };
     if (customerId) where.customerId = customerId;
     if (supplierId) where.supplierId = supplierId;
+    if (branchId) where.branchId = branchId;
     const [items, total] = await Promise.all([
       this.prisma.payment.findMany({ where, skip: (page-1)*limit, take: +limit, orderBy: { date: 'desc' } }),
       this.prisma.payment.count({ where }),
@@ -21,6 +22,34 @@ export class PaymentsService {
       const payment = await tx.payment.create({
         data: { ...data, organizationId: orgId, branchId, transactionId, employeeId: userId, date: data.date ? new Date(data.date) : new Date() },
       });
+
+      // Record the money into the selected cash/bank ledger account when given.
+      if (data.accountId) {
+        const acc = await tx.ledgerAccount.findFirst({ where: { id: data.accountId, organizationId: orgId, isActive: true } });
+        if (acc) {
+          await tx.ledgerEntry.create({
+            data: {
+              organizationId: orgId,
+              branchId,
+              accountId: data.accountId,
+              type: 'CREDIT',
+              amount: Number(data.amount),
+              date: data.date ? new Date(data.date) : new Date(),
+              description: data.notes || 'Payment received',
+              reference: transactionId,
+              linkedTo: 'PAYMENT',
+              linkedId: payment.id,
+              employeeId: userId,
+              employeeName: 'System',
+            },
+          });
+          await tx.ledgerAccount.update({
+            where: { id: data.accountId },
+            data: { currentBalance: { increment: Number(data.amount) } },
+          });
+        }
+      }
+
       if (data.customerId) {
         const lastLedger = await tx.customerLedger.findFirst({ where: { customerId: data.customerId }, orderBy: { createdAt: 'desc' } });
         const balance = (lastLedger?.balance || 0) - data.amount;

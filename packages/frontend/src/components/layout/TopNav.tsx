@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
+import { useBranchStore } from '../../stores/branchStore';
 import { api } from '../../services/api';
+import { BranchSelector } from './BranchSelector';
 import {
   LayoutDashboard, ShoppingCart, Receipt, Users, Diamond, Package, Barcode,
   ShoppingBag, Truck, Briefcase, Gem, Wrench, FileBarChart, Settings, LogOut,
-  Bell, ChevronDown, Search, HandCoins, Clock, Wallet, CreditCard,
+  Bell, ChevronDown, HandCoins, Clock, Wallet, CreditCard,
   Building, Users as UsersIcon,
 } from 'lucide-react';
 
@@ -65,6 +67,7 @@ const menuItems: MenuItem[] = [
     submenu: [
       { to: '/branches', label: 'Branches', icon: Building },
       { to: '/users', label: 'Users', icon: Users },
+      { to: '/roles', label: 'Roles & Access', icon: Users },
       { to: '/reports', label: 'Reports Center', icon: FileBarChart },
     ],
   },
@@ -74,10 +77,10 @@ export function TopNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const clearBranch = useBranchStore((s) => s.clearBranch);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [showUser, setShowUser] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   // company details from Settings (shop name + logo shown everywhere)
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
   // live date-time in the header bar (updates every second, no separate bar)
@@ -130,6 +133,7 @@ export function TopNav() {
 
 
   const handleLogout = () => {
+    clearBranch();
     logout();
     navigate('/login');
   };
@@ -138,17 +142,6 @@ export function TopNav() {
     if (item.to) return location.pathname === item.to || location.pathname === item.to + '/';
     if (item.submenu) return item.submenu.some(s => location.pathname.startsWith(s.to));
     return false;
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    const q = searchQuery.trim();
-    if (/^JOB-\d+/i.test(q)) navigate(`/job-orders`);
-    else if (/^GST-\d+/i.test(q) || /^NG-\d+/i.test(q)) navigate(`/bills?search=${q}`);
-    else if (/^G\d{8,}/i.test(q)) navigate(`/jewellery?search=${q}`);
-    else navigate(`/bills?search=${q}`);
-    setSearchQuery('');
   };
 
   const fmt = (n: number) => '₹' + (n || 0).toLocaleString('en-IN');
@@ -174,20 +167,6 @@ export function TopNav() {
               <p className="text-[10px] text-gray-500 leading-tight">ERP & POS</p>
             </div>
           </NavLink>
-
-          {/* Quick search */}
-          <form onSubmit={handleSearch} className="hidden md:flex items-center gap-1 flex-1 max-w-xs">
-            <div className="relative w-full">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search bill # / barcode / job #..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-          </form>
 
           {/* Main menu items */}
           <nav className="hidden lg:flex items-center gap-1 flex-1">
@@ -261,6 +240,9 @@ export function TopNav() {
               {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           </div>
+
+          {/* Branch selector (multi-branch) */}
+          <BranchSelector />
 
           {/* Notifications */}
           <div className="relative">

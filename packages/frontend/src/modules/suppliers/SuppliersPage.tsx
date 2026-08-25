@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Search, Plus, Truck, Phone, MapPin, ExternalLink } from 'lucide-react';
 
 export default function SuppliersPage() {
@@ -9,6 +10,9 @@ export default function SuppliersPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
+
+  // Ctrl/Cmd+A → add supplier
+  useAppShortcut('app:add', () => { setSelectedSupplier(null); setForm({ name: '', mobile: '', address: '', gstin: '', contact: '' }); setShowAdd(true); });
   const [form, setForm] = useState({ name: '', mobile: '', address: '', gstin: '', contact: '' });
   const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
 

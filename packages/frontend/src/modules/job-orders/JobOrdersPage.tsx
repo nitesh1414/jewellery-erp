@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useAppShortcut } from '../../hooks/useAppShortcut';
 import {
   Search, Plus, Briefcase, Clock, CheckCircle, AlertCircle,
-  User, Calendar, HandCoins, FileText, ChevronRight, HardHat, UserPlus, X,
+  User, Calendar, HandCoins, FileText, ChevronRight, HardHat, UserPlus, X, History,
 } from 'lucide-react';
 
 export default function JobOrdersPage() {
@@ -14,6 +15,9 @@ export default function JobOrdersPage() {
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any>(null);
+
+  // Ctrl/Cmd+A → new job order
+  useAppShortcut('app:add', () => { setForm({ customerId: '', customerName: '', customerMobile: '', productDescription: '', purity: '22K', metalType: 'GOLD', expectedWeight: 0, expectedDelivery: '', estimatedAmount: 0, advanceAmount: 0, notes: '', assignEmployeeId: '', assignDueDate: '' }); setShowCreate(true); });
   const [showAdvance, setShowAdvance] = useState(false);
   const [showBill, setShowBill] = useState(false);
   const [form, setForm] = useState<any>({ customerId: '', customerName: '', customerMobile: '', productDescription: '', purity: '22K', metalType: 'GOLD', expectedWeight: 0, expectedDelivery: '', estimatedAmount: 0, advanceAmount: 0, notes: '', assignEmployeeId: '', assignDueDate: '' });
@@ -23,10 +27,13 @@ export default function JobOrdersPage() {
   const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', address: '', city: '' });
 
   // Advance modal state
-  const [advanceForm, setAdvanceForm] = useState({ amount: 0, paymentMode: 'CASH', reference: '' });
+  const [advanceForm, setAdvanceForm] = useState({ amount: 0, paymentMode: 'CASH', reference: '', accountId: '' });
   // Assign worker modal state
   const [showAssign, setShowAssign] = useState(false);
   const [assignForm, setAssignForm] = useState({ employeeId: '', dueDate: '', notes: '' });
+  // Status-change modal (records action date + notes for the job log)
+  const [showStatus, setShowStatus] = useState(false);
+  const [statusForm, setStatusForm] = useState({ status: '', date: '', notes: '' });
 
   const assignMutation = useMutation({
     mutationFn: ({ id, body }: any) => api.post(`/job-orders/${id}/assign`, body),
@@ -48,6 +55,8 @@ export default function JobOrdersPage() {
   const { data: stats } = useQuery({ queryKey: ['job-stats'], queryFn: () => api.getJobOrderStats() });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
   const { data: workersData } = useQuery({ queryKey: ['workers'], queryFn: () => api.getWorkers({ isActive: 'true' }), staleTime: 60000 });
+  const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
+  const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
   const workers = workersData || [];
   const { data: customerResults } = useQuery({
     queryKey: ['job-customers', customerSearch],
@@ -68,13 +77,14 @@ export default function JobOrdersPage() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: any) => api.put(`/job-orders/${id}/status`, { status }),
+    mutationFn: ({ id, status, date, notes }: any) => api.put(`/job-orders/${id}/status`, { status, date, notes }),
     onSuccess: () => {
       toast.success('Status updated');
       qc.invalidateQueries({ queryKey: ['job-orders'] });
       qc.invalidateQueries({ queryKey: ['job-order', selectedJob?.id] });
       qc.invalidateQueries({ queryKey: ['job-stats'] });
-      setSelectedJob(null);
+      setShowStatus(false);
+      setStatusForm({ status: '', date: '', notes: '' });
     },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
@@ -92,7 +102,7 @@ export default function JobOrdersPage() {
       qc.invalidateQueries({ queryKey: ['job-orders'] });
       qc.invalidateQueries({ queryKey: ['job-order', selectedJob?.id] });
       setShowAdvance(false);
-      setAdvanceForm({ amount: 0, paymentMode: 'CASH', reference: '' });
+      setAdvanceForm({ amount: 0, paymentMode: 'CASH', reference: '', accountId: '' });
     },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
@@ -228,7 +238,7 @@ export default function JobOrdersPage() {
                     {(JOB_FLOW[selectedJob.status] || []).map((st: string) => (
                       <button
                         key={st}
-                        onClick={() => { if (confirm('Move job to ' + st.replace('_', ' ') + '?')) statusMutation.mutate({ id: selectedJob.id, status: st }); }}
+                        onClick={() => { setStatusForm({ status: st, date: new Date().toISOString().split('T')[0], notes: '' }); setShowStatus(true); }}
                         className={'text-xs px-3 py-1.5 rounded-lg border transition-all ' + (st === 'CANCELLED'
                           ? 'border-red-200 text-red-600 hover:bg-red-50'
                           : st === 'DELIVERED' || st === 'READY'
@@ -300,6 +310,31 @@ export default function JobOrdersPage() {
                   </table>
                 </div>
               )}
+
+              {/* Action log / status history */}
+              <div className="card">
+                <h3 className="section-title mb-3 flex items-center gap-2"><History className="w-4 h-4 text-primary-600" /> Action Log</h3>
+                {(jobDetail?.statusHistory?.length || 0) === 0 ? (
+                  <p className="text-sm text-gray-400">No actions recorded yet.</p>
+                ) : (
+                  <ol className="relative border-l border-gray-200 ml-2 space-y-4">
+                    {jobDetail.statusHistory.map((h: any) => (
+                      <li key={h.id} className="ml-6 relative">
+                        <span className="absolute -left-[7px] top-1 w-3 h-3 rounded-full bg-primary-500 ring-4 ring-primary-100"></span>
+                        <p className="text-sm font-medium text-gray-800">
+                          <span className="badge badge-info">{h.toStatus?.replace(/_/g, ' ')}</span>
+                          {h.fromStatus ? <span className="text-gray-400 text-xs"> from {h.fromStatus.replace(/_/g, ' ')}</span> : null}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {h.actionDate ? new Date(h.actionDate).toLocaleString('en-IN') : new Date(h.createdAt).toLocaleString('en-IN')}
+                          {h.changedBy ? ' · by ' + (h.changedBy === 'system' ? 'System' : h.changedBy) : ''}
+                        </p>
+                        {h.notes && <p className="text-xs text-gray-600 mt-1">{h.notes}</p>}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
             </div>
           ) : (
             <div className="card flex items-center justify-center py-16 text-gray-400">
@@ -463,6 +498,12 @@ export default function JobOrdersPage() {
                 </select>
               </div>
               <div><label className="label">Reference</label><input className="input-field" value={advanceForm.reference} onChange={e => setAdvanceForm({...advanceForm, reference: e.target.value})} placeholder="Optional" /></div>
+              <div><label className="label">Into Account (Cash/Bank)</label>
+                <select className="input-field" value={advanceForm.accountId} onChange={e => setAdvanceForm({...advanceForm, accountId: e.target.value})}>
+                  <option value="">— no ledger —</option>
+                  {activeAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
+                </select>
+                <p className="text-[10px] text-gray-400 mt-1">Amount is credited to this account in the ledger.</p></div>
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
               <button onClick={() => setShowAdvance(false)} className="btn-secondary">Cancel</button>
@@ -515,6 +556,31 @@ export default function JobOrdersPage() {
                 finalBillMutation.mutate({ id: selectedJob.id, body: billForm });
               }} disabled={finalBillMutation.isPending} className="btn-primary">
                 <FileText className="w-4 h-4" /> {finalBillMutation.isPending ? 'Generating...' : 'Generate Final Bill'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Status (action) Modal — records action date + note into the log */}
+      {showStatus && selectedJob && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowStatus(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-1">Mark {statusForm.status.replace(/_/g, ' ')}</h3>
+            <p className="text-sm text-gray-500 mb-4">{selectedJob.jobNumber} · {selectedJob.customerName}</p>
+            <div className="space-y-3">
+              <div><label className="label">Action Date *</label><input type="date" className="input-field" value={statusForm.date} onChange={e => setStatusForm({...statusForm, date: e.target.value})} /></div>
+              <div><label className="label">Notes / Remark (recorded in log)</label><textarea className="input-field text-xs" rows={3} value={statusForm.notes} onChange={e => setStatusForm({...statusForm, notes: e.target.value})} placeholder="e.g. Ready for delivery, delivered to customer…" /></div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+              <button onClick={() => setShowStatus(false)} className="btn-secondary">Cancel</button>
+              <button
+                onClick={() => {
+                  if (!statusForm.date) { toast.error('Select the action date'); return; }
+                  statusMutation.mutate({ id: selectedJob.id, status: statusForm.status, date: statusForm.date, notes: statusForm.notes });
+                }}
+                disabled={statusMutation.isPending} className="btn-primary">
+                {statusMutation.isPending ? 'Updating…' : 'Update Status'}
               </button>
             </div>
           </div>

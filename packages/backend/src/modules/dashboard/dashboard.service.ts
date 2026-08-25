@@ -10,7 +10,9 @@ export class DashboardService {
     today.setHours(0, 0, 0, 0);
 
     const baseWhere: any = { organizationId };
-    const todayWhere: any = { ...baseWhere, billDate: { gte: today }, status: { notIn: ['CANCELLED', 'DRAFT'] } };
+    // Estimated bills are NOT confirmed sales — they must never count in
+    // sales, collection, outstanding or GST until confirmed into a real bill.
+    const todayWhere: any = { ...baseWhere, billDate: { gte: today }, status: { notIn: ['CANCELLED', 'DRAFT', 'ESTIMATE'] }, billType: { not: 'ESTIMATE' } };
     if (branchId) {
       baseWhere.branchId = branchId;
       todayWhere.branchId = branchId;

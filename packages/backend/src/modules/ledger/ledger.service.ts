@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 
-const AUTO_LOCKED = new Set(['SALE_PAYMENT', 'PURCHASE', 'EXPENSE', 'INCOME', 'OPENING']);
+const AUTO_LOCKED = new Set(['SALE', 'SALE_PAYMENT', 'PURCHASE', 'EXPENSE', 'INCOME', 'OPENING']);
 
 @Injectable()
 export class LedgerService {
@@ -191,8 +191,9 @@ export class LedgerService {
   // ====== EXPENSES ======
 
   async listExpenses(organizationId: string, params: any = {}) {
-    const { category, startDate, endDate, page = 1, limit = 50 } = params;
+    const { category, branchId, startDate, endDate, page = 1, limit = 50 } = params;
     const where: any = { organizationId };
+    if (branchId) where.branchId = branchId;
     if (category) where.category = category;
     if (startDate || endDate) {
       where.date = {};
@@ -288,8 +289,9 @@ export class LedgerService {
   // ====== INCOME ======
 
   async listIncome(organizationId: string, params: any = {}) {
-    const { source, startDate, endDate, page = 1, limit = 50 } = params;
+    const { source, branchId, startDate, endDate, page = 1, limit = 50 } = params;
     const where: any = { organizationId };
+    if (branchId) where.branchId = branchId;
     if (source) where.source = source;
     if (startDate || endDate) {
       where.date = {};

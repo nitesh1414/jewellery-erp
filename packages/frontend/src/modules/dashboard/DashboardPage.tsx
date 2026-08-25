@@ -58,6 +58,9 @@ export default function DashboardPage() {
     let cash = 0, bank = 0, other = 0;
     for (const a of list) {
       const b = Number(a.currentBalance) || 0;
+      // Revenue/income accounts (e.g. the auto-created Sales ledger) are not
+      // physical money — exclude them from the cash & bank position.
+      if (a.type === 'INCOME' || a.type === 'SALES' || a.type === 'REVENUE') continue;
       if (a.type === 'CASH') cash += b;
       else if (a.type === 'BANK') bank += b;
       else other += b;
