@@ -1,8 +1,9 @@
 /**
  * Minimal bootstrap seed for the packaged desktop app (no demo data).
  *
- * Creates: organization, main branch, an admin login, shop settings, common
- * HSN codes, gold/silver rates and a primary cash account. The first-run
+ * Creates: organization, main branch, an admin login, built-in roles and
+ * permissions, shop settings, common HSN codes, gold/silver rates and a
+ * primary cash account. The first-run
  * setup wizard inside the app then customizes shop details.
  *
  * Run by the desktop packaging scripts against the template SQLite database:
@@ -31,8 +32,39 @@ function resolveDep(name) {
 
 const { PrismaClient } = resolveDep('@prisma/client');
 const bcrypt = resolveDep('bcryptjs');
+const { DEFAULT_ROLE_PERMISSIONS } = require('./default-role-permissions.cjs');
 
 const prisma = new PrismaClient();
+
+async function seedRoles() {
+  for (const [roleName, permissionNames] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+    const role = await prisma.role.upsert({
+      where: { name: roleName },
+      update: { isSystem: true },
+      create: { name: roleName, description: `${roleName} role`, isSystem: true },
+    });
+
+    for (const permissionName of permissionNames) {
+      const permission = await prisma.permission.upsert({
+        where: { name: permissionName },
+        update: {
+          description: permissionName.replace(/_/g, ' '),
+          module: permissionName.split('_')[0],
+        },
+        create: {
+          name: permissionName,
+          description: permissionName.replace(/_/g, ' '),
+          module: permissionName.split('_')[0],
+        },
+      });
+      await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } },
+        update: {},
+        create: { roleId: role.id, permissionId: permission.id },
+      });
+    }
+  }
+}
 
 async function main() {
   const org = await prisma.organization.upsert({
@@ -64,6 +96,8 @@ async function main() {
       role: 'SUPER_ADMIN',
     },
   });
+
+  await seedRoles();
 
   await prisma.shopSettings.upsert({
     where: { organizationId: org.id },

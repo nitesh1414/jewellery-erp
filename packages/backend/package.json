@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "build": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && tsc",
-    "dev": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma --force && ts-node-dev --respawn --transpile-only src/main.ts",
+    "dev": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && ts-node-dev --respawn --transpile-only src/main.ts",
     "start": "node dist/main.js",
-    "db:generate": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma --force",
-    "db:push": "prisma db push",
+    "db:generate": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma",
+    "db:push": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && prisma db push --skip-generate",
     "db:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts"
   },

@@ -69,6 +69,11 @@ fs.copyFileSync(
   path.join(backendDir, 'prisma', 'schema.prisma'),
   path.join(stagingDir, 'backend', 'prisma', 'schema.prisma'),
 );
+// The runtime role bootstrap is shared by the compiled backend and seed.
+fs.copyFileSync(
+  path.join(backendDir, 'prisma', 'default-role-permissions.cjs'),
+  path.join(stagingDir, 'backend', 'prisma', 'default-role-permissions.cjs'),
+);
 
 // package.json without the workspace dependency (we copy shared bits ourselves
 // if ever needed) — used for a standalone production dependency install.

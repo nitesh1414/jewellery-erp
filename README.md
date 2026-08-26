@@ -61,12 +61,14 @@ npm run db:studio      # browse/edit the database in Prisma Studio
 npm run build          # compile every package
 ```
 
-> On Windows, the build caches Prisma clients when their schema has not
-> changed, so a running app does not normally lock the native query engine.
-> If a schema changed and `prisma generate` reports `EPERM` while renaming a
-> `query_engine-windows.dll.node` file, stop the backend, license server,
-> Electron app, Prisma Studio, and other Node processes that may use it, then
-> run the build again. `npm run db:generate` intentionally forces regeneration.
+> On Windows, the build and development commands cache Prisma clients when
+> their schema has not changed, so a running app does not normally lock the
+> native query engine. If a schema changed and `prisma generate` reports
+> `EPERM` while renaming a `query_engine-windows.dll.node` file, stop the
+> backend, license server, Electron app, Prisma Studio, and other Node
+> processes that may use it, then run the command again. The `db:push` scripts
+> run the same cached generation first and skip Prisma's automatic second
+> generation.
 
 ### Daily use cheatsheet
 
