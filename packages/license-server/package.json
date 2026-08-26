@@ -5,11 +5,11 @@
   "description": "Cloud license/subscription server with admin API for the Jewellery ERP desktop app",
   "main": "dist/index.js",
   "scripts": {
-    "build": "prisma generate && tsc -p tsconfig.json",
-    "dev": "prisma generate && ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && tsc -p tsconfig.json",
+    "dev": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && ts-node-dev --respawn --transpile-only src/index.ts",
     "start": "node dist/index.js",
-    "db:push": "prisma db push",
-    "db:generate": "prisma generate",
+    "db:push": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && prisma db push --skip-generate",
+    "db:generate": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma",
     "db:studio": "prisma studio",
     "seed:admin": "ts-node-dev --transpile-only src/scripts/seed-admin.ts"
   },

@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "prisma generate && tsc",
-    "dev": "prisma generate && ts-node-dev --respawn --transpile-only src/main.ts",
+    "build": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && tsc",
+    "dev": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && ts-node-dev --respawn --transpile-only src/main.ts",
     "start": "node dist/main.js",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
+    "db:generate": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma",
+    "db:push": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && prisma db push --skip-generate",
     "db:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts"
   },

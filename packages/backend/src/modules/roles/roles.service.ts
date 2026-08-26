@@ -1,5 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+
+const { DEFAULT_ROLE_PERMISSIONS } = require('../../../prisma/default-role-permissions.cjs') as {
+  DEFAULT_ROLE_PERMISSIONS: Record<string, string[]>;
+};
 
 /** Permission catalog grouped by module (read/write access model). */
 export const PERMISSION_CATALOG: { module: string; label: string; permissions: { name: string; action: 'read' | 'write'; label: string }[] }[] = [
@@ -49,11 +53,17 @@ export const PERMISSION_CATALOG: { module: string; label: string; permissions: {
 ];
 
 @Injectable()
-export class RolesService {
+export class RolesService implements OnModuleInit {
+  private defaultsReady: Promise<void> | null = null;
+
   constructor(private prisma: PrismaService) {}
 
+  async onModuleInit(): Promise<void> {
+    await this.ensureSystemRoles();
+  }
+
   /** Ensure every known permission exists as a DB row (idempotent). */
-  async ensureCatalog() {
+  private async ensureCatalog() {
     for (const group of PERMISSION_CATALOG) {
       for (const p of group.permissions) {
         await this.prisma.permission.upsert({
@@ -65,15 +75,55 @@ export class RolesService {
     }
   }
 
+  /**
+   * Ensure built-in roles exist in the database as well as in the user form.
+   *
+   * The desktop template database historically created users with a role
+   * string but did not seed the Role/RolePermission tables. Keeping this
+   * idempotent runtime repair means existing installations are fixed on the
+   * next backend start; new template databases are seeded by seed-desktop.cjs.
+   */
+  async ensureSystemRoles(): Promise<void> {
+    if (!this.defaultsReady) {
+      this.defaultsReady = this.seedSystemRoles().catch((error) => {
+        this.defaultsReady = null;
+        throw error;
+      });
+    }
+    await this.defaultsReady;
+  }
+
+  private async seedSystemRoles(): Promise<void> {
+    await this.ensureCatalog();
+
+    for (const [roleName, permissionNames] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+      const role = await this.prisma.role.upsert({
+        where: { name: roleName },
+        update: { isSystem: true },
+        create: { name: roleName, description: `${roleName} role`, isSystem: true },
+      });
+
+      for (const permissionName of permissionNames) {
+        const permission = await this.prisma.permission.findUnique({ where: { name: permissionName } });
+        if (!permission) continue;
+        await this.prisma.rolePermission.upsert({
+          where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } },
+          update: {},
+          create: { roleId: role.id, permissionId: permission.id },
+        });
+      }
+    }
+  }
+
   /** Return the permission catalog with a per-module read/write summary. */
   async getCatalog() {
-    await this.ensureCatalog();
+    await this.ensureSystemRoles();
     return PERMISSION_CATALOG;
   }
 
   /** List roles with their granted permission names. */
   async findAll() {
-    await this.ensureCatalog();
+    await this.ensureSystemRoles();
     const roles = await this.prisma.role.findMany({
       orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
       include: { permissions: { include: { permission: true } } },
@@ -109,7 +159,7 @@ export class RolesService {
     const existing = await this.prisma.role.findUnique({ where: { name } });
     if (existing) throw new BadRequestException(`Role "${name}" already exists`);
 
-    await this.ensureCatalog();
+    await this.ensureSystemRoles();
     const permissions = Array.isArray(data.permissions) ? data.permissions : [];
     const role = await this.prisma.role.create({
       data: { name, description: data.description || name + ' role', isSystem: false },
@@ -126,7 +176,7 @@ export class RolesService {
     // System roles can have their description/permissions updated but not renamed.
     const name = data.name ? data.name.trim().toUpperCase().replace(/\s+/g, '_') : role.name;
 
-    await this.ensureCatalog();
+    await this.ensureSystemRoles();
     await this.prisma.role.update({
       where: { id },
       data: { name, description: data.description ?? role.description },

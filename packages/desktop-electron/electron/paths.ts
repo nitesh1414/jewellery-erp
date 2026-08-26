@@ -5,7 +5,7 @@ import * as fs from 'fs';
 /** Repo root when running unpackaged (`npm run dev` / `electron .`). */
 export function repoRoot(): string {
   // dist-electron/ → package dir → packages/ → repo root
-  return path.resolve(__dirname, '..', '..');
+  return path.resolve(__dirname, '..', '..', '..');
 }
 
 export const isPackaged = () => app.isPackaged;

@@ -4,7 +4,9 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../common/prisma.service';
 
-const DEFAULT_ROLES = ['SUPER_ADMIN', 'OWNER', 'BRANCH_MANAGER', 'ACCOUNTANT', 'SALESMAN', 'CASHIER', 'INVENTORY_MANAGER', 'GOLDSMITH', 'KARIGAR', 'JOB_WORKER'];
+const { DEFAULT_ROLES } = require('../../../prisma/default-role-permissions.cjs') as {
+  DEFAULT_ROLES: string[];
+};
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
