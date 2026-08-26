@@ -422,6 +422,20 @@ export default function BillingPage() {
     return exact ? Number(exact.rate) || 0 : 0;
   };
 
+  // Hallmark master entries (from database/settings) used to populate the
+  // hallmark dropdown in the item forms.
+  const hallmarkMaster: any[] = settings?.allHallmarks || [];
+
+  // Apply a hallmark master entry: sets purity, the hallmark reference and the
+  // charge for the given line form ('manual' or 'edit').
+  const applyHallmarkFromMaster = (id: string, form: 'manual' | 'edit') => {
+    const entry = hallmarkMaster.find((h: any) => h.id === id);
+    if (!entry) return;
+    const patch = { purity: entry.purity, hallmarkNumber: entry.label, hallmarkCharge: Number(entry.charge) || 0 };
+    if (form === 'manual') setManualItem((prev: any) => ({ ...prev, ...patch }));
+    else setEditForm((prev: any) => ({ ...prev, ...patch }));
+  };
+
   return (
     <div className="space-y-3 pb-6 lg:pb-4 print:hidden">
       {/* Header */}
@@ -811,7 +825,7 @@ export default function BillingPage() {
                 <select className="input-field" value={manualItem.purity} onChange={e => {
                   const purity = e.target.value;
                   const autoRate = getRateForPurity(purity);
-                  setManualItem((prev: any) => ({ ...prev, purity, ratePerGram: prev.ratePerGram || autoRate }));
+                  setManualItem((prev: any) => ({ ...prev, purity, ratePerGram: autoRate }));
                 }}>
                   {(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_925']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
                 </select></div>
@@ -825,7 +839,17 @@ export default function BillingPage() {
                 </select></div>
               <div><label className="label">Making Value</label><input type="number" className="input-field" value={manualItem.makingChargeValue} onChange={e => setManualItem({ ...manualItem, makingChargeValue: Number(e.target.value) })} /></div>
               <div className="col-span-2 border rounded-lg p-3 bg-amber-50/50">
-                <p className="label !text-[10px] !mb-2">Hallmark (with purity {manualItem.purity})</p>
+                <p className="label !text-[10px] !mb-2">Hallmark (populated from database master)</p>
+                <select
+                  className="input-field mb-2"
+                  value=""
+                  onChange={e => { if (e.target.value) applyHallmarkFromMaster(e.target.value, 'manual'); }}
+                >
+                  <option value="">— Select hallmark from master —</option>
+                  {hallmarkMaster.map((h: any) => (
+                    <option key={h.id} value={h.id}>{h.label} ({h.purity} · ₹{h.charge})</option>
+                  ))}
+                </select>
                 <div className="grid grid-cols-2 gap-3">
                   <input className="input-field" placeholder="Hallmark number (optional)" value={manualItem.hallmarkNumber} onChange={e => setManualItem({ ...manualItem, hallmarkNumber: e.target.value })} />
                   <div className="flex gap-2">
@@ -943,7 +967,7 @@ export default function BillingPage() {
                 <select className="input-field" value={editForm.purity} onChange={e => {
                   const purity = e.target.value;
                   const autoRate = getRateForPurity(purity);
-                  setEditForm((prev: any) => ({ ...prev, purity, ratePerGram: prev.ratePerGram || autoRate }));
+                  setEditForm((prev: any) => ({ ...prev, purity, ratePerGram: autoRate }));
                 }}>
                   {(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_925']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
                 </select></div>
@@ -960,7 +984,17 @@ export default function BillingPage() {
               <div><label className="label">Discount on line (₹)</label><input type="number" className="input-field" value={editForm.discount} onChange={e => setEditForm({ ...editForm, discount: Number(e.target.value) })} /></div>
               <div><label className="label">URD Value (₹)</label><input type="number" className="input-field" value={editForm.urd} onChange={e => setEditForm({ ...editForm, urd: Number(e.target.value) })} /></div>
               <div className="col-span-2 border rounded-lg p-3 bg-amber-50/50">
-                <p className="label !text-[10px] !mb-2">Hallmark (with purity {editForm.purity})</p>
+                <p className="label !text-[10px] !mb-2">Hallmark (populated from database master)</p>
+                <select
+                  className="input-field mb-2"
+                  value=""
+                  onChange={e => { if (e.target.value) applyHallmarkFromMaster(e.target.value, 'edit'); }}
+                >
+                  <option value="">— Select hallmark from master —</option>
+                  {hallmarkMaster.map((h: any) => (
+                    <option key={h.id} value={h.id}>{h.label} ({h.purity} · ₹{h.charge})</option>
+                  ))}
+                </select>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="label !text-[10px]">Hallmark Number</label>
                     <input className="input-field" placeholder="HM-916-xxxx (optional)" value={editForm.hallmarkNumber || ''} onChange={e => setEditForm({ ...editForm, hallmarkNumber: e.target.value })} /></div>

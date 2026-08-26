@@ -327,49 +327,72 @@ function PuritiesTab({ purities, defaultPurities, newPurity, setNewPurity, onAdd
 
 function RatesTab({ rates, onUpdate }: any) {
   const [rateEdits, setRateEdits] = useState<Record<string, number>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const saveRate = (id: string, value: number) => {
+    const next = Number(value);
+    if (!id || isNaN(next)) return;
+    setSavingId(id);
+    // Commit on blur/Enter — the mutation shows a success toast and refreshes.
+    onUpdate(id, next);
+    setRateEdits(prev => { const c = { ...prev }; delete c[id]; return c; });
+    setTimeout(() => setSavingId(null), 700);
+  };
+
+  // Group the schedule by metal so each metal lists its purities with their rates.
+  const grouped = (rates || []).reduce((acc: Record<string, any[]>, r: any) => {
+    (acc[r.metalType] = acc[r.metalType] || []).push(r);
+    return acc;
+  }, {});
+  const metalOrder = Object.keys(grouped).sort();
+  const metals = metalOrder.map(m => ({ metal: m, items: [...grouped[m]].sort((a: any, b: any) => a.purity.localeCompare(b.purity)) }));
 
   return (
     <div className="card space-y-4">
       <h3 className="section-title">Daily Rate Schedule</h3>
-      <p className="text-sm text-gray-500">Edit gold/silver rates per purity. Used by Billing and Inventory.</p>
+      <p className="text-sm text-gray-500">
+        Rates are grouped by metal, listing each purity with its rate. Edit any rate — it saves automatically and is
+        used by Billing, Inventory, Purchases &amp; Jewellery entries.
+      </p>
 
-      <div className="overflow-hidden rounded-lg border">
-        <table className="w-full">
-          <thead><tr className="border-b bg-gray-50">
-            <th className="table-header">Metal</th>
-            <th className="table-header">Purity</th>
-            <th className="table-header text-right">Rate (₹ / gram)</th>
-            <th className="table-header text-right">Effective</th>
-            <th className="table-header"></th>
-          </tr></thead>
-          <tbody>
-            {(rates || []).map((r: any) => (
-              <tr key={r.id} className="border-b border-gray-50">
-                <td className="table-cell font-medium">{r.metalType}</td>
-                <td className="table-cell">{r.purity}</td>
-                <td className="table-cell text-right">
-                  <input
-                    type="number"
-                    className="input-field text-right w-32"
-                    value={rateEdits[r.id] ?? r.rate}
-                    onChange={e => setRateEdits({ ...rateEdits, [r.id]: Number(e.target.value) })}
-                  />
-                </td>
-                <td className="table-cell text-right text-xs text-gray-500">
-                  {new Date(r.effectiveDate).toLocaleDateString('en-IN')}
-                </td>
-                <td className="table-cell text-right">
-                  <button
-                    onClick={() => { onUpdate(r.id, rateEdits[r.id] ?? r.rate); setRateEdits(prev => { const c = { ...prev }; delete c[r.id]; return c; }); }}
-                    className="btn-primary text-xs"
-                  >
-                    <Save className="w-3.5 h-3.5" /> Save
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {metals.length === 0 && (
+        <div className="text-center text-gray-400 text-sm py-8">No rates defined yet. Add rates for each metal &amp; purity.</div>
+      )}
+
+      <div className="space-y-4">
+        {metals.map(({ metal, items }) => (
+          <div key={metal} className="overflow-hidden rounded-lg border">
+            <div className="px-4 py-2.5 bg-gray-50 border-b font-semibold text-sm text-gray-800 flex items-center justify-between">
+              <span>{metal.replace('_', ' ')}</span>
+              <span className="text-[11px] font-medium text-gray-400">Rate in ₹ / gram</span>
+            </div>
+            <table className="w-full">
+              <thead><tr className="border-b bg-white">
+                <th className="table-header w-1/2">Purity</th>
+                <th className="table-header text-right w-1/2">Rate (₹ / gram)</th>
+              </tr></thead>
+              <tbody>
+                {items.map((r: any) => (
+                  <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50/60">
+                    <td className="table-cell font-medium">{r.purity}</td>
+                    <td className="table-cell text-right">
+                      <input
+                        type="number"
+                        className="input-field text-right w-40"
+                        value={rateEdits[r.id] ?? r.rate}
+                        onBlur={(e) => { if (Number(rateEdits[r.id] ?? r.rate) !== Number(r.rate)) saveRate(r.id, Number(rateEdits[r.id] ?? r.rate)); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        onChange={e => setRateEdits({ ...rateEdits, [r.id]: Number(e.target.value) })}
+                        title="Edit rate and click away / press Enter to save"
+                      />
+                      {savingId === r.id && <span className="text-[10px] text-gray-400 ml-1">saving…</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
       </div>
     </div>
   );

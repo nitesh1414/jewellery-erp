@@ -28,12 +28,21 @@ export default function JewelleryPage() {
     netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113',
     makingChargeType: 'PERCENTAGE', makingChargeValue: 10,
     category: '', subCategory: '', location: '', ornament: '', ornamentGender: '',
-    purchaseDate: new Date().toISOString().split('T')[0],
+    hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0],
   });
   const [bulkItems, setBulkItems] = useState('');
 
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
+  const { data: rateMaster } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
   const { data: ornamentsData } = useQuery({ queryKey: ['ornaments-active'], queryFn: () => api.getOrnaments({ isActive: 'true' }), staleTime: 60000 });
+
+  // Rate for a purity from the DB rate schedule (used to auto-fill the item rate).
+  const getRateForPurity = (purity: string): number => {
+    const rows: any[] = (rateMaster as any) || [];
+    const exact = rows.find((r: any) => (r.purity || '').toUpperCase() === (purity || '').toUpperCase());
+    return exact ? Number(exact.rate) || 0 : 0;
+  };
+  const hallmarkMaster: any[] = settings?.allHallmarks || [];
   const ornaments = (ornamentsData?.items || []).map((o: any) => o);
 
   const { data, isLoading } = useQuery({
@@ -85,6 +94,7 @@ export default function JewelleryPage() {
       location: item.location || '',
       ornament: item.ornament || '',
       ornamentGender: item.ornamentGender || '',
+      hallmarkNumber: item.hallmarkNumber || '',
       purchaseDate: item.purchaseDate ? new Date(item.purchaseDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     });
     setEditingId(item.id);
@@ -92,7 +102,7 @@ export default function JewelleryPage() {
   };
 
   // Ctrl/Cmd+A → add item
-  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
+  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
 
   const bulkMutation = useMutation({
     mutationFn: (items: any[]) => api.post('/jewellery/bulk', { items }),
@@ -231,7 +241,7 @@ export default function JewelleryPage() {
             <div className="grid grid-cols-3 gap-4">
               <div><label className="label">Design Code</label><input className="input-field" value={form.designCode} onChange={e => setForm({...form, designCode: e.target.value})} placeholder="RING-001" /></div>
               <div><label className="label">Metal Type</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
-              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}>{(settings?.allPurities || ['24K','22K','18K']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
+              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => { const purity = e.target.value; const autoRate = getRateForPurity(purity); setForm({...form, purity, currentRate: autoRate}); }}>{(settings?.allPurities || ['24K','22K','18K']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
               <div><label className="label">Category</label><input className="input-field" value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="Ring" /></div>
               <div><label className="label">Sub Category</label><input className="input-field" value={form.subCategory} onChange={e => setForm({...form, subCategory: e.target.value})} /></div>
               <div>
@@ -260,6 +270,17 @@ export default function JewelleryPage() {
               <div><label className="label">Making Value</label><input type="number" className="input-field" value={form.makingChargeValue} onChange={e => setForm({...form, makingChargeValue: Number(e.target.value)})} /></div>
               <div><label className="label">Location</label><input className="input-field" value={form.location} onChange={e => setForm({...form, location: e.target.value})} placeholder="Showcase A1" /></div>
               <div><label className="label">Purchase Date</label><input type="date" className="input-field" value={form.purchaseDate} onChange={e => setForm({...form, purchaseDate: e.target.value})} /></div>
+              <div>
+                <label className="label">Hallmark (from master)</label>
+                <select className="input-field" value="" onChange={e => {
+                  const h = hallmarkMaster.find((x: any) => x.id === e.target.value);
+                  if (h) setForm({ ...form, purity: h.purity, hallmarkNumber: h.label, currentRate: getRateForPurity(h.purity) });
+                }}>
+                  <option value="">— select —</option>
+                  {hallmarkMaster.map((h: any) => <option key={h.id} value={h.id}>{h.label} ({h.purity} · ₹{h.charge})</option>)}
+                </select>
+              </div>
+              <div><label className="label">Hallmark Number</label><input className="input-field" value={form.hallmarkNumber || ''} onChange={e => setForm({...form, hallmarkNumber: e.target.value})} placeholder="HM-916-xxxx" /></div>
             </div>
             <p className="text-xs text-gray-400 mt-2">* Required fields. Barcode auto-generated.</p>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
