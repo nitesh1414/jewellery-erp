@@ -55,7 +55,15 @@ export default function PurchasesPage() {
   });
   const { data: suppliers } = useQuery({ queryKey: ['suppliers-all'], queryFn: () => api.getSuppliers({ limit: 100 }) });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
+  const { data: rateMaster } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
   const { data: ornamentsData } = useQuery({ queryKey: ['ornaments-active'], queryFn: () => api.getOrnaments({ isActive: 'true' }), staleTime: 60000 });
+  const hallmarkMaster: any[] = settings?.allHallmarks || [];
+  // Rate for a purity from the DB rate schedule (used to auto-fill the item rate).
+  const getRateForPurity = (purity: string): number => {
+    const rows: any[] = (rateMaster as any) || [];
+    const exact = rows.find((r: any) => (r.purity || '').toUpperCase() === (purity || '').toUpperCase());
+    return exact ? Number(exact.rate) || 0 : 0;
+  };
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
   const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
   const ornaments = (ornamentsData?.items || []).map((o: any) => o);
@@ -304,7 +312,7 @@ export default function PurchasesPage() {
                     {(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
                   </select></div>
                 <div><label className="label">Purity *</label>
-                  <select className="input-field text-xs" value={itemForm.purity} onChange={e => setItemForm({...itemForm, purity: e.target.value})}>
+                  <select className="input-field text-xs" value={itemForm.purity} onChange={e => { const purity = e.target.value; setItemForm({...itemForm, purity, rate: getRateForPurity(purity)}); }}>
                     {(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_999', 'SILVER_925']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}
                   </select></div>
                 <div><label className="label">HSN Code</label>
@@ -345,6 +353,14 @@ export default function PurchasesPage() {
                   </select></div>
                 <div><label className="label">Making Value</label>
                   <input type="number" className="input-field text-xs" value={itemForm.makingChargeValue || ''} onChange={e => setItemForm({...itemForm, makingChargeValue: Number(e.target.value)})} /></div>
+                <div><label className="label">Hallmark (from master)</label>
+                  <select className="input-field text-xs" value="" onChange={e => {
+                    const h = hallmarkMaster.find((x: any) => x.id === e.target.value);
+                    if (h) setItemForm({ ...itemForm, purity: h.purity, hallmarkNumber: h.label, rate: getRateForPurity(h.purity) });
+                  }}>
+                    <option value="">— select —</option>
+                    {hallmarkMaster.map((h: any) => <option key={h.id} value={h.id}>{h.label} ({h.purity} · ₹{h.charge})</option>)}
+                  </select></div>
                 <div><label className="label">Hallmark No.</label>
                   <input className="input-field text-xs" value={itemForm.hallmarkNumber} onChange={e => setItemForm({...itemForm, hallmarkNumber: e.target.value})} /></div>
                 <div><label className="label">Certificate No.</label>

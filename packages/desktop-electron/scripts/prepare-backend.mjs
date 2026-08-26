@@ -107,8 +107,10 @@ run(
 );
 console.log('▶ seeding template database (minimal bootstrap, no demo data)');
 // Run the seed with the STAGING prisma client so engines resolve correctly.
-fs.copyFileSync(path.join(backendDir, 'prisma', 'seed-desktop.cjs'), path.join(stagingDir, 'backend', 'seed-desktop.cjs'));
-run(process.execPath, [path.join(stagingDir, 'backend', 'seed-desktop.cjs')], {
+// Copy the seed into the prisma/ folder next to default-role-permissions.cjs,
+// which it requires via a relative './default-role-permissions.cjs' path.
+fs.copyFileSync(path.join(backendDir, 'prisma', 'seed-desktop.cjs'), path.join(stagingDir, 'backend', 'prisma', 'seed-desktop.cjs'));
+run(process.execPath, [path.join(stagingDir, 'backend', 'prisma', 'seed-desktop.cjs')], {
   cwd: path.join(stagingDir, 'backend'),
   env: { ...process.env, DATABASE_URL: `file:${templateDb}` },
 });

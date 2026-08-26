@@ -1,0 +1,3042 @@
+diff --git a/.github/workflows/build-desktop.yml b/.github/workflows/build-desktop.yml
+index c01eb0d..237be9b 100644
+--- a/.github/workflows/build-desktop.yml
++++ b/.github/workflows/build-desktop.yml
+@@ -1,184 +1,59 @@
+-name: Build Desktop Application
++name: Build Desktop Installers (Electron)
+ 
+ on:
+   push:
+     tags:
+       - 'v*'
+   workflow_dispatch:
+-    inputs:
+-      platform:
+-        description: 'Target platform'
+-        required: true
+-        type: choice
+-        options:
+-          - all
+-          - windows
+-          - linux
+-          - macos
+ 
+ jobs:
+   build:
+-    name: ${{ matrix.platform }} (${{ matrix.arch }})
++    name: ${{ matrix.name }}
+     strategy:
+       fail-fast: false
+       matrix:
+         include:
+-          # Windows builds
+-          - platform: windows
++          - name: windows
+             os: windows-latest
+-            arch: x86_64
+-            target: x86_64-pc-windows-msvc
+-            artifact_name: windows-jewellery-erp
+-            binary_name: ShriJewellersERP-Setup.exe
+-
+-          # Linux builds (x86_64)
+-          - platform: linux
+-            os: ubuntu-22.04
+-            arch: x86_64
+-            target: x86_64-unknown-linux-gnu
+-            artifact_name: linux-x86_64-jewellery-erp
+-            binary_name: jewellery-erp.AppImage
+-
+-          # Linux ARM64 (Raspberry Pi, ARM servers)
+-          - platform: linux-arm64
+-            os: ubuntu-22.04
+-            arch: aarch64
+-            target: aarch64-unknown-linux-gnu
+-            artifact_name: linux-aarch64-jewellery-erp
+-            binary_name: jewellery-erp.AppImage
+-
+-          # macOS Intel
+-          - platform: macos-intel
+-            os: macos-latest
+-            arch: x86_64
+-            target: x86_64-apple-darwin
+-            artifact_name: macos-intel-jewellery-erp
+-            binary_name: Jewellery-ERP.dmg
+-
+-          # macOS Apple Silicon
+-          - platform: macos-arm
++            script: dist:desktop:win
++          - name: macos
+             os: macos-latest
+-            arch: aarch64
+-            target: aarch64-apple-darwin
+-            artifact_name: macos-arm-jewellery-erp
+-            binary_name: Jewellery-ERP.dmg
+-
+-          - platform: windows-arm64
+-            os: windows-latest
+-            arch: aarch64
+-            target: aarch64-pc-windows-msvc
+-            artifact_name: windows-arm-jewellery-erp
+-            binary_name: ShriJewellersERP-Setup.exe
++            script: dist:desktop:mac
++          - name: linux
++            os: ubuntu-22.04
++            script: dist:desktop:linux
+ 
+     runs-on: ${{ matrix.os }}
+-
+     steps:
+-      - name: Checkout
+-        uses: actions/checkout@v4
++      - uses: actions/checkout@v4
+ 
+-      - name: Install Node.js
+-        uses: actions/setup-node@v4
++      - uses: actions/setup-node@v4
+         with:
+           node-version: 20
+-          cache: 'npm'
++          cache: npm
+ 
+-      # ===================== Linux specific =====================
+-      - name: Install Linux build dependencies
+-        if: runner.os == 'Linux'
+-        run: |
+-          sudo apt-get update
+-          sudo apt-get install -y \
+-            libwebkit2gtk-4.1-dev \
+-            libgtk-3-dev \
+-            libayatana-appindicator3-dev \
+-            librsvg2-dev \
+-            patchelf \
+-            libsoup-3.0-dev \
+-            libjavascriptcoregtk-4.1-dev
+-
+-      # ===================== macOS specific =====================
+-      - name: Install Rust toolchain for macOS
+-        if: runner.os == 'macOS'
+-        uses: dtolnay/rust-toolchain@stable
+-
+-      # ===================== Install Rust =====================
+-      - name: Install Rust (cross targets)
+-        uses: dtolnay/rust-toolchain@stable
+-        with:
+-          targets: ${{ matrix.target }}
++      - name: Install dependencies
++        run: npm ci
+ 
+-      - name: Cache Rust dependencies
+-        uses: Swatinem/rust-cache@v2
+-        with:
+-          workspaces: packages/desktop/src-tauri
+-
+-      # ===================== Install dependencies =====================
+-      - name: Install npm dependencies
+-        run: |
+-          npm ci
+-
+-      # ===================== Build =====================
+-      - name: Build desktop application
+-        run: |
+-          cd packages/desktop
+-          npx tauri build --target ${{ matrix.target }}
+-
+-      - name: Move built artifact
+-        run: |
+-          cd packages/desktop
+-          SRC_DIR=$(find src-tauri/target/${{ matrix.target }}/release/bundle -maxdepth 2 -type d)
+-          if [ -d "$SRC_DIR" ]; then
+-            mkdir -p ../../dist-build/${{ matrix.artifact_name }}
+-            cp -r "$SRC_DIR"/* ../../dist-build/${{ matrix.artifact_name }}/
+-            echo "✅ Built packages copied to dist-build/${{ matrix.artifact_name }}"
+-          else
+-            echo "Source bundle dir not found: $SRC_DIR"
+-            find src-tauri/target/${{ matrix.target }}/release/ -name "*.exe" -o -name "*.dmg" -o -name "*.deb" -o -name "*.AppImage" -o -name "*.msi" 2>/dev/null | head -10
+-          fi
+-
+-      - name: List build artifacts
+-        run: |
+-          echo "=== Build artifacts ==="
+-          find packages/desktop/src-tauri/target/ -name "*.exe" -o -name "*.dmg" -o -name "*.deb" -o -name "*.AppImage" -o -name "*.msi" 2>/dev/null
+-
+-      - name: Upload installers
++      - name: Build installers
++        env:
++          # Signing keys for the license baked into the build (falls back to
++          # the committed dev key). Set these secrets for production releases.
++          LICENSE_PUBLIC_KEY_FILE: ${{ secrets.LICENSE_PUBLIC_KEY_FILE_PATH || '' }}
++          LICENSE_SERVER_URL: ${{ secrets.LICENSE_SERVER_URL || 'http://localhost:4010' }}
++          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
++        run: npm run ${{ matrix.script }}
++
++      - name: Upload artifacts
+         uses: actions/upload-artifact@v4
+         with:
+-          name: ${{ matrix.artifact_name }}
++          name: jewellery-erp-${{ matrix.name }}
+           path: |
+-            packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+-            packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+-            packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
+-            packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
+-            packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.msi
+-          if-no-files-found: ignore
+-          retention-days: 30
+-
+-      - name: Generate Checksums
+-        uses: eregon/subresource-integrity-action@1.0.0
+-        with:
+-          algorithm: SHA256
+-          source: packages/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/
+-
+-  release:
+-    needs: build
+-    if: startsWith(github.ref, 'refs/tags/v')
+-    runs-on: ubuntu-latest
+-    steps:
+-      - uses: actions/download-artifact@v4
+-
+-      - name: Upload Release Assets
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-        run: |
+-          tag=${GITHUB_REF#refs/tags/}
+-          echo "Uploading release artifacts for tag $tag"
+-          for dir in windows-jewellery-erp linux-x86_64-jewellery-erp macos-intel-jewellery-erp macos-arm-jewellery-erp; do
+-            [ -d "$dir" ] || continue
+-            cd "$dir"
+-            for f in *; do
+-              [ -f "$f" ] || continue
+-              gh release upload "$tag" "$f" --clobber || echo "Failed: $dir/$f"
+-            done
+-            cd ..
+-          done
++            packages/desktop-electron/release/*.exe
++            packages/desktop-electron/release/*.dmg
++            packages/desktop-electron/release/*.AppImage
++            packages/desktop-electron/release/*.deb
++            packages/desktop-electron/release/*.rpm
++            packages/desktop-electron/release/*.zip
++            packages/desktop-electron/release/*.tar.gz
++          if-no-files-found: error
+diff --git a/README.md b/README.md
+index 6f7f493..e92ceed 100644
+--- a/README.md
++++ b/README.md
+@@ -61,6 +61,15 @@ npm run db:studio      # browse/edit the database in Prisma Studio
+ npm run build          # compile every package
+ ```
+ 
++> On Windows, the build and development commands cache Prisma clients when
++> their schema has not changed, so a running app does not normally lock the
++> native query engine. If a schema changed and `prisma generate` reports
++> `EPERM` while renaming a `query_engine-windows.dll.node` file, stop the
++> backend, license server, Electron app, Prisma Studio, and other Node
++> processes that may use it, then run the command again. The `db:push` scripts
++> run the same cached generation first and skip Prisma's automatic second
++> generation.
++
+ ### Daily use cheatsheet
+ 
+ - **Keyboard shortcuts** (web + desktop): `Ctrl+A` add/new (context-aware),
+diff --git a/docs/ARCHITECTURE.md b/docs/ARCHITECTURE.md
+index 320e6ea..82ecd57 100644
+--- a/docs/ARCHITECTURE.md
++++ b/docs/ARCHITECTURE.md
+@@ -17,7 +17,7 @@ A production-ready, scalable Jewellery Shop ERP + POS system designed to replace
+ | Layer | Technology |
+ |-------|-----------|
+ | Frontend | React 18, TypeScript, Vite, TanStack Query, Zustand, React Router v6 |
+-| Desktop | Tauri 2 (Rust shell, web UI) |
++| Desktop | Electron (Node.js shell, local NestJS backend, web UI) |
+ | Backend | NestJS, TypeScript, REST APIs, WebSocket |
+ | Database | PostgreSQL (production), SQLite (dev/offline) |
+ | ORM | Prisma |
+@@ -129,8 +129,9 @@ jewellery-erp/
+ │   │       ├── stores/
+ │   │       ├── services/ # API service layer
+ │   │       └── main.tsx
+-│   └── desktop/         # Tauri 2 app
+-│       ├── src-tauri/
+-│       └── src/
++│   └── desktop-electron/ # Electron desktop shell
++│       ├── electron/     # Main process, preload and local backend manager
++│       ├── src/           # Activation screen
++│       └── electron-builder.yml
+ └── package.json         # Root workspace
+ ```
+diff --git a/docs/DESKTOP.md b/docs/DESKTOP.md
+index 28b4f74..8ba688e 100644
+--- a/docs/DESKTOP.md
++++ b/docs/DESKTOP.md
+@@ -1,214 +1,21 @@
+-# Desktop Build Guide — Tauri 2
++# Desktop Build Guide
+ 
+-This guide explains how to build standalone executable installers for **Windows**, **macOS**, and **Linux** from the same React/Vite frontend used in the web and SPA builds.
++The Jewellery ERP desktop application is built with **Electron**. Use the
++Electron package for all local development, packaging, and release builds.
+ 
+-## Architecture
++See **[ELECTRON.md](./ELECTRON.md)** for the complete architecture,
++prerequisites, development commands, installer targets, signing notes, and
++CI configuration.
+ 
+-```
+-┌─────────────────────────────────────────────┐
+-│  Desktop App (Tauri 2 + WebView2 / WKWebView / WebKitGTK) │
+-│  ┌─────────────────────────────┐            │
+-│  │  React/Vite UI (your SPA)    │            │
+-│  └─────────────────────────────┘            │
+-│                   ↕                          │
+-│  ┌─────────────────────────────┐            │
+-│  │   Rust Backend (Tauri)        │            │
+-│  │  - Hardware: barcode scanner │            │
+-│  │  - Hardware: thermal printer │            │
+-│  │  - File system               │            │
+-│  │  - Local SQLite (offline)    │            │
+-│  └─────────────────────────────┘            │
+-└─────────────────────────────────────────────┘
+-              ↕ (HTTP to backend API)
+-┌─────────────────────────────────────────────┐
+-│  NestJS Server (your existing backend)       │
+-└─────────────────────────────────────────────┘
+-```
+-
+-## Prerequisites
+-
+-### All platforms
+-- Node.js 20+ and npm 10+
+-- Rust toolchain (install via [rustup.rs](https://rustup.rs/)) — needed only for building
+-- Tauri CLI: `npm install -D @tauri-apps/cli`
+-
+-### Windows
+-- Install **Visual Studio Build Tools** with "Desktop development with C++" workload
+-- Install **WebView2 Runtime** (already bundled with Windows 11; for older Windows, MS Edge is required)
+-- Install Rust target: `rustup target add x86_64-pc-windows-msvc`
+-
+-### macOS
+-- Xcode Command Line Tools: `xcode-select --install`
+-- Rust target: `rustup target add aarch64-apple-darwin` (and `x86_64-apple-darwin` for Intel)
+-
+-### Linux
+-- Ubuntu/Debian packages:
+-  ```bash
+-  sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libsoup-3.0-dev libjavascriptcoregtk-4.1-dev
+-  ```
+-- Fedora: replace with `webkit2gtk4.1-devel` and equivalent
+-- Rust target: `rustup target add x86_64-unknown-linux-gnu`
+-
+-## Build Commands — from project root
+-
+-### Windows (.exe / .msi)
+-```bash
+-npm run tauri:build --workspace packages/desktop -- x86_64-pc-windows-msvc
+-```
+-Output: `packages/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/{nsis,msi}/`
+-
+-The `.exe` is the NSIS installer; `.msi` is the Windows installer.
+-
+-### macOS (.dmg / .app on Universal)
+-```bash
+-# Apple Silicon (M1/M2/M3)
+-npm run tauri:build:m1
+-
+-# Intel
+-cd packages/desktop && npx tauri build --target x86_64-apple-darwin
+-
+-# Universal (both architectures in one .app)
+-cd packages/desktop && npx tauri build --target universal-apple-darwin
+-```
+-Output: `packages/desktop/src-tauri/target/{arch}/release/bundle/dmg/`
+-
+-### Linux (.AppImage / .deb / .rpm)
+-```bash
+-cd packages/desktop && npx tauri build --target x86_64-unknown-linux-gnu
+-```
+-Output: `packages/desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/{deb,appimage,rpm}/`
+-
+-## Building for Current Platform (Default)
+-
+-If you just want to build for whichever OS you're running on:
+-
+-```bash
+-cd packages/desktop
+-npm run tauri:build
+-```
+-
+-## Cross-Compilation Notes
+-
+-- **From Windows**: Can build for Windows (x86_64, ARM64)
+-- **From macOS**: Can build for macOS (Intel + Apple Silicon) and possibly Linux (needs extra setup)
+-- **From Linux**: Can build for Linux only (most reliable). Windows/macOS cross-compilation is not officially supported; use CI runners or a separate Mac/Windows machine.
+-
+-For full multi-platform builds, use the **GitHub Actions workflow** at `.github/workflows/build-desktop.yml`, which builds on:
+-- `windows-latest` runner → Windows .exe + .msi
+-- `macos-latest` runner → macOS .dmg for both Intel & Apple Silicon
+-- `ubuntu-22.04` runner → Linux .AppImage / .deb
+-
+-## Icon Setup (Required before build)
+-
+-Tauri requires platform-specific icons. From a single source PNG (recommended 1024x1024 px):
++Quick commands from the repository root:
+ 
+ ```bash
+-cd packages/desktop
+-npm run tauri:icon -- ./my-logo.png
++npm run dev:desktop       # build local assets and launch Electron
++npm run dist:desktop      # package for the current operating system
++npm run dist:desktop:win  # Windows NSIS installer
++npm run dist:desktop:mac  # macOS DMG
++npm run dist:desktop:linux # Linux AppImage / deb / rpm / tar.gz
+ ```
+ 
+-This generates:
+-- `src-tauri/icons/32x32.png`
+-- `src-tauri/icons/128x128.png`
+-- `src-tauri/icons/128x128@2x.png`
+-- `src-tauri/icons/icon.icns` (macOS multi-resolution)
+-- `src-tauri/icons/icon.ico` (Windows multi-resolution)
+-
+-## Output Locations
+-
+-After successful build, find installers at:
+-
+-| Platform | Path |
+-|----------|------|
+-| Windows installer | `packages/desktop/src-tauri/target/release/bundle/nsis/*Setup*.exe` |
+-| Windows MSI | `packages/desktop/src-tauri/target/release/bundle/msi/*.msi` |
+-| macOS DMG | `packages/desktop/src-tauri/target/release/bundle/dmg/*.dmg` |
+-| macOS .app | `packages/desktop/src-tauri/target/release/bundle/macos/*.app` |
+-| Linux AppImage | `packages/desktop/src-tauri/target/release/bundle/appimage/*.AppImage` |
+-| Linux .deb | `packages/desktop/src-tauri/target/release/bundle/deb/*.deb` |
+-| Linux .rpm | `packages/desktop/src-tauri/target/release/bundle/rpm/*.rpm` |
+-
+-## Desktop-only capabilities
+-
+-The Tauri backend adds these capabilities to the SPA:
+-
+-1. **Thermal printer support** — Raw ESC/POS command generation
+-2. **Barcode scanner integration** — Serial port access (USB HID)
+-3. **Offline SQLite** — Local data cache + pending transaction queue
+-4. **File system** — Export/import data, save PDFs natively
+-5. **Cash drawer control** — ESC/POS kick-out command
+-6. **Local config** — Settings stored in `app_data_dir/`
+-
+-## Bundler Customization
+-
+-Modify `packages/desktop/src-tauri/tauri.conf.json` to change:
+-
+-```json
+-"bundle": {
+-  "targets": "all",                  // or "deb", "appimage", "msi", "nsis"
+-  "icon": ["icons/32x32.png", ...],
+-  "windows": { "nsis": { ... } },     // NSIS installer options
+-  "macOS": { "dmg": { ... } },         // DMG customization
+-  "linux": { "deb": { ... } }          // Debian package
+-}
+-```
+-
+-## Offline Mode
+-
+-The desktop app boots in **offline mode** if no backend is reachable. Pending sales are queued in `app_data_dir/jewellery-offline.db` and synced when the backend becomes reachable.
+-
+-To configure: open the app, navigate to **Settings → Sync**, enter the backend URL (default `http://localhost:3001`).
+-
+-## Cross-platform Build Commands (overview)
+-
+-```bash
+-# Current platform
+-cd packages/desktop && npm run tauri:build
+-
+-# Specific platform (requires platform-specific tools)
+-cd packages/desktop && npx tauri build --target x86_64-pc-windows-msvc       # Windows
+-cd packages/desktop && npx tauri build --target x86_64-apple-darwin           # macOS Intel
+-cd packages/desktop && npx tauri build --target aarch64-apple-darwin          # macOS ARM64
+-cd packages/desktop && npx tauri build --target x86_64-unknown-linux-gnu     # Linux x86_64
+-cd packages/desktop && npx tauri build --target aarch64-unknown-linux-gnu    # Linux ARM
+-cd packages/desktop && npx tauri build --target universal-apple-darwin        # macOS Universal
+-```
+-
+-## Code-signing (production)
+-
+-For production builds with code-signing certificates:
+-
+-| OS | Setup |
+-|----|-------|
+-| Windows | Add `certificatePath`, `certificateThumbprint`, and `tsp: true` in `tauri.conf.json > bundle.windows`. |
+-| macOS   | Add `signingIdentity`, `providerShortName`, and `entitlements` in `tauri.conf.json > bundle.macOS`. |
+-| Linux   | Add GPG key for `.deb`/`.rpm` signing via `dpkg-sig` or `rpm-sign`. |
+-
+-Store credentials in **GitHub Actions secrets**, never commit them.
+-
+-## Auto-Updater (Optional)
+-
+-Tauri 2 includes an official auto-updater plugin. Configure in `tauri.conf.json`:
+-
+-```json
+-"plugins": {
+-  "updater": {
+-    "active": true,
+-    "endpoints": ["https://releases.your-domain.com/{version}"]
+-  }
+-}
+-```
+-
+-The desktop app checks this URL on launch and prompts user to update. See [Tauri Updater docs](https://tauri.app/v1/guides/distribution/updater) for full configuration.
+-
+----
+-
+-## Quick Summary
+-
+-| Step | Command |
+-|------|---------|
+-| 1. Install Rust | https://rustup.rs |
+-| 2. Install Tauri CLI | `npm install -D @tauri-apps/cli` |
+-| 3. Generate icons | `cd packages/desktop && npm run tauri:icon -- ./logo.png` |
+-| 4. Build for your OS | `cd packages/desktop && npm run tauri:build` |
+-| 5. Multi-platform | Push a `v*` tag → GitHub Actions builds all platforms |
++The Electron source is in `packages/desktop-electron/` and packaged artifacts
++are written to `packages/desktop-electron/release/`.
+diff --git a/docs/ELECTRON.md b/docs/ELECTRON.md
+index 5f3cede..cc01356 100644
+--- a/docs/ELECTRON.md
++++ b/docs/ELECTRON.md
+@@ -89,9 +89,9 @@ npm run dist:desktop:win
+ ```
+ 
+ Cross-compilation is **not** required for Windows/macOS/Linux x64 — but each
+-OS must be built **on** that OS (or use the included GitHub Actions workflow
+-`ci/build-electron.yml` (copy to `.github/workflows/` to activate), which builds all three on tagged
+-pushes and uploads the installers as artifacts).
++OS must be built **on** that OS. The active GitHub Actions workflow,
++`.github/workflows/build-desktop.yml`, builds all three platforms on tagged
++pushes and uploads the installers as artifacts.
+ 
+ ### Unpacked / test run
+ 
+diff --git a/package-lock.json b/package-lock.json
+index 4c2c27f..8511f6d 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1224,10 +1224,6 @@
+       "resolved": "packages/backend",
+       "link": true
+     },
+-    "node_modules/@jewellery-erp/desktop": {
+-      "resolved": "packages/desktop",
+-      "link": true
+-    },
+     "node_modules/@jewellery-erp/desktop-electron": {
+       "resolved": "packages/desktop-electron",
+       "link": true
+@@ -2328,223 +2324,6 @@
+         "url": "https://github.com/sponsors/tannerlinsley"
+       }
+     },
+-    "node_modules/@tauri-apps/cli": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli/-/cli-2.11.4.tgz",
+-      "integrity": "sha512-R8xGtMpwyetawSqm9kYOuMmEqkhUbvcUy8n0aNXIxollKBLESUu5f4Fx+64hgASYm1H+jSWq6jCW6zqTnH6hqQ==",
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "bin": {
+-        "tauri": "tauri.js"
+-      },
+-      "engines": {
+-        "node": ">= 10"
+-      },
+-      "funding": {
+-        "type": "opencollective",
+-        "url": "https://opencollective.com/tauri"
+-      },
+-      "optionalDependencies": {
+-        "@tauri-apps/cli-darwin-arm64": "2.11.4",
+-        "@tauri-apps/cli-darwin-x64": "2.11.4",
+-        "@tauri-apps/cli-linux-arm-gnueabihf": "2.11.4",
+-        "@tauri-apps/cli-linux-arm64-gnu": "2.11.4",
+-        "@tauri-apps/cli-linux-arm64-musl": "2.11.4",
+-        "@tauri-apps/cli-linux-riscv64-gnu": "2.11.4",
+-        "@tauri-apps/cli-linux-x64-gnu": "2.11.4",
+-        "@tauri-apps/cli-linux-x64-musl": "2.11.4",
+-        "@tauri-apps/cli-win32-arm64-msvc": "2.11.4",
+-        "@tauri-apps/cli-win32-ia32-msvc": "2.11.4",
+-        "@tauri-apps/cli-win32-x64-msvc": "2.11.4"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-darwin-arm64": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-darwin-arm64/-/cli-darwin-arm64-2.11.4.tgz",
+-      "integrity": "sha512-1ryOF3ZhpZ/nemHV5zVwBQBz9jDGKmKPvWPADOhc83ig0P4bMc2iER4NbC6r9sjeIZ6RVQ4g3RZIYvezhcl4TQ==",
+-      "cpu": [
+-        "arm64"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "darwin"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-darwin-x64": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-darwin-x64/-/cli-darwin-x64-2.11.4.tgz",
+-      "integrity": "sha512-uFsGQAAfuyz1k/yGLmkWfkBlgKAqZfxqlHmLWx81QU27RJWfmbNHCIq8T8w1e+VClleIuZUjpHWfoE4E3DLo3A==",
+-      "cpu": [
+-        "x64"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "darwin"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-linux-arm-gnueabihf": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-linux-arm-gnueabihf/-/cli-linux-arm-gnueabihf-2.11.4.tgz",
+-      "integrity": "sha512-IaHZn5CdBL21oUmjiVOS1ctw6Ip1O0pjp70FwOWmYz1myWe0SY96ZIj2FYf7pT0m8bI2h/hrs5ZbEXXh44/MkQ==",
+-      "cpu": [
+-        "arm"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "linux"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-linux-arm64-gnu": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-linux-arm64-gnu/-/cli-linux-arm64-gnu-2.11.4.tgz",
+-      "integrity": "sha512-N41/ukTRVe6XSuUTESuFdGeOW2i7k62tK+6gHK5Kd5/q5RPvvi19GaWAVPPb9u95HSGmTChSolBfzynUsssFaA==",
+-      "cpu": [
+-        "arm64"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "linux"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-linux-arm64-musl": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-linux-arm64-musl/-/cli-linux-arm64-musl-2.11.4.tgz",
+-      "integrity": "sha512-v277UnT/fB64xAfSroL5N3Km3tLmvATWqJJw/wRI+g6o+HkeD0slyE7gOhNs1MbjE41R7bQOTxMVoL3aomUJmw==",
+-      "cpu": [
+-        "arm64"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "linux"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-linux-riscv64-gnu": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-linux-riscv64-gnu/-/cli-linux-riscv64-gnu-2.11.4.tgz",
+-      "integrity": "sha512-qqgNkQ2u1yZHxjhxsZaxUtRDW8dIqIYm33rx/mzwQv0SfY9x1B+iraj8vWeFiXjjSVVhEMepXSOts1TqPzvXNQ==",
+-      "cpu": [
+-        "riscv64"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "linux"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-linux-x64-gnu": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-linux-x64-gnu/-/cli-linux-x64-gnu-2.11.4.tgz",
+-      "integrity": "sha512-2VRNWl84FOH0m2giiDkO2h0QXlcMJeX+zJDpI5kDIQAx6s+geF3v48F4DXfJez4GS/FdoDGnPnw1C2iYGbQ7bQ==",
+-      "cpu": [
+-        "x64"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "linux"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-linux-x64-musl": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-linux-x64-musl/-/cli-linux-x64-musl-2.11.4.tgz",
+-      "integrity": "sha512-o9GyhYor/nc7xarmwDE3ka2szuW3uuZzXjHWh64Q8YX5AtSgxdQkFWzrY4O8KiGtVNvFBI14H3Q49Qj5TOIP/A==",
+-      "cpu": [
+-        "x64"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "linux"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-win32-arm64-msvc": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-win32-arm64-msvc/-/cli-win32-arm64-msvc-2.11.4.tgz",
+-      "integrity": "sha512-ld5Ehb598m0VkYyylRPNeCFsBe/km0jxis6KgMpl3IGY6I/i1RwQXO05I1AsXUXO2WC6AvB/Lw4qTf/asiuEiQ==",
+-      "cpu": [
+-        "arm64"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "win32"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-win32-ia32-msvc": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-win32-ia32-msvc/-/cli-win32-ia32-msvc-2.11.4.tgz",
+-      "integrity": "sha512-12Hxi0XX/H5VFxO/bGgHkFWhml9VMgEOu9CidjeCeTNQ1l6fpUlbiGgSP7CLI3PFtW9/FfbeHieZ+kyWK5H7CA==",
+-      "cpu": [
+-        "ia32"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "win32"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+-    "node_modules/@tauri-apps/cli-win32-x64-msvc": {
+-      "version": "2.11.4",
+-      "resolved": "https://registry.npmjs.org/@tauri-apps/cli-win32-x64-msvc/-/cli-win32-x64-msvc-2.11.4.tgz",
+-      "integrity": "sha512-+vDiqBIU5dMISg/wNvX3sF+ZHfgJGJ5T0AcO+EHNXV9GGAG+P5fzodlDXD3QdKCRgZxMoCm5PPvj3BqLNjBthw==",
+-      "cpu": [
+-        "x64"
+-      ],
+-      "dev": true,
+-      "license": "Apache-2.0 OR MIT",
+-      "optional": true,
+-      "os": [
+-        "win32"
+-      ],
+-      "engines": {
+-        "node": ">= 10"
+-      }
+-    },
+     "node_modules/@tokenizer/inflate": {
+       "version": "0.2.7",
+       "resolved": "https://registry.npmjs.org/@tokenizer/inflate/-/inflate-0.2.7.tgz",
+@@ -11095,31 +10874,6 @@
+         "typescript": "^5.4.0"
+       }
+     },
+-    "packages/desktop": {
+-      "name": "@jewellery-erp/desktop",
+-      "version": "1.0.0",
+-      "dependencies": {
+-        "@jewellery-erp/shared": "*",
+-        "@tanstack/react-query": "^5.24.0",
+-        "lucide-react": "^0.344.0",
+-        "react": "^18.2.0",
+-        "react-dom": "^18.2.0",
+-        "react-hot-toast": "^2.4.1",
+-        "react-router-dom": "^6.22.0",
+-        "zustand": "^4.5.0"
+-      },
+-      "devDependencies": {
+-        "@tauri-apps/cli": "^2.0.0",
+-        "@types/react": "^18.2.56",
+-        "@types/react-dom": "^18.2.19",
+-        "@vitejs/plugin-react": "^4.2.1",
+-        "autoprefixer": "^10.4.17",
+-        "postcss": "^8.4.35",
+-        "tailwindcss": "^3.4.1",
+-        "typescript": "^5.4.0",
+-        "vite": "^5.1.0"
+-      }
+-    },
+     "packages/desktop-electron": {
+       "name": "@jewellery-erp/desktop-electron",
+       "version": "1.0.0",
+diff --git a/package.json b/package.json
+index bf7f111..a429338 100644
+--- a/package.json
++++ b/package.json
+@@ -19,7 +19,6 @@
+     "dist:desktop:win": "npm run prepare:backend -w packages/desktop-electron && npm run dist:win -w packages/desktop-electron",
+     "dist:desktop:mac": "npm run prepare:backend -w packages/desktop-electron && npm run dist:mac -w packages/desktop-electron",
+     "dist:desktop:linux": "npm run prepare:backend -w packages/desktop-electron && npm run dist:linux -w packages/desktop-electron",
+-    "tauri:icon": "cd packages/desktop && npx tauri icon",
+     "db:generate": "node scripts/ensure-env.mjs && npm run db:generate -w packages/backend",
+     "db:push": "node scripts/ensure-env.mjs && npm run db:push -w packages/backend",
+     "db:studio": "node scripts/ensure-env.mjs && npm run db:studio -w packages/backend",
+diff --git a/packages/backend/package.json b/packages/backend/package.json
+index ac4fd01..4d44790 100644
+--- a/packages/backend/package.json
++++ b/packages/backend/package.json
+@@ -3,11 +3,11 @@
+   "version": "1.0.0",
+   "private": true,
+   "scripts": {
+-    "build": "prisma generate && tsc",
+-    "dev": "prisma generate && ts-node-dev --respawn --transpile-only src/main.ts",
++    "build": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && tsc",
++    "dev": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && ts-node-dev --respawn --transpile-only src/main.ts",
+     "start": "node dist/main.js",
+-    "db:generate": "prisma generate",
+-    "db:push": "prisma db push",
++    "db:generate": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma",
++    "db:push": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && prisma db push --skip-generate",
+     "db:studio": "prisma studio",
+     "db:seed": "ts-node prisma/seed.ts"
+   },
+diff --git a/packages/backend/prisma/default-role-permissions.cjs b/packages/backend/prisma/default-role-permissions.cjs
+new file mode 100644
+index 0000000..117a8ff
+--- /dev/null
++++ b/packages/backend/prisma/default-role-permissions.cjs
+@@ -0,0 +1,129 @@
++/**
++ * Built-in application roles and their default access matrix.
++ *
++ * This file is CommonJS on purpose: it is used by the TypeScript backend,
++ * the ts-node seed, the plain JavaScript desktop seed, and the packaged
++ * backend. Keep role names in sync with the user-role selector.
++ */
++const DEFAULT_ROLE_PERMISSIONS = {
++  SUPER_ADMIN: [
++    'DASHBOARD_VIEW',
++    'BILLING_VIEW',
++    'BILLING_CREATE',
++    'BILLING_FINALIZE',
++    'BILLING_CANCEL',
++    'BILLING_EDIT_DRAFT',
++    'INVENTORY_VIEW',
++    'INVENTORY_ADJUST',
++    'INVENTORY_TRANSFER',
++    'CUSTOMERS_VIEW',
++    'CUSTOMERS_CREATE',
++    'CUSTOMERS_EDIT',
++    'REPORTS_VIEW',
++    'REPORTS_GST',
++    'REPORTS_FINANCIAL',
++    'REPORTS_EXPORT',
++    'PROFIT_VIEW',
++    'EMPLOYEES_VIEW',
++    'EMPLOYEES_MANAGE',
++    'SALARY_VIEW',
++    'JOB_WORK_VIEW',
++    'JOB_WORK_CREATE',
++    'JOB_WORK_ASSIGN',
++    'PURCHASE_COST_VIEW',
++    'SETTINGS_MANAGE',
++    'USERS_MANAGE',
++    'ROLES_MANAGE',
++    'BRANCHES_MANAGE',
++    'AUDIT_VIEW',
++  ],
++  OWNER: [
++    'DASHBOARD_VIEW',
++    'BILLING_VIEW',
++    'BILLING_CREATE',
++    'BILLING_FINALIZE',
++    'BILLING_CANCEL',
++    'BILLING_EDIT_DRAFT',
++    'INVENTORY_VIEW',
++    'INVENTORY_ADJUST',
++    'INVENTORY_TRANSFER',
++    'CUSTOMERS_VIEW',
++    'CUSTOMERS_CREATE',
++    'CUSTOMERS_EDIT',
++    'REPORTS_VIEW',
++    'REPORTS_GST',
++    'REPORTS_FINANCIAL',
++    'REPORTS_EXPORT',
++    'PROFIT_VIEW',
++    'EMPLOYEES_VIEW',
++    'EMPLOYEES_MANAGE',
++    'SALARY_VIEW',
++    'JOB_WORK_VIEW',
++    'JOB_WORK_CREATE',
++    'JOB_WORK_ASSIGN',
++    'PURCHASE_COST_VIEW',
++    'SETTINGS_MANAGE',
++    'USERS_MANAGE',
++    'ROLES_MANAGE',
++    'BRANCHES_MANAGE',
++    'AUDIT_VIEW',
++  ],
++  BRANCH_MANAGER: [
++    'DASHBOARD_VIEW',
++    'BILLING_VIEW',
++    'BILLING_CREATE',
++    'BILLING_FINALIZE',
++    'INVENTORY_VIEW',
++    'INVENTORY_ADJUST',
++    'CUSTOMERS_VIEW',
++    'CUSTOMERS_CREATE',
++    'REPORTS_VIEW',
++    'REPORTS_GST',
++    'EMPLOYEES_VIEW',
++    'JOB_WORK_VIEW',
++    'JOB_WORK_CREATE',
++    'JOB_WORK_ASSIGN',
++  ],
++  ACCOUNTANT: [
++    'DASHBOARD_VIEW',
++    'BILLING_VIEW',
++    'BILLING_CANCEL',
++    'CUSTOMERS_VIEW',
++    'REPORTS_VIEW',
++    'REPORTS_GST',
++    'REPORTS_FINANCIAL',
++    'REPORTS_EXPORT',
++    'PROFIT_VIEW',
++    'PURCHASE_COST_VIEW',
++    'AUDIT_VIEW',
++  ],
++  SALESMAN: [
++    'DASHBOARD_VIEW',
++    'BILLING_VIEW',
++    'BILLING_CREATE',
++    'BILLING_EDIT_DRAFT',
++    'CUSTOMERS_VIEW',
++    'CUSTOMERS_CREATE',
++    'CUSTOMERS_EDIT',
++  ],
++  CASHIER: [
++    'DASHBOARD_VIEW',
++    'BILLING_VIEW',
++    'BILLING_CREATE',
++    'CUSTOMERS_VIEW',
++    'CUSTOMERS_CREATE',
++  ],
++  INVENTORY_MANAGER: [
++    'DASHBOARD_VIEW',
++    'INVENTORY_VIEW',
++    'INVENTORY_ADJUST',
++    'INVENTORY_TRANSFER',
++  ],
++  GOLDSMITH: ['DASHBOARD_VIEW', 'JOB_WORK_VIEW'],
++  KARIGAR: ['DASHBOARD_VIEW', 'JOB_WORK_VIEW'],
++  JOB_WORKER: ['DASHBOARD_VIEW', 'JOB_WORK_VIEW'],
++};
++
++const DEFAULT_ROLES = Object.keys(DEFAULT_ROLE_PERMISSIONS);
++
++module.exports = { DEFAULT_ROLE_PERMISSIONS, DEFAULT_ROLES };
+diff --git a/packages/backend/prisma/seed-desktop.cjs b/packages/backend/prisma/seed-desktop.cjs
+index 487f2ae..a117c56 100644
+--- a/packages/backend/prisma/seed-desktop.cjs
++++ b/packages/backend/prisma/seed-desktop.cjs
+@@ -1,8 +1,9 @@
+ /**
+  * Minimal bootstrap seed for the packaged desktop app (no demo data).
+  *
+- * Creates: organization, main branch, an admin login, shop settings, common
+- * HSN codes, gold/silver rates and a primary cash account. The first-run
++ * Creates: organization, main branch, an admin login, built-in roles and
++ * permissions, shop settings, common HSN codes, gold/silver rates and a
++ * primary cash account. The first-run
+  * setup wizard inside the app then customizes shop details.
+  *
+  * Run by the desktop packaging scripts against the template SQLite database:
+@@ -31,9 +32,40 @@ function resolveDep(name) {
+ 
+ const { PrismaClient } = resolveDep('@prisma/client');
+ const bcrypt = resolveDep('bcryptjs');
++const { DEFAULT_ROLE_PERMISSIONS } = require('./default-role-permissions.cjs');
+ 
+ const prisma = new PrismaClient();
+ 
++async function seedRoles() {
++  for (const [roleName, permissionNames] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
++    const role = await prisma.role.upsert({
++      where: { name: roleName },
++      update: { isSystem: true },
++      create: { name: roleName, description: `${roleName} role`, isSystem: true },
++    });
++
++    for (const permissionName of permissionNames) {
++      const permission = await prisma.permission.upsert({
++        where: { name: permissionName },
++        update: {
++          description: permissionName.replace(/_/g, ' '),
++          module: permissionName.split('_')[0],
++        },
++        create: {
++          name: permissionName,
++          description: permissionName.replace(/_/g, ' '),
++          module: permissionName.split('_')[0],
++        },
++      });
++      await prisma.rolePermission.upsert({
++        where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } },
++        update: {},
++        create: { roleId: role.id, permissionId: permission.id },
++      });
++    }
++  }
++}
++
+ async function main() {
+   const org = await prisma.organization.upsert({
+     where: { id: 'default-org' },
+@@ -65,6 +97,8 @@ async function main() {
+     },
+   });
+ 
++  await seedRoles();
++
+   await prisma.shopSettings.upsert({
+     where: { organizationId: org.id },
+     update: {},
+diff --git a/packages/backend/prisma/seed.ts b/packages/backend/prisma/seed.ts
+index ba697eb..9d8f2cd 100644
+--- a/packages/backend/prisma/seed.ts
++++ b/packages/backend/prisma/seed.ts
+@@ -1,6 +1,10 @@
+ import { PrismaClient } from '@prisma/client';
+ import * as bcrypt from 'bcryptjs';
+ 
++const { DEFAULT_ROLE_PERMISSIONS: rolePerms } = require('./default-role-permissions.cjs') as {
++  DEFAULT_ROLE_PERMISSIONS: Record<string, string[]>;
++};
++
+ const prisma = new PrismaClient();
+ 
+ async function main() {
+@@ -225,19 +229,7 @@ async function main() {
+     });
+   }
+ 
+-  // Create Roles with their default permission matrix
+-  const rolePerms: Record<string, string[]> = {
+-    SUPER_ADMIN: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CREATE','BILLING_FINALIZE','BILLING_CANCEL','BILLING_EDIT_DRAFT','INVENTORY_VIEW','INVENTORY_ADJUST','INVENTORY_TRANSFER','CUSTOMERS_VIEW','CUSTOMERS_CREATE','CUSTOMERS_EDIT','REPORTS_VIEW','REPORTS_GST','REPORTS_FINANCIAL','REPORTS_EXPORT','PROFIT_VIEW','EMPLOYEES_VIEW','EMPLOYEES_MANAGE','SALARY_VIEW','JOB_WORK_VIEW','JOB_WORK_CREATE','JOB_WORK_ASSIGN','PURCHASE_COST_VIEW','SETTINGS_MANAGE','USERS_MANAGE','ROLES_MANAGE','BRANCHES_MANAGE','AUDIT_VIEW'],
+-    OWNER: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CREATE','BILLING_FINALIZE','BILLING_CANCEL','BILLING_EDIT_DRAFT','INVENTORY_VIEW','INVENTORY_ADJUST','INVENTORY_TRANSFER','CUSTOMERS_VIEW','CUSTOMERS_CREATE','CUSTOMERS_EDIT','REPORTS_VIEW','REPORTS_GST','REPORTS_FINANCIAL','REPORTS_EXPORT','PROFIT_VIEW','EMPLOYEES_VIEW','EMPLOYEES_MANAGE','SALARY_VIEW','JOB_WORK_VIEW','JOB_WORK_CREATE','JOB_WORK_ASSIGN','PURCHASE_COST_VIEW','SETTINGS_MANAGE','USERS_MANAGE','ROLES_MANAGE','BRANCHES_MANAGE','AUDIT_VIEW'],
+-    BRANCH_MANAGER: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CREATE','BILLING_FINALIZE','INVENTORY_VIEW','INVENTORY_ADJUST','CUSTOMERS_VIEW','CUSTOMERS_CREATE','REPORTS_VIEW','REPORTS_GST','EMPLOYEES_VIEW','JOB_WORK_VIEW','JOB_WORK_CREATE','JOB_WORK_ASSIGN'],
+-    ACCOUNTANT: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CANCEL','CUSTOMERS_VIEW','REPORTS_VIEW','REPORTS_GST','REPORTS_FINANCIAL','REPORTS_EXPORT','PROFIT_VIEW','PURCHASE_COST_VIEW','AUDIT_VIEW'],
+-    SALESMAN: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CREATE','BILLING_EDIT_DRAFT','CUSTOMERS_VIEW','CUSTOMERS_CREATE','CUSTOMERS_EDIT'],
+-    CASHIER: ['DASHBOARD_VIEW','BILLING_VIEW','BILLING_CREATE','CUSTOMERS_VIEW','CUSTOMERS_CREATE'],
+-    INVENTORY_MANAGER: ['DASHBOARD_VIEW','INVENTORY_VIEW','INVENTORY_ADJUST','INVENTORY_TRANSFER'],
+-    GOLDSMITH: ['DASHBOARD_VIEW','JOB_WORK_VIEW'],
+-    KARIGAR: ['DASHBOARD_VIEW','JOB_WORK_VIEW'],
+-    JOB_WORKER: ['DASHBOARD_VIEW','JOB_WORK_VIEW'],
+-  };
++  // Create roles with their default permission matrix.
+   const roles = Object.keys(rolePerms);
+   for (const roleName of roles) {
+     await prisma.role.upsert({
+diff --git a/packages/backend/src/modules/roles/roles.service.ts b/packages/backend/src/modules/roles/roles.service.ts
+index 6fe8a11..c82729b 100644
+--- a/packages/backend/src/modules/roles/roles.service.ts
++++ b/packages/backend/src/modules/roles/roles.service.ts
+@@ -1,6 +1,10 @@
+-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
++import { Injectable, BadRequestException, NotFoundException, OnModuleInit } from '@nestjs/common';
+ import { PrismaService } from '../../common/prisma.service';
+ 
++const { DEFAULT_ROLE_PERMISSIONS } = require('../../../prisma/default-role-permissions.cjs') as {
++  DEFAULT_ROLE_PERMISSIONS: Record<string, string[]>;
++};
++
+ /** Permission catalog grouped by module (read/write access model). */
+ export const PERMISSION_CATALOG: { module: string; label: string; permissions: { name: string; action: 'read' | 'write'; label: string }[] }[] = [
+   { module: 'DASHBOARD', label: 'Dashboard', permissions: [{ name: 'DASHBOARD_VIEW', action: 'read', label: 'View dashboard' }] },
+@@ -49,11 +53,17 @@ export const PERMISSION_CATALOG: { module: string; label: string; permissions: {
+ ];
+ 
+ @Injectable()
+-export class RolesService {
++export class RolesService implements OnModuleInit {
++  private defaultsReady: Promise<void> | null = null;
++
+   constructor(private prisma: PrismaService) {}
+ 
++  async onModuleInit(): Promise<void> {
++    await this.ensureSystemRoles();
++  }
++
+   /** Ensure every known permission exists as a DB row (idempotent). */
+-  async ensureCatalog() {
++  private async ensureCatalog() {
+     for (const group of PERMISSION_CATALOG) {
+       for (const p of group.permissions) {
+         await this.prisma.permission.upsert({
+@@ -65,15 +75,55 @@ export class RolesService {
+     }
+   }
+ 
++  /**
++   * Ensure built-in roles exist in the database as well as in the user form.
++   *
++   * The desktop template database historically created users with a role
++   * string but did not seed the Role/RolePermission tables. Keeping this
++   * idempotent runtime repair means existing installations are fixed on the
++   * next backend start; new template databases are seeded by seed-desktop.cjs.
++   */
++  async ensureSystemRoles(): Promise<void> {
++    if (!this.defaultsReady) {
++      this.defaultsReady = this.seedSystemRoles().catch((error) => {
++        this.defaultsReady = null;
++        throw error;
++      });
++    }
++    await this.defaultsReady;
++  }
++
++  private async seedSystemRoles(): Promise<void> {
++    await this.ensureCatalog();
++
++    for (const [roleName, permissionNames] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
++      const role = await this.prisma.role.upsert({
++        where: { name: roleName },
++        update: { isSystem: true },
++        create: { name: roleName, description: `${roleName} role`, isSystem: true },
++      });
++
++      for (const permissionName of permissionNames) {
++        const permission = await this.prisma.permission.findUnique({ where: { name: permissionName } });
++        if (!permission) continue;
++        await this.prisma.rolePermission.upsert({
++          where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } },
++          update: {},
++          create: { roleId: role.id, permissionId: permission.id },
++        });
++      }
++    }
++  }
++
+   /** Return the permission catalog with a per-module read/write summary. */
+   async getCatalog() {
+-    await this.ensureCatalog();
++    await this.ensureSystemRoles();
+     return PERMISSION_CATALOG;
+   }
+ 
+   /** List roles with their granted permission names. */
+   async findAll() {
+-    await this.ensureCatalog();
++    await this.ensureSystemRoles();
+     const roles = await this.prisma.role.findMany({
+       orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
+       include: { permissions: { include: { permission: true } } },
+@@ -109,7 +159,7 @@ export class RolesService {
+     const existing = await this.prisma.role.findUnique({ where: { name } });
+     if (existing) throw new BadRequestException(`Role "${name}" already exists`);
+ 
+-    await this.ensureCatalog();
++    await this.ensureSystemRoles();
+     const permissions = Array.isArray(data.permissions) ? data.permissions : [];
+     const role = await this.prisma.role.create({
+       data: { name, description: data.description || name + ' role', isSystem: false },
+@@ -126,7 +176,7 @@ export class RolesService {
+     // System roles can have their description/permissions updated but not renamed.
+     const name = data.name ? data.name.trim().toUpperCase().replace(/\s+/g, '_') : role.name;
+ 
+-    await this.ensureCatalog();
++    await this.ensureSystemRoles();
+     await this.prisma.role.update({
+       where: { id },
+       data: { name, description: data.description ?? role.description },
+diff --git a/packages/backend/src/modules/users/users.controller.ts b/packages/backend/src/modules/users/users.controller.ts
+index 3716049..350aa22 100644
+--- a/packages/backend/src/modules/users/users.controller.ts
++++ b/packages/backend/src/modules/users/users.controller.ts
+@@ -4,7 +4,9 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+ import { CurrentUser } from '../../common/decorators/current-user.decorator';
+ import { PrismaService } from '../../common/prisma.service';
+ 
+-const DEFAULT_ROLES = ['SUPER_ADMIN', 'OWNER', 'BRANCH_MANAGER', 'ACCOUNTANT', 'SALESMAN', 'CASHIER', 'INVENTORY_MANAGER', 'GOLDSMITH', 'KARIGAR', 'JOB_WORKER'];
++const { DEFAULT_ROLES } = require('../../../prisma/default-role-permissions.cjs') as {
++  DEFAULT_ROLES: string[];
++};
+ 
+ @Controller('users')
+ @UseGuards(JwtAuthGuard)
+diff --git a/packages/desktop-electron/electron/paths.ts b/packages/desktop-electron/electron/paths.ts
+index 2ad117d..f5f0fb3 100644
+--- a/packages/desktop-electron/electron/paths.ts
++++ b/packages/desktop-electron/electron/paths.ts
+@@ -5,7 +5,7 @@ import * as fs from 'fs';
+ /** Repo root when running unpackaged (`npm run dev` / `electron .`). */
+ export function repoRoot(): string {
+   // dist-electron/ → package dir → packages/ → repo root
+-  return path.resolve(__dirname, '..', '..');
++  return path.resolve(__dirname, '..', '..', '..');
+ }
+ 
+ export const isPackaged = () => app.isPackaged;
+diff --git a/packages/desktop-electron/package.json b/packages/desktop-electron/package.json
+index 7153b21..c1b73e6 100644
+--- a/packages/desktop-electron/package.json
++++ b/packages/desktop-electron/package.json
+@@ -7,6 +7,7 @@
+   "main": "dist-electron/main.js",
+   "scripts": {
+     "typecheck:main": "tsc -p tsconfig.json --noEmit",
++    "build": "npm run build:main && npm run build:renderer",
+     "build:renderer": "vite build",
+     "dev:ui": "vite",
+     "dev": "node scripts/dev.mjs",
+diff --git a/packages/desktop-electron/scripts/prepare-backend.mjs b/packages/desktop-electron/scripts/prepare-backend.mjs
+index 0087520..400bbf0 100644
+--- a/packages/desktop-electron/scripts/prepare-backend.mjs
++++ b/packages/desktop-electron/scripts/prepare-backend.mjs
+@@ -69,6 +69,11 @@ fs.copyFileSync(
+   path.join(backendDir, 'prisma', 'schema.prisma'),
+   path.join(stagingDir, 'backend', 'prisma', 'schema.prisma'),
+ );
++// The runtime role bootstrap is shared by the compiled backend and seed.
++fs.copyFileSync(
++  path.join(backendDir, 'prisma', 'default-role-permissions.cjs'),
++  path.join(stagingDir, 'backend', 'prisma', 'default-role-permissions.cjs'),
++);
+ 
+ // package.json without the workspace dependency (we copy shared bits ourselves
+ // if ever needed) — used for a standalone production dependency install.
+diff --git a/packages/desktop/.gitignore b/packages/desktop/.gitignore
+deleted file mode 100644
+index 0ae290c..0000000
+--- a/packages/desktop/.gitignore
++++ /dev/null
+@@ -1,46 +0,0 @@
+-# Node / Vite
+-node_modules/
+-dist/
+-.vite/
+-
+-# Tauri / Rust
+-src-tauri/target/
+-src-tauri/Cargo.lock
+-
+-# Build artifacts (these are bundled per-platform)
+-src-tauri/target/x86_64-pc-windows-msvc/
+-src-tauri/target/x86_64-unknown-linux-gnu/
+-src-tauri/target/aarch64-unknown-linux-gnu/
+-src-tauri/target/x86_64-apple-darwin/
+-src-tauri/target/aarch64-apple-darwin/
+-src-tauri/target/universal-apple-darwin/
+-
+-# Generated icons (placed manually after first build, then tracked)
+-# src-tauri/icons/  # uncomment to ignore all icons
+-
+-# OS files
+-.DS_Store
+-Thumbs.db
+-
+-# IDE
+-.idea/
+-.vscode/
+-*.swp
+-*.swo
+-
+-# Logs
+-*.log
+-npm-debug.log*
+-yarn-debug.log*
+-yarn-error.log*
+-
+-# Env files
+-.env
+-.env.local
+-.env.*.local
+-
+-# Distribution builds (kept here as convenience)
+-dist-build/
+-
+-# Auto-generated TS build info
+-*.tsbuildinfo
+diff --git a/packages/desktop/README.md b/packages/desktop/README.md
+deleted file mode 100644
+index 1aa1963..0000000
+--- a/packages/desktop/README.md
++++ /dev/null
+@@ -1,97 +0,0 @@
+-# Jewellery ERP — Desktop Edition (Tauri 2)
+-
+-This is the desktop packaging of the Jewellery ERP web application.
+-The same React/Vite frontend is embedded in a native window using Tauri 2, providing direct OS access for hardware like thermal printers, barcode scanners, and the cash drawer.
+-
+-## Quick start
+-
+-```bash
+-# Install Rust (one-time)
+-curl https://sh.rustup.rs -sSf | sh -s -- -y
+-source $HOME/.cargo/env
+-
+-# Install dependencies
+-npm install
+-
+-# Generate icons
+-npm run tauri:icon -- ./my-logo.png
+-
+-# Run in dev mode
+-npm run tauri:dev
+-
+-# Build production executable
+-npm run tauri:build
+-```
+-
+-## Production builds
+-
+-| Build target | How |
+-|--------------|-----|
+-| Windows `.exe` `.msi` | `npm run tauri:build:windows` |
+-| Linux `.AppImage` `.deb` `.rpm` | `npm run tauri:build:linux` |
+-| macOS `.dmg` (Apple Silicon) | `npm run tauri:build:mac` |
+-| macOS `.dmg` (Intel) | `npx tauri build --target x86_64-apple-darwin` |
+-| Linux ARM64 | `npx tauri build --target aarch64-unknown-linux-gnu` |
+-
+-For cross-platform CI builds, see `.github/workflows/build-desktop.yml`.
+-
+-## Hardware integration
+-
+-The Tauri backend exposes commands the frontend uses:
+-
+-### Thermal printer (ESC/POS)
+-```ts
+-import { invoke } from '@tauri-apps/api/core';
+-await invoke('print_thermal_receipt', {
+-  payload: {
+-    shop_name: '...',
+-    items: [...],
+-    // ...
+-  },
+-});
+-```
+-
+-### Barcode scanner (USB / serial)
+-```ts
+-const ports = await invoke('list_serial_ports');
+-```
+-
+-### Cash drawer
+-```ts
+-await invoke('print_thermal_receipt', { payload, options: { open_drawer: true } });
+-```
+-
+-### Offline mode (synced when online)
+-```ts
+-const status = await invoke('get_offline_status');
+-await invoke('cache_bill_for_offline', { payload: pendingTx });
+-await invoke('sync_pending_transactions', { serverUrl: 'http://...' });
+-```
+-
+-## Folder layout
+-
+-```
+-desktop/
+-├── src/                    React/Vite SPA (shared with web frontend)
+-├── src-tauri/              Rust backend
+-│   ├── Cargo.toml          Rust dependencies
+-│   ├── tauri.conf.json     Tauri config (icons, bundle settings, plugins)
+-│   ├── capabilities/       Tauri 2 permission model
+-│   ├── icons/              App icons (auto-generated by `tauri icon`)
+-│   └── src/
+-│       ├── main.rs         Entry point
+-│       ├── lib.rs          Tauri setup + plugin registration
+-│       ├── state.rs        AppState types
+-│       ├── commands.rs     #[tauri::command] handlers
+-│       ├── printer.rs      ESC/POS thermal printer
+-│       └── offline.rs      Local SQLite + pending queue
+-├── vite.config.ts          Vite config (Tauri-aware)
+-├── package.json
+-└── index.html              HTML entry
+-```
+-
+-## Notes
+-
+-- The frontend in `src/` mirrors the SPA in `packages/frontend/src/`. Kept intentionally lightweight — desktop-specific logic lives in the Tauri backend (Rust).
+-- For local development, the app opens in a separate window from the backend. Backend at `http://localhost:3001` must be running.
+-- See `docs/DESKTOP.md` for cross-platform build instructions and CI configuration.
+diff --git a/packages/desktop/index.html b/packages/desktop/index.html
+deleted file mode 100644
+index b4413f9..0000000
+--- a/packages/desktop/index.html
++++ /dev/null
+@@ -1,13 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="en">
+-  <head>
+-    <meta charset="UTF-8" />
+-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-    <title>Shri Jewellers ERP - Desktop</title>
+-  </head>
+-  <body>
+-    <div id="root"></div>
+-    <script type="module" src="/src/main.tsx"></script>
+-  </body>
+-</html>
+diff --git a/packages/desktop/package.json b/packages/desktop/package.json
+deleted file mode 100644
+index bce47d3..0000000
+--- a/packages/desktop/package.json
++++ /dev/null
+@@ -1,41 +0,0 @@
+-{
+-  "name": "@jewellery-erp/desktop",
+-  "version": "1.0.0",
+-  "private": true,
+-  "description": "Jewellery ERP & POS Desktop Application (Tauri)",
+-  "main": "dist/index.html",
+-  "scripts": {
+-    "dev": "vite",
+-    "build": "tsc -b && vite build",
+-    "preview": "vite preview",
+-    "tauri": "tauri",
+-    "tauri:dev": "tauri dev",
+-    "tauri:build": "tauri build",
+-    "tauri:build:windows": "tauri build --target x86_64-pc-windows-msvc",
+-    "tauri:build:linux": "tauri build --target x86_64-unknown-linux-gnu",
+-    "tauri:build:mac": "tauri build --target aarch64-apple-darwin",
+-    "tauri:build:mac:x64": "tauri build --target x86_64-apple-darwin",
+-    "tauri:icon": "tauri icon"
+-  },
+-  "dependencies": {
+-    "@jewellery-erp/shared": "*",
+-    "@tanstack/react-query": "^5.24.0",
+-    "lucide-react": "^0.344.0",
+-    "react": "^18.2.0",
+-    "react-dom": "^18.2.0",
+-    "react-hot-toast": "^2.4.1",
+-    "react-router-dom": "^6.22.0",
+-    "zustand": "^4.5.0"
+-  },
+-  "devDependencies": {
+-    "@tauri-apps/cli": "^2.0.0",
+-    "@types/react": "^18.2.56",
+-    "@types/react-dom": "^18.2.19",
+-    "@vitejs/plugin-react": "^4.2.1",
+-    "autoprefixer": "^10.4.17",
+-    "postcss": "^8.4.35",
+-    "tailwindcss": "^3.4.1",
+-    "typescript": "^5.4.0",
+-    "vite": "^5.1.0"
+-  }
+-}
+diff --git a/packages/desktop/src-tauri/Cargo.toml b/packages/desktop/src-tauri/Cargo.toml
+deleted file mode 100644
+index 2ea83f1..0000000
+--- a/packages/desktop/src-tauri/Cargo.toml
++++ /dev/null
+@@ -1,53 +0,0 @@
+-[package]
+-name = "jewellery-erp-desktop"
+-version = "1.0.0"
+-description = "Jewellery Shop ERP & POS - Desktop Edition"
+-authors = ["Shri Jewellers"]
+-edition = "2021"
+-rust-version = "1.70"
+-
+-# See more keys and their definitions at https://doc.rust-lang.org/cargo/[manifest.html]
+-
+-[lib]
+-name = "jewellery_erp_desktop_lib"
+-crate-type = ["staticlib", "cdylib", "rlib"]
+-
+-[build-dependencies]
+-tauri-build = { version = "2", features = [] }
+-
+-[dependencies]
+-tauri = { version = "2", features = [] }
+-tauri-plugin-dialog = "2"
+-tauri-plugin-fs = "2"
+-tauri-plugin-shell = "2"
+-tauri-plugin-os = "2"
+-tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+-tauri-plugin-http = { version = "2", features = ["unsafe-headers"] }
+-serde = { version = "1", features = ["derive"] }
+-serde_json = "1"
+-tokio = { version = "1", features = ["full"] }
+-chrono = { version = "0.4", features = ["serde"] }
+-rusqlite = { version = "0.31", features = ["bundled"] }
+-printing = "0.2"
+-thiserror = "1"
+-anyhow = "1"
+-uuid = { version = "1", features = ["v4", "serde"] }
+-log = "0.4"
+-env_logger = "0.11"
+-sha2 = "0.10"
+-hex = "0.4"
+-
+-[features]
+-# This feature is used for production builds where `devPath` points to the filesystem
+-# DO NOT REMOVE!!
+-custom-protocol = ["tauri/custom-protocol"]
+-
+-[profile.release]
+-panic = "abort" # Abort on panic in release mode
+-codegen-units = 1 # Maximize compile time optimizations
+-lto = true # Enable Link-Time-Optimization
+-opt-level = "s" # Optimize for size
+-strip = true # Strip symbols (smaller binary)
+-
+-[profile.dev]
+-incremental = true
+diff --git a/packages/desktop/src-tauri/build.rs b/packages/desktop/src-tauri/build.rs
+deleted file mode 100644
+index d860e1e..0000000
+--- a/packages/desktop/src-tauri/build.rs
++++ /dev/null
+@@ -1,3 +0,0 @@
+-fn main() {
+-    tauri_build::build()
+-}
+diff --git a/packages/desktop/src-tauri/capabilities/default.json b/packages/desktop/src-tauri/capabilities/default.json
+deleted file mode 100644
+index 578c32e..0000000
+--- a/packages/desktop/src-tauri/capabilities/default.json
++++ /dev/null
+@@ -1,39 +0,0 @@
+-{
+-  "$schema": "../gen/schemas/desktop-schema.json",
+-  "identifier": "default",
+-  "description": "Default permissions for Shri Jewellers ERP",
+-  "windows": ["main"],
+-  "permissions": [
+-    "core:default",
+-    "core:window:default",
+-    "core:window:allow-close",
+-    "core:window:allow-minimize",
+-    "core:window:allow-maximize",
+-    "core:window:allow-unmaximize",
+-    "core:window:allow-start-dragging",
+-    "core:app:default",
+-    "core:path:default",
+-    "core:event:default",
+-    "dialog:default",
+-    "dialog:allow-save",
+-    "dialog:allow-open",
+-    "dialog:allow-message",
+-    "fs:default",
+-    "fs:allow-read-file",
+-    "fs:allow-write-file",
+-    "fs:allow-read-text-file",
+-    "fs:allow-write-text-file",
+-    "fs:allow-mkdir",
+-    "fs:allow-exists",
+-    "shell:default",
+-    "shell:allow-open",
+-    "os:default",
+-    "sql:default",
+-    "sql:allow-load",
+-    "sql:allow-execute",
+-    "sql:allow-select",
+-    "sql:allow-close",
+-    "http:default",
+-    "http:allow-request"
+-  ]
+-}
+diff --git a/packages/desktop/src-tauri/icons/README.md b/packages/desktop/src-tauri/icons/README.md
+deleted file mode 100644
+index fa7a24b..0000000
+--- a/packages/desktop/src-tauri/icons/README.md
++++ /dev/null
+@@ -1,43 +0,0 @@
+-# Tauri Icons
+-
+-This folder should contain Tauri app icons in the following formats:
+-
+-## Required icon files:
+-- `32x32.png` — 32x32 pixel PNG
+-- `128x128.png` — 128x128 pixel PNG
+-- `128x128@2x.png` — 256x256 pixel PNG (Apple "Retina" 2x)
+-- `icon.icns` — macOS icon fileset (multi-resolution)
+-- `icon.ico` — Windows icon file (multi-resolution ICO)
+-
+-## Generation
+-
+-If you have a source logo (PNG, SVG, etc.), use Tauri's built-in icon generator:
+-
+-```bash
+-cd packages/desktop
+-npm run tauri:icon -- /path/to/source-logo.png
+-```
+-
+-This will generate all required formats from a single source image (recommended: square, 512x512 or higher, transparent background).
+-
+-## Manual creation
+-
+-If you don't have Tauri CLI, create the files manually:
+-- Use ImageMagick, Photoshop, or [rcedit](https://github.com/electron/rcedit)
+-- For `icon.ico` (Windows): convert PNGs to multi-size ICO
+-- For `icon.icns` (macOS): use `iconutil` on macOS or `png2icns`
+-
+-## Placeholder note
+-
+-If you build without providing these icons, Tauri build will fail with errors mentioning missing icon files.
+-
+-A simple solution: download or create a 512x512 PNG with a "diamond" icon and run:
+-
+-```bash
+-npx tauri icon ./source.png
+-```
+-
+-Tauri CLI must be installed:
+-```bash
+-npm install -D @tauri-apps/cli
+-```
+diff --git a/packages/desktop/src-tauri/src/commands.rs b/packages/desktop/src-tauri/src/commands.rs
+deleted file mode 100644
+index cd9aff0..0000000
+--- a/packages/desktop/src-tauri/src/commands.rs
++++ /dev/null
+@@ -1,393 +0,0 @@
+-use crate::AppState;
+-use crate::state::{AppInfo, PendingTransaction, SystemInfo};
+-use crate::printer::{ThermalPrinter, ThermalReceiptPayload, PrintOptions};
+-use chrono::Utc;
+-use serde::{Deserialize, Serialize};
+-use std::fs;
+-use std::path::PathBuf;
+-use tauri::{State, Manager};
+-use tauri_plugin_dialog::{DialogExt, MessageDialogBuilder};
+-
+-// ==================== System commands ====================
+-
+-#[tauri::command]
+-pub fn get_app_info(state: State<AppState>) -> AppInfo {
+-    let pending_count = state.offline_store.lock().ok()
+-        .and_then(|s| s.as_ref().map(|o| o.pending_count().ok().unwrap_or(0)))
+-        .unwrap_or(0);
+-
+-    AppInfo {
+-        name: "Shri Jewellers ERP".to_string(),
+-        version: env!("CARGO_PKG_VERSION").to_string(),
+-        platform: std::env::consts::OS.to_string(),
+-        arch: std::env::consts::ARCH.to_string(),
+-        is_offline: pending_count > 0,
+-    }
+-}
+-
+-#[tauri::command]
+-pub fn get_system_info(app_handle: tauri::AppHandle, state: State<AppState>) -> SystemInfo {
+-    let app_dir = app_handle.path().app_data_dir().unwrap_or(PathBuf::from("."));
+-    let db_path = app_dir.join("jewellery-offline.db");
+-    let db_size = fs::metadata(&db_path).map(|m| m.len()).unwrap_or(0);
+-
+-    let mut hostname = "unknown".to_string();
+-    if let Ok(name) = std::env::var("HOSTNAME") {
+-        hostname = name;
+-    } else if let Ok(name) = std::env::var("COMPUTERNAME") {
+-        hostname = name;
+-    }
+-
+-    SystemInfo {
+-        os: std::env::consts::OS.to_string(),
+-        os_version: std::env::consts::FAMILY.to_string(),
+-        hostname,
+-        cpu_count: num_cpus::get(),
+-        total_memory: sys_memory(),
+-        free_memory: 0,
+-        db_path: db_path.to_string_lossy().to_string(),
+-        db_size_bytes: db_size,
+-    }
+-}
+-
+-fn sys_memory() -> u64 {
+-    8 * 1024 * 1024 * 1024 // Fallback 8GB — only used when probing fails
+-}
+-
+-// ==================== Printer commands ====================
+-
+-#[tauri::command]
+-pub async fn list_thermal_printers(app: tauri::AppHandle) -> Result<Vec<crate::printer::PrinterInfo>, String> {
+-    let tauri_app = app.clone();
+-
+-    tauri::async_runtime::spawn_blocking(move || {
+-        match tauri_app.shell().sidecar_path("print-detector") {
+-            Ok(bin) => std::process::Command::new(bin)
+-                .output()
+-                .map_err(|e| e.to_string()),
+-            Err(_) => {
+-                // Fallback: empty list (the user can manually add printers)
+-                Ok(Vec::new())
+-            }
+-        }
+-    })
+-    .await
+-    .map_err(|e| e.to_string())?
+-}
+-
+-#[tauri::command]
+-pub fn connect_printer(state: State<AppState>, name: String, port: String) -> Result<(), String> {
+-    let mut printer_lock = state.connected_printer.lock().unwrap();
+-    *printer_lock = Some(ThermalPrinter {
+-        name,
+-        connected: true,
+-    });
+-    log::info!("🖨  Connected to printer on port {}", port);
+-    Ok(())
+-}
+-
+-#[tauri::command]
+-pub fn disconnect_printer(state: State<AppState>) -> Result<(), String> {
+-    let mut printer_lock = state.connected_printer.lock().unwrap();
+-    *printer_lock = None;
+-    Ok(())
+-}
+-
+-#[tauri::command]
+-pub async fn print_thermal_receipt(
+-    app: tauri::AppHandle,
+-    payload: ThermalReceiptPayload,
+-    options: Option<PrintOptions>,
+-) -> Result<PrintResult, String> {
+-    let opts = options.unwrap_or_default();
+-    let app_clone = app.clone();
+-
+-    tauri::async_runtime::spawn_blocking(move || {
+-        let data = ThermalPrinter::build_thermal_receipt(&payload, &opts);
+-
+-        // Save payload as a print job file (in real life, we'd send to printer)
+-        let print_dir = app_clone.path().app_data_dir()
+-            .map_err(|e| e.to_string())?
+-            .join("prints");
+-        fs::create_dir_all(&print_dir).map_err(|e| e.to_string())?;
+-
+-        let filename = format!("thermal-{}-
+-.bin", payload.bill_number.replace('/', "_"));
+-        let path = print_dir.join(filename);
+-        fs::write(&path, &data).map_err(|e| e.to_string())?;
+-
+-        Ok(PrintResult {
+-            bytes: data.len(),
+-            format: "ESC/POS".to_string(),
+-            saved_to: path.to_string_lossy().to_string(),
+-        })
+-    })
+-    .await
+-    .map_err(|e| e.to_string())?
+-}
+-
+-#[derive(Debug, Serialize, Deserialize)]
+-pub struct PrintResult {
+-    pub bytes: usize,
+-    pub format: String,
+-    pub saved_to: String,
+-}
+-
+-#[tauri::command]
+-pub async fn print_bill(app: tauri::AppHandle, _bill_id: String) -> Result<String, String> {
+-    let app_clone = app.clone();
+-    tauri::async_runtime::spawn_blocking(move || {
+-        // In real production: route to OS print spool or user-selected PDF generator
+-        let dir = app_clone.path().app_data_dir().map_err(|e| e.to_string())?;
+-        Ok(dir.join("prints").to_string_lossy().to_string())
+-    })
+-    .await
+-    .map_err(|e| e.to_string())?
+-}
+-
+-// ==================== Barcode scanner (Serial) ====================
+-
+-#[tauri::command]
+-pub async fn list_serial_ports() -> Result<Vec<String>, String> {
+-    tauri::async_runtime::spawn_blocking(|| {
+-        // Use serialport crate scanning. Returning empty list as no API is exposed.
+-        let ports: Vec<String> = Vec::new();
+-        Ok::<_, String>(ports)
+-    })
+-    .await
+-    .map_err(|e| e.to_string())?
+-}
+-
+-#[tauri::command]
+-pub fn test_serial_port(port: String) -> Result<bool, String> {
+-    log::info!("Testing serial port: {}", port);
+-    // In real app: serialport.open().test_connection()
+-    Ok(false)
+-}
+-
+-// ==================== File operations ====================
+-
+-#[tauri::command]
+-pub fn save_pdf_to_file(save_path: String, content_base64: String) -> Result<String, String> {
+-    use base64::Engine;
+-    let bytes = base64::engine::general_purpose::STANDARD.decode(&content_base64)
+-        .map_err(|e| e.to_string())?;
+-    fs::write(&save_path, &bytes).map_err(|e| e.to_string())?;
+-    Ok(save_path)
+-}
+-
+-#[derive(Debug, Serialize, Deserialize)]
+-pub struct ExportResult {
+-    pub path: String,
+-    pub size_bytes: u64,
+-}
+-
+-#[tauri::command]
+-pub async fn export_data(
+-    app: tauri::AppHandle,
+-    format: String,
+-    data: String,
+-) -> Result<String, String> {
+-    let app_clone = app.clone();
+-    let format_clone = format.clone();
+-    let data_clone = data.clone();
+-
+-    tauri::async_runtime::spawn_blocking(move || {
+-        let dir = app_clone.path().app_data_dir().map_err(|e| e.to_string())?;
+-        let exports_dir = dir.join("exports");
+-        fs::create_dir_all(&exports_dir).map_err(|e| e.to_string())?;
+-
+-        let ts = Utc::now().format("%Y-%m-%d_%H%M%S").to_string();
+-        let ext = match format_clone.as_str() {
+-            "json" => "json",
+-            "csv" => "csv",
+-            _ => "txt",
+-        };
+-        let path = exports_dir.join(format!("export-{}.{}.{}",
+-            format_clone, ts, ext));
+-        fs::write(&path, data_clone.as_bytes()).map_err(|e| e.to_string())?;
+-        Ok(path.to_string_lossy().to_string())
+-    })
+-    .await
+-    .map_err(|e| e.to_string())?
+-}
+-
+-#[tauri::command]
+-pub async fn import_data(app: tauri::AppHandle, path: String) -> Result<String, String> {
+-    let app_clone = app.clone();
+-    tauri::async_runtime::spawn_blocking(move || {
+-        let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+-        let dir = app_clone.path().app_data_dir().map_err(|e| e.to_string())?;
+-        let imports_dir = dir.join("imports");
+-        fs::create_dir_all(&imports_dir).map_err(|e| e.to_string())?;
+-        let dest = imports_dir.join(format!("imported-{}.json",
+-            Utc::now().format("%Y-%m-%d_%H%M%S")));
+-        fs::write(&dest, &content).map_err(|e| e.to_string())?;
+-        Ok(dest.to_string_lossy().to_string())
+-    })
+-    .await
+-    .map_err(|e| e.to_string())?
+-}
+-
+-// ==================== Offline / sync ====================
+-
+-#[tauri::command]
+-pub fn get_offline_status(state: State<AppState>) -> Result<OfflineStatus, String> {
+-    let pending_count = state.offline_store.lock().unwrap()
+-        .as_ref()
+-        .map(|o| o.pending_count().unwrap_or(0))
+-        .unwrap_or(0);
+-
+-    Ok(OfflineStatus {
+-        offline_mode: pending_count > 0,
+-        pending_transactions: pending_count,
+-        storage_path: state_offline_path(),
+-        last_sync: None,
+-    })
+-}
+-
+-#[derive(Debug, Serialize, Deserialize)]
+-pub struct OfflineStatus {
+-    pub offline_mode: bool,
+-    pub pending_transactions: i64,
+-    pub storage_path: String,
+-    pub last_sync: Option<String>,
+-}
+-
+-fn state_offline_path() -> String {
+-    "app_data/jewellery-offline.db".to_string()
+-}
+-
+-#[tauri::command]
+-pub async fn sync_pending_transactions(state: State<'_, AppState>, server_url: String) -> Result<SyncResult, String> {
+-    let store_clone = state.offline_store.lock().unwrap().clone();
+-    let pending = store_clone.as_ref()
+-        .ok_or_else(|| "Offline store not initialized".to_string())?
+-        .get_pending()
+-        .map_err(|e| e.to_string())?;
+-
+-    let mut synced = 0;
+-    let mut failed = 0;
+-    let client = reqwest::Client::new();
+-
+-    for tx in pending {
+-        match client.post(&format!("{}/api/{}/sync", server_url.trim_end_matches('/'), tx.transaction_type.to_lowercase()))
+-            .header("Content-Type", "application/json")
+-            .body(tx.payload.clone())
+-            .timeout(std::time::Duration::from_secs(10))
+-            .send()
+-            .await
+-        {
+-            Ok(resp) if resp.status().is_success() => {
+-                if let Ok(mut s) = state.offline_store.lock() {
+-                    if let Some(o) = s.as_ref() {
+-                        let _ = o.mark_synced(&tx.id);
+-                    }
+-                }
+-                synced += 1;
+-            }
+-            Ok(resp) => {
+-                if let Ok(mut s) = state.offline_store.lock() {
+-                    if let Some(o) = s.as_ref() {
+-                        let _ = o.increment_retry(&tx.id, &format!("HTTP {}", resp.status().as_u16()));
+-                    }
+-                }
+-                failed += 1;
+-            }
+-            Err(e) => {
+-                if let Ok(mut s) = state.offline_store.lock() {
+-                    if let Some(o) = s.as_ref() {
+-                        let _ = o.increment_retry(&tx.id, &e.to_string());
+-                    }
+-                }
+-                failed += 1;
+-            }
+-        }
+-    }
+-
+-    Ok(SyncResult { synced, failed, total: synced + failed })
+-}
+-
+-#[derive(Debug, Serialize, Deserialize)]
+-pub struct SyncResult {
+-    pub synced: u32,
+-    pub failed: u32,
+-    pub total: u32,
+-}
+-
+-#[tauri::command]
+-pub fn cache_bill_for_offline(payload: PendingTransaction, state: State<AppState>) -> Result<(), String> {
+-    let store = state.offline_store.lock().unwrap();
+-    if let Some(o) = store.as_ref() {
+-        o.save_pending(&payload).map_err(|e| e.to_string())?;
+-    }
+-    Ok(())
+-}
+-
+-// ==================== App lifecycle ====================
+-
+-#[tauri::command]
+-pub fn exit_app(app: tauri::AppHandle) {
+-    app.exit(0);
+-}
+-
+-#[tauri::command]
+-pub fn restart_app(app: tauri::AppHandle) {
+-    app.restart();
+-}
+-
+-// ==================== num_cpus compatibility shim ====================
+-
+-// Inline cpus detection using std (no extra crate dependency)
+-mod num_cpus {
+-    pub fn get() -> usize {
+-        std::thread::available_parallelism()
+-            .map(|n| n.get())
+-            .unwrap_or(1)
+-    }
+-}
+-
+-// ==================== base64 compatibility ====================
+-
+-mod base64 {
+-    use std::fmt;
+-    pub mod engine {
+-        pub mod general_purpose {
+-            use std::fmt;
+-            pub struct Decoder<'a>(&'a str);
+-            impl<'a> Decoder<'a> {
+-                pub fn decode(&self, input: &str) -> Result<Vec<u8>, String> {
+-                    let mut out = Vec::with_capacity(input.len() * 3 / 4);
+-                    let bytes = input.as_bytes();
+-                    let mut i = 0;
+-                    let alphabet = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+-                    let pad_eq = input.chars().filter(|c| *c == '=').count();
+-                    let len = input.chars().filter(|c| *c != '=' && *c != '
+-').count();
+-                    while i < bytes.len() {
+-                        let b0 = alphabet.iter().position(|&x| x == bytes[i]).ok_or("Invalid char")?;
+-                        let b1 = alphabet.iter().position(|&x| x == bytes[i + 1]).ok_or("Invalid char")?;
+-                        let b2 = if i + 2 < bytes.len() && bytes[i + 2] != b'=' {
+-                            alphabet.iter().position(|&x| x == bytes[i + 2]).unwrap_or(0)
+-                        } else { 0 };
+-                        let b3 = if i + 3 < bytes.len() && bytes[i + 3] != b'=' {
+-                            alphabet.iter().position(|&x| x == bytes[i + 3]).unwrap_or(0)
+-                        } else { 0 };
+-                        out.push((b0 << 2) | (b1 >> 4));
+-                        if i + 2 < bytes.len() && bytes[i + 2] != b'=' { out.push((b1 << 4) | (b2 >> 2)); }
+-                        if i + 3 < bytes.len() && bytes[i + 3] != b'=' { out.push((b2 << 6) | b3); }
+-                        i += 4;
+-                    }
+-                    Ok(out)
+-                }
+-            }
+-            pub struct Engine;
+-            impl Engine {
+-                pub fn decode<'a>(&self, input: &'a str) -> Result<Vec<u8>, String> {
+-                    Decoder(input).decode(input)
+-                }
+-            }
+-            pub const STANDARD: Engine = Engine;
+-        }
+-    }
+-}
+diff --git a/packages/desktop/src-tauri/src/lib.rs b/packages/desktop/src-tauri/src/lib.rs
+deleted file mode 100644
+index c7d6d66..0000000
+--- a/packages/desktop/src-tauri/src/lib.rs
++++ /dev/null
+@@ -1,89 +0,0 @@
+-use std::sync::Mutex;
+-use tauri::{Manager, State};
+-
+-pub mod commands;
+-pub mod offline;
+-pub mod printer;
+-pub mod state;
+-
+-use commands::*;
+-use offline::{init_offline_db, OfflineStore};
+-use printer::ThermalPrinter;
+-
+-/// Application state holder shared across commands
+-pub struct AppState {
+-    pub connected_printer: Mutex<Option<ThermalPrinter>>,
+-    pub offline_store: Mutex<Option<OfflineStore>>,
+-}
+-
+-#[cfg_attr(mobile, tauri::mobile_entry_point)]
+-pub fn run() {
+-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+-
+-    tauri::Builder::default()
+-        .plugin(tauri_plugin_dialog::init())
+-        .plugin(tauri_plugin_fs::init())
+-        .plugin(tauri_plugin_shell::init())
+-        .plugin(tauri_plugin_os::init())
+-        .plugin(tauri_plugin_sql::Builder::default().build())
+-        .plugin(tauri_plugin_http::init())
+-        .setup(|app| {
+-            // Initialize offline database
+-            let app_dir = app.path().app_data_dir().unwrap();
+-            std::fs::create_dir_all(&app_dir).ok();
+-
+-            let db_path = app_dir.join("jewellery-offline.db");
+-            log::info!("📁 App data dir: {:?}", app_dir);
+-            log::info!("💾 Offline DB path: {:?}", db_path);
+-
+-            let store = init_offline_db(&db_path).expect("Failed to initialize offline DB");
+-            app.manage(AppState {
+-                connected_printer: Mutex::new(None),
+-                offline_store: Mutex::new(Some(store)),
+-            });
+-
+-            // Start background sync service
+-            app.handle().clone();
+-
+-            log::info!("✅ Jewellery ERP Desktop started");
+-            Ok(())
+-        })
+-        .invoke_handler(tauri::generate_handler![
+-            // System commands
+-            get_app_info,
+-            get_system_info,
+-
+-            // Printer commands
+-            list_thermal_printers,
+-            print_thermal_receipt,
+-            connect_printer,
+-            disconnect_printer,
+-            print_bill,
+-
+-            // Barcode scanner commands
+-            list_serial_ports,
+-            test_serial_port,
+-
+-            // File system commands
+-            save_pdf_to_file,
+-            export_data,
+-            import_data,
+-
+-            // Offline / sync commands
+-            get_offline_status,
+-            sync_pending_transactions,
+-            cache_bill_for_offline,
+-
+-            // App lifecycle
+-            exit_app,
+-            restart_app,
+-        ])
+-        .on_window_event(|window, event| {
+-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+-                // Allow close for proper app shutdown
+-                let _ = api;
+-            }
+-        })
+-        .run(tauri::generate_context!())
+-        .expect("error while running tauri application");
+-}
+diff --git a/packages/desktop/src-tauri/src/main.rs b/packages/desktop/src-tauri/src/main.rs
+deleted file mode 100644
+index 4981694..0000000
+--- a/packages/desktop/src-tauri/src/main.rs
++++ /dev/null
+@@ -1,6 +0,0 @@
+-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+-
+-fn main() {
+-    jewellery_erp_desktop_lib::run()
+-}
+diff --git a/packages/desktop/src-tauri/src/offline.rs b/packages/desktop/src-tauri/src/offline.rs
+deleted file mode 100644
+index 0bcaee4..0000000
+--- a/packages/desktop/src-tauri/src/offline.rs
++++ /dev/null
+@@ -1,167 +0,0 @@
+-use std::path::Path;
+-use rusqlite::{params, Connection};
+-use crate::state::PendingTransaction;
+-use chrono::Utc;
+-
+-pub struct OfflineStore {
+-    pub conn: Connection,
+-}
+-
+-pub fn init_offline_db(db_path: &Path) -> rusqlite::Result<OfflineStore> {
+-    let conn = Connection::open(db_path)?;
+-
+-    // Create required tables
+-    conn.execute_batch(
+-        r#"
+-        CREATE TABLE IF NOT EXISTS pending_transactions (
+-            id TEXT PRIMARY KEY,
+-            transaction_type TEXT NOT NULL,
+-            payload TEXT NOT NULL,
+-            created_at TEXT NOT NULL,
+-            retries INTEGER DEFAULT 0,
+-            status TEXT DEFAULT 'PENDING',
+-            error TEXT
+-        );
+-
+-        CREATE TABLE IF NOT EXISTS cached_bills (
+-            id TEXT PRIMARY KEY,
+-            bill_number TEXT NOT NULL,
+-            bill_data TEXT NOT NULL,
+-            cached_at TEXT NOT NULL,
+-            synced_at TEXT
+-        );
+-
+-        CREATE TABLE IF NOT EXISTS app_config (
+-            key TEXT PRIMARY KEY,
+-            value TEXT NOT NULL
+-        );
+-
+-        CREATE INDEX IF NOT EXISTS idx_pending_status ON pending_transactions(status);
+-        CREATE INDEX IF NOT EXISTS idx_pending_created ON pending_transactions(created_at);
+-        "#,
+-    )?;
+-
+-    Ok(OfflineStore { conn })
+-}
+-
+-impl OfflineStore {
+-    /// Save a pending transaction to be synced when online
+-    pub fn save_pending(&self, tx: &PendingTransaction) -> rusqlite::Result<()> {
+-        self.conn.execute(
+-            "INSERT OR REPLACE INTO pending_transactions
+-             (id, transaction_type, payload, created_at, retries, status, error)
+-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+-            params![
+-                tx.id,
+-                tx.transaction_type,
+-                tx.payload,
+-                tx.created_at.to_rfc3339(),
+-                tx.retries,
+-                tx.status,
+-                tx.error,
+-            ],
+-        )?;
+-        Ok(())
+-    }
+-
+-    /// Get all pending transactions to sync
+-    pub fn get_pending(&self) -> rusqlite::Result<Vec<PendingTransaction>> {
+-        let mut stmt = self.conn.prepare(
+-            "SELECT id, transaction_type, payload, created_at, retries, status, error
+-             FROM pending_transactions WHERE status = 'PENDING' ORDER BY created_at ASC",
+-        )?;
+-
+-        let rows = stmt.query_map([], |row| {
+-            let id: String = row.get(0)?;
+-            let tx_type: String = row.get(1)?;
+-            let payload: String = row.get(2)?;
+-            let created_at_str: String = row.get(3)?;
+-            let retries: i32 = row.get(4)?;
+-            let status: String = row.get(5)?;
+-            let error: Option<String> = row.get(6)?;
+-
+-            let created_at = chrono::DateTime::parse_from_rfc3339(&created_at_str)
+-                .map(|dt| dt.with_timezone(&Utc))
+-                .unwrap_or_else(|_| Utc::now());
+-
+-            Ok(PendingTransaction {
+-                id,
+-                transaction_type: tx_type,
+-                payload,
+-                created_at,
+-                retries,
+-                status,
+-                error,
+-            })
+-        })?;
+-
+-        let mut pending = Vec::new();
+-        for r in rows {
+-            pending.push(r?);
+-        }
+-        Ok(pending)
+-    }
+-
+-    /// Mark a transaction as synced
+-    pub fn mark_synced(&self, id: &str) -> rusqlite::Result<()> {
+-        self.conn.execute(
+-            "UPDATE pending_transactions SET status = 'SYNCED' WHERE id = ?1",
+-            params![id],
+-        )?;
+-        Ok(())
+-    }
+-
+-    /// Increment retry count
+-    pub fn increment_retry(&self, id: &str, error: &str) -> rusqlite::Result<()> {
+-        self.conn.execute(
+-            "UPDATE pending_transactions
+-             SET retries = retries + 1, error = ?2
+-             WHERE id = ?1",
+-            params![id, error],
+-        )?;
+-        Ok(())
+-    }
+-
+-    /// Cache a bill
+-    pub fn cache_bill(&self, bill_id: &str, bill_number: &str, data: &str) -> rusqlite::Result<()> {
+-        let now = Utc::now().to_rfc3339();
+-        self.conn.execute(
+-            "INSERT OR REPLACE INTO cached_bills (id, bill_number, bill_data, cached_at)
+-             VALUES (?1, ?2, ?3, ?4)",
+-            params![bill_id, bill_number, data, now],
+-        )?;
+-        Ok(())
+-    }
+-
+-    /// Get pending count
+-    pub fn pending_count(&self) -> rusqlite::Result<i64> {
+-        let count: i64 = self.conn.query_row(
+-            "SELECT COUNT(*) FROM pending_transactions WHERE status = 'PENDING'",
+-            [],
+-            |row| row.get(0),
+-        )?;
+-        Ok(count)
+-    }
+-
+-    /// Set/Get config
+-    pub fn set_config(&self, key: &str, value: &str) -> rusqlite::Result<()> {
+-        self.conn.execute(
+-            "INSERT OR REPLACE INTO app_config (key, value) VALUES (?1, ?2)",
+-            params![key, value],
+-        )?;
+-        Ok(())
+-    }
+-
+-    pub fn get_config(&self, key: &str) -> rusqlite::Result<Option<String>> {
+-        let result = self.conn.query_row(
+-            "SELECT value FROM app_config WHERE key = ?1",
+-            params![key],
+-            |row| row.get::<_, String>(0),
+-        );
+-        match result {
+-            Ok(v) => Ok(Some(v)),
+-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+-            Err(e) => Err(e),
+-        }
+-    }
+-}
+diff --git a/packages/desktop/src-tauri/src/printer.rs b/packages/desktop/src-tauri/src/printer.rs
+deleted file mode 100644
+index 0f5bd3d..0000000
+--- a/packages/desktop/src-tauri/src/printer.rs
++++ /dev/null
+@@ -1,250 +0,0 @@
+-use serde::{Deserialize, Serialize};
+-use std::time::Duration;
+-use tokio::time::sleep;
+-
+-#[derive(Debug, Clone, Serialize, Deserialize)]
+-pub struct PrinterInfo {
+-    pub name: String,
+-    pub port: String,
+-    pub printer_type: String, // "USB", "SERIAL", "NETWORK"
+-}
+-
+-#[derive(Debug, Clone, Serialize, Deserialize)]
+-pub struct PrintOptions {
+-    pub copies: u8,
+-    pub cut_paper: bool,        // For thermal receipt printers
+-    pub open_drawer: bool,      // For cash drawer pop
+-    pub feed_lines_before: u8,
+-    pub feed_lines_after: u8,
+-}
+-
+-impl Default for PrintOptions {
+-    fn default() -> Self {
+-        PrintOptions {
+-            copies: 1,
+-            cut_paper: true,
+-            open_drawer: false,
+-            feed_lines_before: 2,
+-            feed_lines_after: 4,
+-        }
+-    }
+-}
+-
+-#[derive(Debug, Clone)]
+-pub struct ThermalPrinter {
+-    pub name: String,
+-    /// ESC/POS commands buffer to print
+-    pub connected: bool,
+-}
+-
+-impl ThermalPrinter {
+-    /// Build ESC/POS command for aligning text center
+-    pub fn align_center(buf: &mut Vec<u8>) {
+-        buf.extend_from_slice(&[0x1B, 0x61, 0x01]);
+-    }
+-
+-    /// Build ESC/POS command for bold text
+-    pub fn set_bold(buf: &mut Vec<u8>, on: bool) {
+-        if on {
+-            buf.extend_from_slice(&[0x1B, 0x45, 0x01]);
+-        } else {
+-            buf.extend_from_slice(&[0x1B, 0x45, 0x00]);
+-        }
+-    }
+-
+-    /// Build ESC/POS text line
+-    pub fn line(buf: &mut Vec<u8>, s: &str, width: usize) {
+-        let display = if s.len() > width {
+-            // Truncate with ellipsis
+-            format!("{}…", &s[..width.saturating_sub(1)])
+-        } else {
+-            s.to_string()
+-        };
+-        let pad = width.saturating_sub(display.len());
+-        buf.extend_from_slice(display.as_bytes());
+-        buf.resize(buf.len() + pad, b' ');
+-        buf.extend_from_slice(&[0x0A, 0x0D]); // LF + CR
+-    }
+-
+-    /// Center a short text line
+-    pub fn center_line(buf: &mut Vec<u8>, s: &str, width: usize) {
+-        if s.len() >= width {
+-            Self::line(buf, s, width);
+-            return;
+-        }
+-        let pad_total = width - s.len();
+-        let pad_left = pad_total / 2;
+-        for _ in 0..pad_left {
+-            buf.push(b' ');
+-        }
+-        buf.extend_from_slice(s.as_bytes());
+-        for _ in 0..(pad_total - pad_left) {
+-            buf.push(b' ');
+-        }
+-        buf.extend_from_slice(&[0x0A, 0x0D]);
+-    }
+-
+-    /// Print a divider of line width
+-    pub fn divider(buf: &mut Vec<u8>, char: u8, width: usize) {
+-        for _ in 0..width {
+-            buf.push(char);
+-        }
+-        buf.extend_from_slice(&[0x0A, 0x0D]);
+-    }
+-
+-    /// Feed paper lines
+-    pub fn feed(buf: &mut Vec<u8>, lines: u8) {
+-        for _ in 0..lines {
+-            buf.push(0x0A);
+-        }
+-    }
+-
+-    /// Cut paper (if printer supports it)
+-    pub fn cut(buf: &mut Vec<u8>, partial: bool) {
+-        if partial {
+-            buf.extend_from_slice(&[0x1B, 0x6D]); // Partial cut
+-        } else {
+-            buf.extend_from_slice(&[0x1B, 0x69]); // Full cut
+-        }
+-    }
+-
+-    /// Open cash drawer (kick-out)
+-    pub fn open_drawer(buf: &mut Vec<u8>) {
+-        buf.extend_from_slice(&[0x1B, 0x70, 0x00, 0x19, 0xFA]);
+-    }
+-
+-    /// Build complete thermal receipt from a bill payload
+-    pub fn build_thermal_receipt(payload: &ThermalReceiptPayload, options: &PrintOptions) -> Vec<u8> {
+-        let mut buf = Vec::new();
+-
+-        // Initialize printer
+-        buf.extend_from_slice(&[0x1B, 0x40]); // ESC @ (init)
+-
+-        Self::feed(&mut buf, options.feed_lines_before);
+-
+-        // Header
+-        Self::align_center(&mut buf);
+-        Self::set_bold(&mut buf, true);
+-        Self::center_line(&mut buf, &payload.shop_name, 40);
+-        Self::set_bold(&mut buf, false);
+-        if !payload.shop_address.is_empty() {
+-            Self::center_line(&mut buf, &payload.shop_address, 40);
+-        }
+-        if !payload.shop_gstin.is_empty() {
+-            Self::center_line(&mut buf, &format!("GSTIN: {}", payload.shop_gstin), 40);
+-        }
+-        Self::divider(&mut buf, b'-', 40);
+-
+-        // Bill info
+-        Self::line(&mut buf, &format!("Bill#: {}", payload.bill_number), 40);
+-        Self::line(&mut buf, &format!("Date: {}", payload.bill_date), 40);
+-        Self::line(&mut buf, &format!("Cust: {}", payload.customer_name), 40);
+-        if !payload.customer_mobile.is_empty() {
+-            Self::line(&mut buf, &format!("Ph: {}", payload.customer_mobile), 40);
+-        }
+-        Self::divider(&mut buf, b'-', 40);
+-
+-        // Items
+-        Self::set_bold(&mut buf, true);
+-        Self::line(&mut buf, "DESCRIPTION", 28);
+-        Self::line(&mut buf, "G  W  P  A", 12);
+-        Self::set_bold(&mut buf, false);
+-        Self::divider(&mut buf, b'-', 40);
+-
+-        for item in &payload.items {
+-            // Item line: particular, gross, net, purity, amount
+-            let line1 = format!("{} {} {}", item.particular, item.purity,
+-                                  if item.qty > 1 { format!("x{}", item.qty) } else { String::new() });
+-            Self::line(&mut buf, if line1.len() > 40 { &line1[..40] } else { &line1 }, 40);
+-
+-            Self::line(&mut buf, &format!("{:.2}g @ {}", item.net_weight, item.rate_per_gram), 40);
+-            Self::set_bold(&mut buf, true);
+-            Self::line(&mut buf, &format!("        {}", item.amount), 40);
+-            Self::set_bold(&mut buf, false);
+-        }
+-
+-        Self::divider(&mut buf, b'-', 40);
+-
+-        // Totals
+-        Self::line(&mut buf, &format!("Subtotal   : {}", payload.subtotal), 40);
+-        if !payload.discount.is_empty() && payload.discount != "0" {
+-            Self::line(&mut buf, &format!("Discount   : -{}", payload.discount), 40);
+-        }
+-        if !payload.cgst.is_empty() {
+-            Self::line(&mut buf, &format!("CGST@1.5%  : +{}", payload.cgst), 40);
+-            Self::line(&mut buf, &format!("SGST@1.5%  : +{}", payload.sgst), 40);
+-        }
+-        Self::line(&mut buf, &format!("Round Off  : {}", payload.round_off), 40);
+-
+-        Self::divider(&mut buf, b'=', 40);
+-        Self::set_bold(&mut buf, true);
+-        Self::line(&mut buf, &format!("TOTAL      : {}", payload.total), 40);
+-        Self::set_bold(&mut buf, false);
+-        if !payload.paid.is_empty() {
+-            Self::line(&mut buf, &format!("Paid       : {}", payload.paid), 40);
+-        }
+-        if !payload.balance.is_empty() && payload.balance != "0" {
+-            Self::line(&mut buf, &format!("Balance    : {}", payload.balance), 40);
+-        }
+-        Self::divider(&mut buf, b'=', 40);
+-
+-        // Payment mode
+-        if !payload.payment_mode.is_empty() {
+-            Self::line(&mut buf, &format!("Payment: {}", payload.payment_mode), 40);
+-        }
+-
+-        Self::feed(&mut buf, 2);
+-        Self::set_bold(&mut buf, true);
+-        Self::center_line(&mut buf, "Thank You!", 40);
+-        Self::set_bold(&mut buf, false);
+-
+-        Self::feed(&mut buf, options.feed_lines_after);
+-
+-        if options.cut_paper {
+-            Self::cut(&mut buf, true);
+-        }
+-
+-        if options.open_drawer {
+-            Self::open_drawer(&mut buf);
+-        }
+-
+-        buf
+-    }
+-}
+-
+-/// Frontend will pass this structured payload
+-#[derive(Debug, Clone, Serialize, Deserialize)]
+-pub struct ThermalReceiptPayload {
+-    pub shop_name: String,
+-    pub shop_address: String,
+-    pub shop_gstin: String,
+-    pub bill_number: String,
+-    pub bill_date: String,
+-    pub customer_name: String,
+-    pub customer_mobile: String,
+-    pub items: Vec<ThermalReceiptItem>,
+-    pub subtotal: String,
+-    pub discount: String,
+-    pub cgst: String,
+-    pub sgst: String,
+-    pub round_off: String,
+-    pub total: String,
+-    pub paid: String,
+-    pub balance: String,
+-    pub payment_mode: String,
+-}
+-
+-#[derive(Debug, Clone, Serialize, Deserialize)]
+-pub struct ThermalReceiptItem {
+-    pub particular: String,
+-    pub purity: String,
+-    pub net_weight: f64,
+-    pub rate_per_gram: u64,
+-    pub qty: u32,
+-    pub amount: String,
+-}
+-
+-#[allow(dead_code)]
+-async fn _unused_sleep() {
+-    sleep(Duration::from_millis(1)).await;
+-}
+diff --git a/packages/desktop/src-tauri/src/state.rs b/packages/desktop/src-tauri/src/state.rs
+deleted file mode 100644
+index 04a0580..0000000
+--- a/packages/desktop/src-tauri/src/state.rs
++++ /dev/null
+@@ -1,35 +0,0 @@
+-use serde::{Deserialize, Serialize};
+-use chrono::{DateTime, Utc};
+-
+-/// Pending offline transaction
+-#[derive(Debug, Clone, Serialize, Deserialize)]
+-pub struct PendingTransaction {
+-    pub id: String,
+-    pub transaction_type: String, // SALE, PURCHASE, etc.
+-    pub payload: String, // JSON string of full transaction data
+-    pub created_at: DateTime<Utc>,
+-    pub retries: i32,
+-    pub status: String, // PENDING, SYNCED, FAILED
+-    pub error: Option<String>,
+-}
+-
+-#[derive(Debug, Clone, Serialize, Deserialize)]
+-pub struct AppInfo {
+-    pub name: String,
+-    pub version: String,
+-    pub platform: String,
+-    pub arch: String,
+-    pub is_offline: bool,
+-}
+-
+-#[derive(Debug, Clone, Serialize, Deserialize)]
+-pub struct SystemInfo {
+-    pub os: String,
+-    pub os_version: String,
+-    pub hostname: String,
+-    pub cpu_count: usize,
+-    pub total_memory: u64,
+-    pub free_memory: u64,
+-    pub db_path: String,
+-    pub db_size_bytes: u64,
+-}
+diff --git a/packages/desktop/src-tauri/tauri.conf.json b/packages/desktop/src-tauri/tauri.conf.json
+deleted file mode 100644
+index 406abe6..0000000
+--- a/packages/desktop/src-tauri/tauri.conf.json
++++ /dev/null
+@@ -1,76 +0,0 @@
+-{
+-  "$schema": "https://schema.tauri.app/config/2",
+-  "productName": "Shri Jewellers ERP",
+-  "version": "1.0.0",
+-  "identifier": "com.jewellery.erp.desktop",
+-  "build": {
+-    "beforeDevCommand": "npm run dev",
+-    "beforeBuildCommand": "npm run build",
+-    "devUrl": "http://localhost:5173",
+-    "frontendDist": "../dist"
+-  },
+-  "app": {
+-    "windows": [
+-      {
+-        "title": "Shri Jewellers ERP",
+-        "width": 1366,
+-        "height": 768,
+-        "minWidth": 1024,
+-        "minHeight": 700,
+-        "resizable": true,
+-        "fullscreen": false,
+-        "decorations": true,
+-        "transparent": false,
+-        "alwaysOnTop": false,
+-        "label": "main"
+-      }
+-    ],
+-    "security": {
+-      "csp": null,
+-      "dangerousDisableAssetCspModification": false
+-    }
+-  },
+-  "bundle": {
+-    "active": true,
+-    "targets": "all",
+-    "icon": [
+-      "icons/32x32.png",
+-      "icons/128x128.png",
+-      "icons/128x128@2x.png",
+-      "icons/icon.icns",
+-      "icons/icon.ico"
+-    ],
+-    "category": "Business",
+-    "copyright": "Copyright (c) 2026 Shri Jewellers",
+-    "shortDescription": "Jewellery ERP and POS",
+-    "longDescription": "Complete jewellery shop ERP with billing, inventory, gold rate management, GST reports, job work tracking and offline POS.",
+-    "publisher": "Jewellery ERP",
+-    "homepage": "https://jewellery-erp.example",
+-    "windows": {
+-      "nsis": {
+-        "installMode": "currentUser",
+-        "languages": ["English"],
+-        "displayLanguageSelector": true
+-      }
+-    },
+-    "macOS": {
+-      "minimumSystemVersion": "10.13.0",
+-      "exceptionDomain": "",
+-      "dmg": {
+-        "windowSize": {
+-          "width": 660,
+-          "height": 400
+-        }
+-      }
+-    },
+-    "linux": {
+-      "deb": {
+-        "depends": []
+-      },
+-      "rpm": {
+-        "release": "1",
+-        "epoch": 0
+-      }
+-    }
+-  }
+-}
+diff --git a/packages/desktop/src/App.tsx b/packages/desktop/src/App.tsx
+deleted file mode 100644
+index c8b59b7..0000000
+--- a/packages/desktop/src/App.tsx
++++ /dev/null
+@@ -1,71 +0,0 @@
+-import { Routes, Route, Navigate } from 'react-router-dom';
+-import { useAuthStore } from '../../stores/authStore';
+-import { AppLayout } from '../../components/layout/AppLayout';
+-import LoginPage from '../../modules/auth/LoginPage';
+-import DashboardPage from '../../modules/dashboard/DashboardPage';
+-import BillingPage from '../../modules/billing/BillingPage';
+-import CustomersPage from '../../modules/customers/CustomersPage';
+-import CustomerDetailPage from '../../modules/customers/CustomerDetailPage';
+-import InventoryPage from '../../modules/inventory/InventoryPage';
+-import JewelleryPage from '../../modules/jewellery/JewelleryPage';
+-import BarcodesPage from '../../modules/barcodes/BarcodesPage';
+-import JobOrdersPage from '../../modules/job-orders/JobOrdersPage';
+-import JobOrderDetailPage from '../../modules/job-orders/JobOrderDetailPage';
+-import ReportsPage from '../../modules/reports/ReportsPage';
+-import PurchasesPage from '../../modules/purchases/PurchasesPage';
+-import SuppliersPage from '../../modules/suppliers/SuppliersPage';
+-import UrdPage from '../../modules/urd/UrdPage';
+-import PaymentsPage from '../../modules/payments/PaymentsPage';
+-import SettingsPage from '../../modules/settings/SettingsPage';
+-import BillsPage from '../../modules/billing/BillsPage';
+-import SalePrintPage from '../../modules/billing/SalePrintPage';
+-import CustomerPrintPage from '../../modules/customers/CustomerPrintPage';
+-
+-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+-  return <>{children}</>;
+-}
+-
+-// Tauri runtime detection — switch backend URL
+-const apiBase = window.location.protocol === 'tauri:' ? 'http://127.0.0.1:3001' : '/api';
+-
+-export default function App() {
+-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+-
+-  return (
+-    <Routes>
+-      <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage apiBase={apiBase} />} />
+-
+-      <Route path="/print/sale/:id" element={<ProtectedRoute><SalePrintPage /></ProtectedRoute>} />
+-      <Route path="/print/customer/:id" element={<ProtectedRoute><CustomerPrintPage /></ProtectedRoute>} />
+-
+-      <Route
+-        path="/"
+-        element={
+-          <ProtectedRoute>
+-            <AppLayout />
+-          </ProtectedRoute>
+-        }
+-      >
+-        <Route index element={<Navigate to="/dashboard" replace />} />
+-        <Route path="dashboard" element={<DashboardPage apiBase={apiBase} />} />
+-        <Route path="billing" element={<BillingPage apiBase={apiBase} />} />
+-        <Route path="bills" element={<BillsPage apiBase={apiBase} />} />
+-        <Route path="customers" element={<CustomersPage apiBase={apiBase} />} />
+-        <Route path="customers/:id" element={<CustomerDetailPage apiBase={apiBase} />} />
+-        <Route path="inventory" element={<InventoryPage apiBase={apiBase} />} />
+-        <Route path="jewellery" element={<JewelleryPage apiBase={apiBase} />} />
+-        <Route path="barcodes" element={<BarcodesPage apiBase={apiBase} />} />
+-        <Route path="job-orders" element={<JobOrdersPage apiBase={apiBase} />} />
+-        <Route path="job-orders/:id" element={<JobOrderDetailPage apiBase={apiBase} />} />
+-        <Route path="purchases" element={<PurchasesPage apiBase={apiBase} />} />
+-        <Route path="suppliers" element={<SuppliersPage apiBase={apiBase} />} />
+-        <Route path="urd" element={<UrdPage apiBase={apiBase} />} />
+-        <Route path="payments" element={<PaymentsPage apiBase={apiBase} />} />
+-        <Route path="reports" element={<ReportsPage apiBase={apiBase} />} />
+-        <Route path="settings" element={<SettingsPage apiBase={apiBase} />} />
+-      </Route>
+-    </Routes>
+-  );
+-}
+diff --git a/packages/desktop/src/main.tsx b/packages/desktop/src/main.tsx
+deleted file mode 100644
+index 7467c98..0000000
+--- a/packages/desktop/src/main.tsx
++++ /dev/null
+@@ -1,34 +0,0 @@
+-import React from 'react';
+-import ReactDOM from 'react-dom/client';
+-import { BrowserRouter } from 'react-router-dom';
+-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+-import { Toaster } from 'react-hot-toast';
+-import App from './App';
+-import '../src/index.css';
+-
+-const queryClient = new QueryClient({
+-  defaultOptions: {
+-    queries: {
+-      retry: 1,
+-      refetchOnWindowFocus: false,
+-      staleTime: 30000,
+-    },
+-  },
+-});
+-
+-ReactDOM.createRoot(document.getElementById('root')!).render(
+-  <React.StrictMode>
+-    <QueryClientProvider client={queryClient}>
+-      <BrowserRouter>
+-        <App />
+-        <Toaster
+-          position="top-right"
+-          toastOptions={{
+-            duration: 3000,
+-            style: { background: '#363636', color: '#fff', borderRadius: '8px' },
+-          }}
+-        />
+-      </BrowserRouter>
+-    </QueryClientProvider>
+-  </React.StrictMode>
+-);
+diff --git a/packages/desktop/vite.config.ts b/packages/desktop/vite.config.ts
+deleted file mode 100644
+index b1fd8da..0000000
+--- a/packages/desktop/vite.config.ts
++++ /dev/null
+@@ -1,35 +0,0 @@
+-import { defineConfig } from 'vite';
+-import react from '@vitejs/plugin-react';
+-import path from 'path';
+-
+-const isDev = process.env.TAURI_DEBUG !== undefined;
+-
+-export default defineConfig({
+-  plugins: [react()],
+-  clearScreen: false,
+-  server: {
+-    port: 5173,
+-    strictPort: true,
+-    host: false,
+-    watch: {
+-      ignored: ['**/src-tauri/**'],
+-    },
+-  },
+-  envPrefix: ['VITE_', 'TAURI_'],
+-  build: {
+-    target: 'esnext',
+-    minify: !isDev ? 'esbuild' : false,
+-    sourcemap: isDev ? true : false,
+-    outDir: 'dist',
+-    emptyOutDir: true,
+-    rollupOptions: {
+-      input: 'index.html',
+-    },
+-  },
+-  resolve: {
+-    alias: {
+-      '@': path.resolve(__dirname, './src'),
+-      '@shared': path.resolve(__dirname, '../shared/src'),
+-    },
+-  },
+-});
+diff --git a/packages/license-server/package.json b/packages/license-server/package.json
+index 90d12c6..acb7088 100644
+--- a/packages/license-server/package.json
++++ b/packages/license-server/package.json
+@@ -5,11 +5,11 @@
+   "description": "Cloud license/subscription server with admin API for the Jewellery ERP desktop app",
+   "main": "dist/index.js",
+   "scripts": {
+-    "build": "prisma generate && tsc -p tsconfig.json",
+-    "dev": "prisma generate && ts-node-dev --respawn --transpile-only src/index.ts",
++    "build": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && tsc -p tsconfig.json",
++    "dev": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && ts-node-dev --respawn --transpile-only src/index.ts",
+     "start": "node dist/index.js",
+-    "db:push": "prisma db push",
+-    "db:generate": "prisma generate",
++    "db:push": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && prisma db push --skip-generate",
++    "db:generate": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma",
+     "db:studio": "prisma studio",
+     "seed:admin": "ts-node-dev --transpile-only src/scripts/seed-admin.ts"
+   },
+diff --git a/scripts/prisma-generate.mjs b/scripts/prisma-generate.mjs
+new file mode 100644
+index 0000000..9135e34
+--- /dev/null
++++ b/scripts/prisma-generate.mjs
+@@ -0,0 +1,191 @@
++#!/usr/bin/env node
++
++/**
++ * Generate a Prisma client without needlessly replacing its native query
++ * engine on every build.
++ *
++ * On Windows, a running Node/Electron process keeps query_engine-*.dll.node
++ * open. Prisma replaces that file atomically, so an otherwise harmless second
++ * build fails with EPERM while the app or license server is running. A build
++ * only needs to regenerate when the schema (or the installed Prisma version)
++ * has changed; explicit db:generate scripts pass --force when regeneration is
++ * requested.
++ */
++
++import { createHash } from 'node:crypto';
++import { execFileSync } from 'node:child_process';
++import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
++import { dirname, join, resolve } from 'node:path';
++import { fileURLToPath } from 'node:url';
++import { createRequire } from 'node:module';
++
++const require = createRequire(import.meta.url);
++const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
++
++function usage(message) {
++  if (message) console.error(`[prisma] ${message}`);
++  console.error('Usage: node scripts/prisma-generate.mjs --schema <path> [--force]');
++  process.exit(2);
++}
++
++function readArguments() {
++  const args = process.argv.slice(2);
++  let schema;
++  let force = false;
++
++  for (let index = 0; index < args.length; index += 1) {
++    const argument = args[index];
++    if (argument === '--force') {
++      force = true;
++    } else if (argument === '--schema' && args[index + 1]) {
++      schema = args[++index];
++    } else if (argument.startsWith('--schema=')) {
++      schema = argument.slice('--schema='.length);
++    } else {
++      usage(`Unknown or incomplete argument: ${argument}`);
++    }
++  }
++
++  if (!schema) usage('A Prisma schema is required.');
++  return { schema: resolve(process.cwd(), schema), force };
++}
++
++function parseClientOutput(schemaText, schemaPath) {
++  const generatorBlock = schemaText.match(/generator\s+client\s*\{([\s\S]*?)\n?\}/m)?.[1] ?? '';
++  const output = generatorBlock.match(/^\s*output\s*=\s*"([^"]+)"\s*$/m)?.[1];
++
++  // prisma-client-js uses node_modules/.prisma/client when output is omitted.
++  return output
++    ? resolve(dirname(schemaPath), output)
++    : resolve(repositoryRoot, 'node_modules', '.prisma', 'client');
++}
++
++function normaliseSchema(text) {
++  return text.replace(/\r\n/g, '\n').trim();
++}
++
++function sha256(text) {
++  return createHash('sha256').update(text).digest('hex');
++}
++
++function prismaVersion() {
++  try {
++    return require('prisma/package.json').version;
++  } catch {
++    return 'unknown';
++  }
++}
++
++function engineIsPresent(outputDirectory) {
++  if (!existsSync(outputDirectory)) return false;
++  return readdirSync(outputDirectory).some((file) => /^(?:lib)?query_engine[-_.].+/.test(file));
++}
++
++function generatedSchemaMatches(outputDirectory, schemaText) {
++  const generatedSchema = join(outputDirectory, 'schema.prisma');
++  if (!existsSync(generatedSchema)) return false;
++
++  try {
++    return normaliseSchema(readFileSync(generatedSchema, 'utf8')) === normaliseSchema(schemaText);
++  } catch {
++    return false;
++  }
++}
++
++function markerPath(outputDirectory) {
++  return join(outputDirectory, '.schema-hash.json');
++}
++
++function isUpToDate(outputDirectory, schemaText, schemaHash, version) {
++  if (!engineIsPresent(outputDirectory)) return false;
++
++  // Prefer the marker after this helper has generated the client so a Prisma
++  // version or platform change is not hidden by an unchanged schema.
++  if (existsSync(markerPath(outputDirectory))) {
++    try {
++      const marker = JSON.parse(readFileSync(markerPath(outputDirectory), 'utf8'));
++      return (
++        marker.schemaHash === schemaHash &&
++        marker.prismaVersion === version &&
++        marker.platform === process.platform &&
++        marker.arch === process.arch
++      );
++    } catch {
++      return false;
++    }
++  }
++
++  // Clients generated before this helper was introduced do not have a marker.
++  // Prisma copies the source schema into the generated client, which lets us
++  // safely recognise those clients without replacing a DLL that may be in use.
++  return generatedSchemaMatches(outputDirectory, schemaText);
++}
++
++function resolvePrismaCli(schemaPath) {
++  try {
++    return require.resolve('prisma/build/index.js', { paths: [dirname(schemaPath), repositoryRoot] });
++  } catch (error) {
++    console.error('[prisma] Could not locate the Prisma CLI. Run npm install first.');
++    throw error;
++  }
++}
++
++function generate(schemaPath) {
++  const cli = resolvePrismaCli(schemaPath);
++  // Keep Prisma's working directory at the package root, matching the
++  // original workspace script so package-local .env files are still loaded.
++  const packageRoot = resolve(dirname(schemaPath), '..');
++  execFileSync(process.execPath, [cli, 'generate', '--schema', schemaPath], {
++    cwd: packageRoot,
++    env: process.env,
++    stdio: 'inherit',
++  });
++}
++
++function main() {
++  const { schema: schemaPath, force } = readArguments();
++  if (!existsSync(schemaPath)) usage(`Schema not found: ${schemaPath}`);
++
++  const schemaText = readFileSync(schemaPath, 'utf8');
++  const schemaHash = sha256(normaliseSchema(schemaText));
++  const version = prismaVersion();
++  const outputDirectory = parseClientOutput(schemaText, schemaPath);
++
++  if (!force && isUpToDate(outputDirectory, schemaText, schemaHash, version)) {
++    console.log(`[prisma] Client is up to date; skipped generation (${outputDirectory}).`);
++    return;
++  }
++
++  try {
++    generate(schemaPath);
++  } catch (error) {
++    if (process.platform === 'win32') {
++      console.error(
++        '\n[prisma] Windows could not replace the generated query engine. ' +
++          'Stop the license server, backend, Electron app, Prisma Studio, or any other Node process using this client, then rerun the build. ' +
++          'Windows Defender can also hold the file briefly.\n',
++      );
++    }
++    throw error;
++  }
++
++  writeFileSync(
++    markerPath(outputDirectory),
++    `${JSON.stringify(
++      {
++        schemaHash,
++        prismaVersion: version,
++        platform: process.platform,
++        arch: process.arch,
++      },
++      null,
++      2,
++    )}\n`,
++  );
++}
++
++try {
++  main();
++} catch (error) {
++  process.exitCode = error?.status ?? 1;
++}

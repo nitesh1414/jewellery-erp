@@ -15,7 +15,7 @@ const fs = require('fs');
 /**
  * This script runs from two locations:
  *  - dev/repo:     packages/backend/prisma/seed-desktop.cjs  → deps at ../node_modules
- *  - desktop stage: staging/backend/seed-desktop.cjs         → deps at ./node_modules
+ *  - desktop stage: staging/backend/prisma/seed-desktop.cjs  → deps at ../node_modules
  * Resolve accordingly (falls back to normal node resolution).
  */
 function resolveDep(name) {

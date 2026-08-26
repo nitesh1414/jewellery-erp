@@ -1,0 +1,364 @@
+diff --git a/packages/backend/prisma/seed-desktop.cjs b/packages/backend/prisma/seed-desktop.cjs
+index a117c56..54c64ea 100644
+--- a/packages/backend/prisma/seed-desktop.cjs
++++ b/packages/backend/prisma/seed-desktop.cjs
+@@ -15,7 +15,7 @@ const fs = require('fs');
+ /**
+  * This script runs from two locations:
+  *  - dev/repo:     packages/backend/prisma/seed-desktop.cjs  → deps at ../node_modules
+- *  - desktop stage: staging/backend/seed-desktop.cjs         → deps at ./node_modules
++ *  - desktop stage: staging/backend/prisma/seed-desktop.cjs  → deps at ../node_modules
+  * Resolve accordingly (falls back to normal node resolution).
+  */
+ function resolveDep(name) {
+diff --git a/packages/desktop-electron/scripts/prepare-backend.mjs b/packages/desktop-electron/scripts/prepare-backend.mjs
+index 400bbf0..2553e6d 100644
+--- a/packages/desktop-electron/scripts/prepare-backend.mjs
++++ b/packages/desktop-electron/scripts/prepare-backend.mjs
+@@ -107,8 +107,10 @@ run(
+ );
+ console.log('▶ seeding template database (minimal bootstrap, no demo data)');
+ // Run the seed with the STAGING prisma client so engines resolve correctly.
+-fs.copyFileSync(path.join(backendDir, 'prisma', 'seed-desktop.cjs'), path.join(stagingDir, 'backend', 'seed-desktop.cjs'));
+-run(process.execPath, [path.join(stagingDir, 'backend', 'seed-desktop.cjs')], {
++// Copy the seed into the prisma/ folder next to default-role-permissions.cjs,
++// which it requires via a relative './default-role-permissions.cjs' path.
++fs.copyFileSync(path.join(backendDir, 'prisma', 'seed-desktop.cjs'), path.join(stagingDir, 'backend', 'prisma', 'seed-desktop.cjs'));
++run(process.execPath, [path.join(stagingDir, 'backend', 'prisma', 'seed-desktop.cjs')], {
+   cwd: path.join(stagingDir, 'backend'),
+   env: { ...process.env, DATABASE_URL: `file:${templateDb}` },
+ });
+diff --git a/packages/frontend/src/components/layout/TopNav.tsx b/packages/frontend/src/components/layout/TopNav.tsx
+index 9b512c9..12bb541 100644
+--- a/packages/frontend/src/components/layout/TopNav.tsx
++++ b/packages/frontend/src/components/layout/TopNav.tsx
+@@ -69,6 +69,7 @@ const menuItems: MenuItem[] = [
+       { to: '/users', label: 'Users', icon: Users },
+       { to: '/roles', label: 'Roles & Access', icon: Users },
+       { to: '/reports', label: 'Reports Center', icon: FileBarChart },
++      { to: '/settings', label: 'Settings', icon: Settings },
+     ],
+   },
+ ];
+@@ -305,9 +306,6 @@ export function TopNav() {
+                     <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                   </div>
+-                  <button onClick={() => navigate('/settings')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+-                    <Settings className="w-4 h-4" /> Settings
+-                  </button>
+                   <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100">
+                     <LogOut className="w-4 h-4" /> Logout
+                   </button>
+diff --git a/packages/frontend/src/modules/billing/BillingPage.tsx b/packages/frontend/src/modules/billing/BillingPage.tsx
+index 422d8d5..953322d 100644
+--- a/packages/frontend/src/modules/billing/BillingPage.tsx
++++ b/packages/frontend/src/modules/billing/BillingPage.tsx
+@@ -422,6 +422,20 @@ export default function BillingPage() {
+     return exact ? Number(exact.rate) || 0 : 0;
+   };
+ 
++  // Hallmark master entries (from database/settings) used to populate the
++  // hallmark dropdown in the item forms.
++  const hallmarkMaster: any[] = settings?.allHallmarks || [];
++
++  // Apply a hallmark master entry: sets purity, the hallmark reference and the
++  // charge for the given line form ('manual' or 'edit').
++  const applyHallmarkFromMaster = (id: string, form: 'manual' | 'edit') => {
++    const entry = hallmarkMaster.find((h: any) => h.id === id);
++    if (!entry) return;
++    const patch = { purity: entry.purity, hallmarkNumber: entry.label, hallmarkCharge: Number(entry.charge) || 0 };
++    if (form === 'manual') setManualItem((prev: any) => ({ ...prev, ...patch }));
++    else setEditForm((prev: any) => ({ ...prev, ...patch }));
++  };
++
+   return (
+     <div className="space-y-3 pb-6 lg:pb-4 print:hidden">
+       {/* Header */}
+@@ -811,7 +825,7 @@ export default function BillingPage() {
+                 <select className="input-field" value={manualItem.purity} onChange={e => {
+                   const purity = e.target.value;
+                   const autoRate = getRateForPurity(purity);
+-                  setManualItem((prev: any) => ({ ...prev, purity, ratePerGram: prev.ratePerGram || autoRate }));
++                  setManualItem((prev: any) => ({ ...prev, purity, ratePerGram: autoRate }));
+                 }}>
+                   {(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_925']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
+                 </select></div>
+@@ -825,7 +839,17 @@ export default function BillingPage() {
+                 </select></div>
+               <div><label className="label">Making Value</label><input type="number" className="input-field" value={manualItem.makingChargeValue} onChange={e => setManualItem({ ...manualItem, makingChargeValue: Number(e.target.value) })} /></div>
+               <div className="col-span-2 border rounded-lg p-3 bg-amber-50/50">
+-                <p className="label !text-[10px] !mb-2">Hallmark (with purity {manualItem.purity})</p>
++                <p className="label !text-[10px] !mb-2">Hallmark (populated from database master)</p>
++                <select
++                  className="input-field mb-2"
++                  value=""
++                  onChange={e => { if (e.target.value) applyHallmarkFromMaster(e.target.value, 'manual'); }}
++                >
++                  <option value="">— Select hallmark from master —</option>
++                  {hallmarkMaster.map((h: any) => (
++                    <option key={h.id} value={h.id}>{h.label} ({h.purity} · ₹{h.charge})</option>
++                  ))}
++                </select>
+                 <div className="grid grid-cols-2 gap-3">
+                   <input className="input-field" placeholder="Hallmark number (optional)" value={manualItem.hallmarkNumber} onChange={e => setManualItem({ ...manualItem, hallmarkNumber: e.target.value })} />
+                   <div className="flex gap-2">
+@@ -943,7 +967,7 @@ export default function BillingPage() {
+                 <select className="input-field" value={editForm.purity} onChange={e => {
+                   const purity = e.target.value;
+                   const autoRate = getRateForPurity(purity);
+-                  setEditForm((prev: any) => ({ ...prev, purity, ratePerGram: prev.ratePerGram || autoRate }));
++                  setEditForm((prev: any) => ({ ...prev, purity, ratePerGram: autoRate }));
+                 }}>
+                   {(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_925']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
+                 </select></div>
+@@ -960,7 +984,17 @@ export default function BillingPage() {
+               <div><label className="label">Discount on line (₹)</label><input type="number" className="input-field" value={editForm.discount} onChange={e => setEditForm({ ...editForm, discount: Number(e.target.value) })} /></div>
+               <div><label className="label">URD Value (₹)</label><input type="number" className="input-field" value={editForm.urd} onChange={e => setEditForm({ ...editForm, urd: Number(e.target.value) })} /></div>
+               <div className="col-span-2 border rounded-lg p-3 bg-amber-50/50">
+-                <p className="label !text-[10px] !mb-2">Hallmark (with purity {editForm.purity})</p>
++                <p className="label !text-[10px] !mb-2">Hallmark (populated from database master)</p>
++                <select
++                  className="input-field mb-2"
++                  value=""
++                  onChange={e => { if (e.target.value) applyHallmarkFromMaster(e.target.value, 'edit'); }}
++                >
++                  <option value="">— Select hallmark from master —</option>
++                  {hallmarkMaster.map((h: any) => (
++                    <option key={h.id} value={h.id}>{h.label} ({h.purity} · ₹{h.charge})</option>
++                  ))}
++                </select>
+                 <div className="grid grid-cols-2 gap-3">
+                   <div><label className="label !text-[10px]">Hallmark Number</label>
+                     <input className="input-field" placeholder="HM-916-xxxx (optional)" value={editForm.hallmarkNumber || ''} onChange={e => setEditForm({ ...editForm, hallmarkNumber: e.target.value })} /></div>
+diff --git a/packages/frontend/src/modules/jewellery/JewelleryPage.tsx b/packages/frontend/src/modules/jewellery/JewelleryPage.tsx
+index 9ad64fa..38670dc 100644
+--- a/packages/frontend/src/modules/jewellery/JewelleryPage.tsx
++++ b/packages/frontend/src/modules/jewellery/JewelleryPage.tsx
+@@ -28,12 +28,21 @@ export default function JewelleryPage() {
+     netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113',
+     makingChargeType: 'PERCENTAGE', makingChargeValue: 10,
+     category: '', subCategory: '', location: '', ornament: '', ornamentGender: '',
+-    purchaseDate: new Date().toISOString().split('T')[0],
++    hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0],
+   });
+   const [bulkItems, setBulkItems] = useState('');
+ 
+   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
++  const { data: rateMaster } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
+   const { data: ornamentsData } = useQuery({ queryKey: ['ornaments-active'], queryFn: () => api.getOrnaments({ isActive: 'true' }), staleTime: 60000 });
++
++  // Rate for a purity from the DB rate schedule (used to auto-fill the item rate).
++  const getRateForPurity = (purity: string): number => {
++    const rows: any[] = (rateMaster as any) || [];
++    const exact = rows.find((r: any) => (r.purity || '').toUpperCase() === (purity || '').toUpperCase());
++    return exact ? Number(exact.rate) || 0 : 0;
++  };
++  const hallmarkMaster: any[] = settings?.allHallmarks || [];
+   const ornaments = (ornamentsData?.items || []).map((o: any) => o);
+ 
+   const { data, isLoading } = useQuery({
+@@ -85,6 +94,7 @@ export default function JewelleryPage() {
+       location: item.location || '',
+       ornament: item.ornament || '',
+       ornamentGender: item.ornamentGender || '',
++      hallmarkNumber: item.hallmarkNumber || '',
+       purchaseDate: item.purchaseDate ? new Date(item.purchaseDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+     });
+     setEditingId(item.id);
+@@ -92,7 +102,7 @@ export default function JewelleryPage() {
+   };
+ 
+   // Ctrl/Cmd+A → add item
+-  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
++  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
+ 
+   const bulkMutation = useMutation({
+     mutationFn: (items: any[]) => api.post('/jewellery/bulk', { items }),
+@@ -231,7 +241,7 @@ export default function JewelleryPage() {
+             <div className="grid grid-cols-3 gap-4">
+               <div><label className="label">Design Code</label><input className="input-field" value={form.designCode} onChange={e => setForm({...form, designCode: e.target.value})} placeholder="RING-001" /></div>
+               <div><label className="label">Metal Type</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
+-              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}>{(settings?.allPurities || ['24K','22K','18K']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
++              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => { const purity = e.target.value; const autoRate = getRateForPurity(purity); setForm({...form, purity, currentRate: autoRate}); }}>{(settings?.allPurities || ['24K','22K','18K']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
+               <div><label className="label">Category</label><input className="input-field" value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="Ring" /></div>
+               <div><label className="label">Sub Category</label><input className="input-field" value={form.subCategory} onChange={e => setForm({...form, subCategory: e.target.value})} /></div>
+               <div>
+@@ -260,6 +270,17 @@ export default function JewelleryPage() {
+               <div><label className="label">Making Value</label><input type="number" className="input-field" value={form.makingChargeValue} onChange={e => setForm({...form, makingChargeValue: Number(e.target.value)})} /></div>
+               <div><label className="label">Location</label><input className="input-field" value={form.location} onChange={e => setForm({...form, location: e.target.value})} placeholder="Showcase A1" /></div>
+               <div><label className="label">Purchase Date</label><input type="date" className="input-field" value={form.purchaseDate} onChange={e => setForm({...form, purchaseDate: e.target.value})} /></div>
++              <div>
++                <label className="label">Hallmark (from master)</label>
++                <select className="input-field" value="" onChange={e => {
++                  const h = hallmarkMaster.find((x: any) => x.id === e.target.value);
++                  if (h) setForm({ ...form, purity: h.purity, hallmarkNumber: h.label, currentRate: getRateForPurity(h.purity) });
++                }}>
++                  <option value="">— select —</option>
++                  {hallmarkMaster.map((h: any) => <option key={h.id} value={h.id}>{h.label} ({h.purity} · ₹{h.charge})</option>)}
++                </select>
++              </div>
++              <div><label className="label">Hallmark Number</label><input className="input-field" value={form.hallmarkNumber || ''} onChange={e => setForm({...form, hallmarkNumber: e.target.value})} placeholder="HM-916-xxxx" /></div>
+             </div>
+             <p className="text-xs text-gray-400 mt-2">* Required fields. Barcode auto-generated.</p>
+             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+diff --git a/packages/frontend/src/modules/purchases/PurchasesPage.tsx b/packages/frontend/src/modules/purchases/PurchasesPage.tsx
+index d5ba5d9..4a6f675 100644
+--- a/packages/frontend/src/modules/purchases/PurchasesPage.tsx
++++ b/packages/frontend/src/modules/purchases/PurchasesPage.tsx
+@@ -55,7 +55,15 @@ export default function PurchasesPage() {
+   });
+   const { data: suppliers } = useQuery({ queryKey: ['suppliers-all'], queryFn: () => api.getSuppliers({ limit: 100 }) });
+   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
++  const { data: rateMaster } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
+   const { data: ornamentsData } = useQuery({ queryKey: ['ornaments-active'], queryFn: () => api.getOrnaments({ isActive: 'true' }), staleTime: 60000 });
++  const hallmarkMaster: any[] = settings?.allHallmarks || [];
++  // Rate for a purity from the DB rate schedule (used to auto-fill the item rate).
++  const getRateForPurity = (purity: string): number => {
++    const rows: any[] = (rateMaster as any) || [];
++    const exact = rows.find((r: any) => (r.purity || '').toUpperCase() === (purity || '').toUpperCase());
++    return exact ? Number(exact.rate) || 0 : 0;
++  };
+   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
+   const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
+   const ornaments = (ornamentsData?.items || []).map((o: any) => o);
+@@ -304,7 +312,7 @@ export default function PurchasesPage() {
+                     {(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
+                   </select></div>
+                 <div><label className="label">Purity *</label>
+-                  <select className="input-field text-xs" value={itemForm.purity} onChange={e => setItemForm({...itemForm, purity: e.target.value})}>
++                  <select className="input-field text-xs" value={itemForm.purity} onChange={e => { const purity = e.target.value; setItemForm({...itemForm, purity, rate: getRateForPurity(purity)}); }}>
+                     {(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_999', 'SILVER_925']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}
+                   </select></div>
+                 <div><label className="label">HSN Code</label>
+@@ -345,6 +353,14 @@ export default function PurchasesPage() {
+                   </select></div>
+                 <div><label className="label">Making Value</label>
+                   <input type="number" className="input-field text-xs" value={itemForm.makingChargeValue || ''} onChange={e => setItemForm({...itemForm, makingChargeValue: Number(e.target.value)})} /></div>
++                <div><label className="label">Hallmark (from master)</label>
++                  <select className="input-field text-xs" value="" onChange={e => {
++                    const h = hallmarkMaster.find((x: any) => x.id === e.target.value);
++                    if (h) setItemForm({ ...itemForm, purity: h.purity, hallmarkNumber: h.label, rate: getRateForPurity(h.purity) });
++                  }}>
++                    <option value="">— select —</option>
++                    {hallmarkMaster.map((h: any) => <option key={h.id} value={h.id}>{h.label} ({h.purity} · ₹{h.charge})</option>)}
++                  </select></div>
+                 <div><label className="label">Hallmark No.</label>
+                   <input className="input-field text-xs" value={itemForm.hallmarkNumber} onChange={e => setItemForm({...itemForm, hallmarkNumber: e.target.value})} /></div>
+                 <div><label className="label">Certificate No.</label>
+diff --git a/packages/frontend/src/modules/settings/SettingsPage.tsx b/packages/frontend/src/modules/settings/SettingsPage.tsx
+index b7ef320..05c86a0 100644
+--- a/packages/frontend/src/modules/settings/SettingsPage.tsx
++++ b/packages/frontend/src/modules/settings/SettingsPage.tsx
+@@ -327,49 +327,72 @@ function PuritiesTab({ purities, defaultPurities, newPurity, setNewPurity, onAdd
+ 
+ function RatesTab({ rates, onUpdate }: any) {
+   const [rateEdits, setRateEdits] = useState<Record<string, number>>({});
++  const [savingId, setSavingId] = useState<string | null>(null);
++
++  const saveRate = (id: string, value: number) => {
++    const next = Number(value);
++    if (!id || isNaN(next)) return;
++    setSavingId(id);
++    // Commit on blur/Enter — the mutation shows a success toast and refreshes.
++    onUpdate(id, next);
++    setRateEdits(prev => { const c = { ...prev }; delete c[id]; return c; });
++    setTimeout(() => setSavingId(null), 700);
++  };
++
++  // Group the schedule by metal so each metal lists its purities with their rates.
++  const grouped = (rates || []).reduce((acc: Record<string, any[]>, r: any) => {
++    (acc[r.metalType] = acc[r.metalType] || []).push(r);
++    return acc;
++  }, {});
++  const metalOrder = Object.keys(grouped).sort();
++  const metals = metalOrder.map(m => ({ metal: m, items: [...grouped[m]].sort((a: any, b: any) => a.purity.localeCompare(b.purity)) }));
+ 
+   return (
+     <div className="card space-y-4">
+       <h3 className="section-title">Daily Rate Schedule</h3>
+-      <p className="text-sm text-gray-500">Edit gold/silver rates per purity. Used by Billing and Inventory.</p>
+-
+-      <div className="overflow-hidden rounded-lg border">
+-        <table className="w-full">
+-          <thead><tr className="border-b bg-gray-50">
+-            <th className="table-header">Metal</th>
+-            <th className="table-header">Purity</th>
+-            <th className="table-header text-right">Rate (₹ / gram)</th>
+-            <th className="table-header text-right">Effective</th>
+-            <th className="table-header"></th>
+-          </tr></thead>
+-          <tbody>
+-            {(rates || []).map((r: any) => (
+-              <tr key={r.id} className="border-b border-gray-50">
+-                <td className="table-cell font-medium">{r.metalType}</td>
+-                <td className="table-cell">{r.purity}</td>
+-                <td className="table-cell text-right">
+-                  <input
+-                    type="number"
+-                    className="input-field text-right w-32"
+-                    value={rateEdits[r.id] ?? r.rate}
+-                    onChange={e => setRateEdits({ ...rateEdits, [r.id]: Number(e.target.value) })}
+-                  />
+-                </td>
+-                <td className="table-cell text-right text-xs text-gray-500">
+-                  {new Date(r.effectiveDate).toLocaleDateString('en-IN')}
+-                </td>
+-                <td className="table-cell text-right">
+-                  <button
+-                    onClick={() => { onUpdate(r.id, rateEdits[r.id] ?? r.rate); setRateEdits(prev => { const c = { ...prev }; delete c[r.id]; return c; }); }}
+-                    className="btn-primary text-xs"
+-                  >
+-                    <Save className="w-3.5 h-3.5" /> Save
+-                  </button>
+-                </td>
+-              </tr>
+-            ))}
+-          </tbody>
+-        </table>
++      <p className="text-sm text-gray-500">
++        Rates are grouped by metal, listing each purity with its rate. Edit any rate — it saves automatically and is
++        used by Billing, Inventory, Purchases &amp; Jewellery entries.
++      </p>
++
++      {metals.length === 0 && (
++        <div className="text-center text-gray-400 text-sm py-8">No rates defined yet. Add rates for each metal &amp; purity.</div>
++      )}
++
++      <div className="space-y-4">
++        {metals.map(({ metal, items }) => (
++          <div key={metal} className="overflow-hidden rounded-lg border">
++            <div className="px-4 py-2.5 bg-gray-50 border-b font-semibold text-sm text-gray-800 flex items-center justify-between">
++              <span>{metal.replace('_', ' ')}</span>
++              <span className="text-[11px] font-medium text-gray-400">Rate in ₹ / gram</span>
++            </div>
++            <table className="w-full">
++              <thead><tr className="border-b bg-white">
++                <th className="table-header w-1/2">Purity</th>
++                <th className="table-header text-right w-1/2">Rate (₹ / gram)</th>
++              </tr></thead>
++              <tbody>
++                {items.map((r: any) => (
++                  <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50/60">
++                    <td className="table-cell font-medium">{r.purity}</td>
++                    <td className="table-cell text-right">
++                      <input
++                        type="number"
++                        className="input-field text-right w-40"
++                        value={rateEdits[r.id] ?? r.rate}
++                        onBlur={(e) => { if (Number(rateEdits[r.id] ?? r.rate) !== Number(r.rate)) saveRate(r.id, Number(rateEdits[r.id] ?? r.rate)); }}
++                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
++                        onChange={e => setRateEdits({ ...rateEdits, [r.id]: Number(e.target.value) })}
++                        title="Edit rate and click away / press Enter to save"
++                      />
++                      {savingId === r.id && <span className="text-[10px] text-gray-400 ml-1">saving…</span>}
++                    </td>
++                  </tr>
++                ))}
++              </tbody>
++            </table>
++          </div>
++        ))}
+       </div>
+     </div>
+   );

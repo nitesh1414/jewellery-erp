@@ -69,6 +69,7 @@ const menuItems: MenuItem[] = [
       { to: '/users', label: 'Users', icon: Users },
       { to: '/roles', label: 'Roles & Access', icon: Users },
       { to: '/reports', label: 'Reports Center', icon: FileBarChart },
+      { to: '/settings', label: 'Settings', icon: Settings },
     ],
   },
 ];
@@ -305,9 +306,6 @@ export function TopNav() {
                     <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                   </div>
-                  <button onClick={() => navigate('/settings')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    <Settings className="w-4 h-4" /> Settings
-                  </button>
                   <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100">
                     <LogOut className="w-4 h-4" /> Logout
                   </button>
