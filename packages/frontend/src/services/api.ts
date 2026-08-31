@@ -200,6 +200,12 @@ class ApiService {
     return data;
   }
 
+  /** Sticker data (shop name + item values) for the given barcode numbers. */
+  async getBarcodeLabels(codes: string[]) {
+    const { data } = await this.client.get('/barcodes/labels', { params: { codes: codes.join(',') } });
+    return data as any[];
+  }
+
   // Purchases
   async getPurchases(params?: any) {
     const { data } = await this.client.get('/purchases', { params });
@@ -355,9 +361,15 @@ class ApiService {
     return data;
   }
 
-  // ====== Ledger Accounts (cash/bank) ======
-  async getAccounts() {
-    const { data } = await this.client.get('/ledger/accounts');
+  // ====== Ledger Accounts (cash/bank + metal/material) ======
+  async getAccounts(params?: any) {
+    const { data } = await this.client.get('/ledger/accounts', { params });
+    return data;
+  }
+
+  /** Metal / material (bullion) ledgers only. */
+  async getMetalAccounts() {
+    const { data } = await this.client.get('/ledger/accounts', { params: { type: 'METAL' } });
     return data;
   }
 

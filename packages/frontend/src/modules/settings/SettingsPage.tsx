@@ -1,12 +1,32 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
-import { Save, Building, Receipt, Percent, Diamond, Plus, X, Gem, Tag, BadgeCheck, Upload } from 'lucide-react';
+import { Save, Building, Receipt, Percent, Diamond, Plus, X, Gem, Tag, BadgeCheck, Upload, Barcode, ArrowUp, ArrowDown, Check } from 'lucide-react';
+import { BARCODE_LABEL_FIELDS, parseBarcodeLabel, serializeBarcodeLabel, barcodeFieldValue } from '../../utils/barcodeLabel';
 import toast from 'react-hot-toast';
+
+const SAMPLE_ITEM: any = {
+  designCode: 'RING-001',
+  sku: 'SKU-1001',
+  metalType: 'GOLD',
+  purity: '22K',
+  grossWeight: 10.5,
+  stoneWeight: 1.2,
+  netWeight: 9.3,
+  currentRate: 7250,
+  hsnCode: '7113',
+  category: 'Ring',
+  ornament: 'Ring',
+  hallmarkNumber: 'HM-916',
+  makingChargeType: 'PERCENTAGE',
+  makingChargeValue: 12,
+  size: '15',
+  barcode: 'G00000001',
+};
 
 export default function SettingsPage() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<'shop' | 'invoice' | 'tax' | 'metals' | 'purities' | 'hallmark' | 'rates'>('shop');
+  const [tab, setTab] = useState<'shop' | 'invoice' | 'tax' | 'metals' | 'purities' | 'hallmark' | 'rates' | 'barcode'>('shop');
 
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings() });
   const { data: rates } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates() });
@@ -92,6 +112,31 @@ export default function SettingsPage() {
   const [newMetal, setNewMetal] = useState('');
   const [newPurity, setNewPurity] = useState('');
 
+  // Barcode sticker fields (what prints on a barcode tag)
+  const [barcodeFields, setBarcodeFields] = useState<string[]>(() => parseBarcodeLabel(null));
+  useEffect(() => {
+    if (settings) setBarcodeFields(parseBarcodeLabel(settings.barcodeLabel || settings.barcodeFields?.join('|')));
+  }, [settings?.barcodeLabel, settings]);
+
+  const barcodeMutation = useMutation({
+    mutationFn: (keys: string[]) => api.updateSettings({ barcodeLabel: serializeBarcodeLabel(keys) }),
+    onSuccess: () => { toast.success('Barcode sticker fields saved!'); qc.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  const toggleBarcodeField = (key: string) => {
+    setBarcodeFields((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
+  };
+  const moveBarcodeField = (index: number, dir: -1 | 1) => {
+    setBarcodeFields((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return next;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
   const isDefault = (list: string[], item: string) => list?.includes(item);
 
   return (
@@ -119,6 +164,7 @@ export default function SettingsPage() {
           ['hallmark', 'Hallmark', BadgeCheck],
           ['purities', 'Purities', Tag],
           ['rates', 'Rate Schedule', Gem],
+          ['barcode', 'Barcode', Barcode],
         ] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key as any)}
             className={'px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 whitespace-nowrap ' + (tab === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
@@ -239,6 +285,77 @@ export default function SettingsPage() {
         {/* Rates */}
         {tab === 'rates' && (
           <RatesTab rates={rates || []} onUpdate={(id: string, rate: number) => updateRateMutation.mutate({ id, rate })} />
+        )}
+
+        {/* Barcode sticker content */}
+        {tab === 'barcode' && (
+          <div className="card space-y-5">
+            <div>
+              <h3 className="section-title">Barcode Sticker</h3>
+              <p className="text-sm text-gray-500">
+                Choose what prints on a barcode tag — tick the fields you want and order them with the arrows. The
+                first field is the heading line; the rest print under the barcode.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {BARCODE_LABEL_FIELDS.map((f) => {
+                const selected = barcodeFields.includes(f.key);
+                const order = barcodeFields.indexOf(f.key);
+                return (
+                  <div key={f.key}
+                    className={'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ' + (selected ? 'bg-primary-50 border-primary-200' : 'bg-white border-gray-200')}>
+                    <button onClick={() => toggleBarcodeField(f.key)}
+                      className={'w-5 h-5 rounded border flex items-center justify-center shrink-0 ' + (selected ? 'bg-primary-600 border-primary-600 text-white' : 'border-gray-300 text-transparent')}>
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{f.label}</p>
+                      <p className="text-[11px] text-gray-400 truncate">{f.hint}</p>
+                    </div>
+                    {selected && (
+                      <div className="flex flex-col shrink-0">
+                        <button onClick={() => moveBarcodeField(order, -1)} disabled={order <= 0} className="text-gray-400 hover:text-gray-700 disabled:opacity-30"><ArrowUp className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => moveBarcodeField(order, 1)} disabled={order >= barcodeFields.length - 1} className="text-gray-400 hover:text-gray-700 disabled:opacity-30"><ArrowDown className="w-3.5 h-3.5" /></button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="border-t pt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="label">Sticker preview</label>
+                <div className="border border-dashed border-gray-300 rounded-lg p-3 w-[38mm] min-h-[25mm] flex flex-col items-center justify-center gap-0.5 bg-white">
+                  {barcodeFields.length === 0 && <p className="text-[8px] text-gray-400">Nothing selected</p>}
+                  {barcodeFields.slice(0, 3).map((k, i) => (
+                    <div key={k} className={'w-full text-center truncate ' + (i === 0 ? 'font-semibold' : '')} style={{ fontSize: i === 0 ? '7px' : '6px', lineHeight: 1.2 }}>
+                      {barcodeFieldValue(k, SAMPLE_ITEM, settings?.shopName || 'Shri Jewellers', Number(settings?.weightPrecision) || 3)}
+                    </div>
+                  ))}
+                  <div className="w-full h-3 mt-0.5 flex items-center justify-center gap-[1px]">
+                    {Array.from({ length: 28 }).map((_, i) => (
+                      <span key={i} className="bg-gray-800" style={{ width: (i % 3 === 0 ? 2 : 1) + 'px', height: '12px' }} />
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '5px' }} className="text-gray-600">G00000001</div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-2">Preview only — the real sticker prints at the label size you pick on the print screen.</p>
+              </div>
+              <div className="flex flex-col justify-end gap-3">
+                <p className="text-xs text-gray-500">
+                  Printing order: <strong className="text-gray-700">{barcodeFields.join(' · ') || '—'}</strong>
+                </p>
+                <div className="flex gap-2">
+                  <button className="btn-primary" disabled={barcodeMutation.isPending} onClick={() => barcodeMutation.mutate(barcodeFields)}>
+                    <Save className="w-4 h-4" /> Save barcode fields
+                  </button>
+                  <button className="btn-secondary" onClick={() => setBarcodeFields(parseBarcodeLabel(null))}>Reset to default</button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

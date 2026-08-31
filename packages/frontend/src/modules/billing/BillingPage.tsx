@@ -34,6 +34,10 @@ interface BillItem {
   totalAmount: number;
 }
 
+/** Net Weight = Weight (gross) − Stone Weight. */
+const calcNet = (gross: number, stone: number) =>
+  Math.round(Math.max(0, (Number(gross) || 0) - (Number(stone) || 0)) * 1000) / 1000;
+
 export default function BillingPage() {
   const queryClient = useQueryClient();
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -829,9 +833,9 @@ export default function BillingPage() {
                 }}>
                   {(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_925']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
                 </select></div>
-              <div><label className="label">Gross Wt (g)</label><input type="number" step="0.001" className="input-field" value={manualItem.grossWeight || ''} onChange={e => setManualItem({ ...manualItem, grossWeight: Number(e.target.value) })} /></div>
-              <div><label className="label">Stone Wt (g)</label><input type="number" step="0.001" className="input-field" value={manualItem.stoneWeight || ''} onChange={e => setManualItem({ ...manualItem, stoneWeight: Number(e.target.value) })} placeholder="0" /></div>
-              <div><label className="label">Net Wt (g) *</label><input type="number" step="0.001" className="input-field" value={manualItem.netWeight || ''} onChange={e => setManualItem({ ...manualItem, netWeight: Number(e.target.value) })} /></div>
+              <div><label className="label">Gross Wt (g)</label><input type="number" step="0.001" className="input-field" value={manualItem.grossWeight || ''} onChange={e => { const grossWeight = Number(e.target.value); setManualItem({ ...manualItem, grossWeight, netWeight: calcNet(grossWeight, manualItem.stoneWeight) }); }} /></div>
+              <div><label className="label">Stone Wt (g)</label><input type="number" step="0.001" className="input-field" value={manualItem.stoneWeight || ''} onChange={e => { const stoneWeight = Number(e.target.value); setManualItem({ ...manualItem, stoneWeight, netWeight: calcNet(manualItem.grossWeight, stoneWeight) }); }} placeholder="0" /></div>
+              <div><label className="label">Net Wt (g) * <span className="text-gray-400">auto</span></label><input type="number" step="0.001" className="input-field bg-gray-100" value={manualItem.netWeight || ''} readOnly title="Net Weight = Gross Weight − Stone Weight" /></div>
               <div><label className="label">Rate/g *</label><input type="number" className="input-field" value={manualItem.ratePerGram || ''} onChange={e => setManualItem({ ...manualItem, ratePerGram: Number(e.target.value) })} /></div>
               <div><label className="label">Making Type</label>
                 <select className="input-field" value={manualItem.makingChargeType} onChange={e => setManualItem({ ...manualItem, makingChargeType: e.target.value })}>

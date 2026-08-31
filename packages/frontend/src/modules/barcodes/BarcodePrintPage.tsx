@@ -3,13 +3,18 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import JsBarcode from 'jsbarcode';
 import { api } from '../../services/api';
-import { Printer, ArrowLeft } from 'lucide-react';
+import { Printer, ArrowLeft, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { parseBarcodeLabel, barcodeFieldValue } from '../../utils/barcodeLabel';
 
 /**
  * Sticker printing — choose a label size that matches the sticker paper in
  * your printer. Every common small jewellery label size is included; the
  * page layout is in real millimetres so what you see is what prints.
+ *
+ * WHAT is printed on a sticker (jeweller name, item name, weight, purity, …)
+ * comes from Settings → Barcode, so the same print screen matches whatever the
+ * shop wants on its tags.
  */
 
 interface StickerSize {
@@ -46,30 +51,28 @@ export default function BarcodePrintPage() {
 
   const size = STICKER_SIZES.find((s) => s.key === sizeKey)!;
 
+  // Shop name + which fields to print (Settings → Barcode)
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings() });
+  const shopName = settings?.shopName || 'Jewellery Shop';
+  const precision = Number(settings?.weightPrecision) || 3;
+  const fields = useMemo(
+    () => parseBarcodeLabel(settings?.barcodeLabel || settings?.barcodeFields?.join('|')),
+    [settings?.barcodeLabel, settings?.barcodeFields],
+  );
+
   const { data, isLoading } = useQuery({
     queryKey: ['barcode-print', ids, codes, scope],
+    enabled: !!settings,
     queryFn: async () => {
       // print by barcode value (jumped from Jewellery/Inventory tab)
       if (codes) {
-        const list = codes.split(',').filter(Boolean);
-        const items = await Promise.all(
-          list.map((code) =>
-            api.getJewelleryByBarcode(code.trim()).catch(() => null),
-          ),
-        );
-        return items
-          .filter(Boolean)
-          .map((item: any) => ({
-            id: item.id,
-            barcode: item.barcode,
-            jewelleryItem: {
-              designCode: item.designCode,
-              sku: item.sku,
-              purity: item.purity,
-              netWeight: item.netWeight,
-              currentRate: item.currentRate,
-            },
-          }));
+        const list = codes.split(',').filter(Boolean).map((c) => c.trim());
+        const labels = await api.getBarcodeLabels(list);
+        return labels.map((l: any) => ({
+          id: l.barcode,
+          barcode: l.barcode,
+          jewelleryItem: { ...(l.raw || {}), ...l },
+        }));
       }
       if (ids) {
         // selected barcode ids
@@ -112,22 +115,31 @@ export default function BarcodePrintPage() {
           <select className="input-field w-28 !py-1.5 text-sm" value={copies} onChange={(e) => setCopies(Number(e.target.value))}>
             {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}× copy</option>)}
           </select>
+          <button onClick={() => window.open('/settings', '_blank')} className="btn-secondary text-sm" title="Choose what prints on the sticker">
+            <Settings className="w-4 h-4" /> Sticker fields
+          </button>
           <button onClick={() => window.print()} className="btn-primary text-sm"><Printer className="w-4 h-4" /> Print</button>
         </div>
       </div>
 
       <div className="p-6 print:p-0">
-        <p className="text-xs text-gray-400 mb-3 print:hidden">
-          In the print dialog choose your sticker paper size (or the label preset matching {size.label}).
-          For roll printers pick the 58/80&nbsp;mm roll layouts.
-        </p>
+        <div className="print:hidden mb-3 text-xs text-gray-400 space-y-1">
+          <p>
+            In the print dialog choose your sticker paper size (or the label preset matching {size.label}).
+            For roll printers pick the 58/80&nbsp;mm roll layouts.
+          </p>
+          <p>
+            Printing: <strong className="text-gray-600">{fields.join(' · ')}</strong> — change this in{' '}
+            <button onClick={() => window.open('/settings', '_blank')} className="underline text-primary-600">Settings → Barcode</button>.
+          </p>
+        </div>
         {isLoading ? (
           <div className="text-center py-16 text-gray-400">Loading…</div>
         ) : (
           <div className={'print-area ' + (size.layout === 'roll' ? 'flex flex-col items-center gap-1' : 'grid')}
                style={size.layout === 'sheet' ? { gridTemplateColumns: `repeat(${size.cols}, ${size.w}mm)`, gap: '2mm' } : undefined}>
             {stickers.map((b: any, i: number) => (
-              <Sticker key={i} barcode={b.barcode} item={b.jewelleryItem} size={size} />
+              <Sticker key={i} barcode={b.barcode} item={b.jewelleryItem} size={size} fields={fields} shopName={shopName} precision={precision} />
             ))}
           </div>
         )}
@@ -136,7 +148,21 @@ export default function BarcodePrintPage() {
   );
 }
 
-function Sticker({ barcode, item, size }: { barcode: string; item: any; size: StickerSize }) {
+function Sticker({
+  barcode,
+  item,
+  size,
+  fields,
+  shopName,
+  precision,
+}: {
+  barcode: string;
+  item: any;
+  size: StickerSize;
+  fields: string[];
+  shopName: string;
+  precision: number;
+}) {
   const ref = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -154,27 +180,35 @@ function Sticker({ barcode, item, size }: { barcode: string; item: any; size: St
     }
   }, [barcode, size.key]);
 
-  const showPrice = size.w >= 45 && size.h >= 25;
-  const showDesign = size.w >= 32 && size.h >= 12;
-  const showWeight = size.h >= 19;
+  const lines = (fields || [])
+    .map((k) => ({ key: k, value: barcodeFieldValue(k, item, shopName, precision) }))
+    .filter((l) => l.value);
+
+  // How much text fits: bigger stickers get one line per field, small ones
+  // share a single row joined with " · ".
+  const maxLines = size.h >= 38 ? 4 : size.h >= 25 ? 3 : size.h >= 19 ? 2 : 1;
+  const header = lines[0];
+  const rest = lines.slice(1, maxLines);
+  const titleSize = size.w >= 45 ? '6pt' : '5.5pt';
+  const lineSize = size.w >= 45 ? '5.5pt' : '5pt';
+  const showHeader = size.h >= 12;
 
   return (
     <div
       className="bg-white border border-dashed border-gray-300 overflow-hidden flex flex-col items-center justify-center print:border-0"
       style={{ width: `${size.w}mm`, height: `${size.h}mm`, padding: '0.5mm 1mm' }}
     >
-      {showDesign && item && (
-        <div style={{ fontSize: '5.5pt', lineHeight: 1.1 }} className="w-full text-center truncate">
-          <span className="font-semibold">{item.designCode || item.sku || ''}</span>
-          {item.purity ? ` · ${item.purity}` : ''}
+      {showHeader && header && (
+        <div style={{ fontSize: titleSize, lineHeight: 1.1 }} className="w-full text-center truncate font-semibold">
+          {header.value}
         </div>
       )}
       <svg ref={ref} />
-      {showWeight && item?.netWeight ? (
-        <div style={{ fontSize: '5.5pt', lineHeight: 1.1 }} className="w-full text-center">
-          {item.netWeight?.toFixed(3)}g{showPrice && item.currentRate ? ` · ₹${item.currentRate.toLocaleString('en-IN')}/g` : ''}
+      {rest.map((l) => (
+        <div key={l.key} style={{ fontSize: lineSize, lineHeight: 1.1 }} className="w-full text-center truncate">
+          {l.value}
         </div>
-      ) : null}
+      ))}
     </div>
   );
 }

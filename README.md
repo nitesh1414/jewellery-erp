@@ -84,7 +84,9 @@ npm run build          # compile every package
 - **Print sizes**: on any print screen choose A4 GST / A4 plain / A5 /
   thermal 80 / 76 / 58 mm / estimate.
 - **Barcodes**: Barcodes → print stickers on every common label size; item
-  rows in *Jewellery Items* have a 🖨 print-barcode button too.
+  rows in *Jewellery Items* have a 🖨 print-barcode button too. What appears on
+  the sticker (jeweller name, item, weight, purity …) is configured in
+  Settings → Barcode.
 - **Multi-branch**: if the user has access to more than one branch, a branch
   selector appears in the top bar. All actions (sale, purchase, expense,
   income, URD, payment…) are recorded against the selected branch; the default
@@ -95,6 +97,31 @@ npm run build          # compile every package
   sub-category, ornament, HSN, making charge, hallmark, certificate no.) and can
   hold **many metals/purities in one purchase**. The supplier's invoice number
   is optional. Purchases, inventory items, URD and users all have View + Edit.
+- **Two kinds of purchase** (choose at the top of the New Purchase form):
+  - **Metal / Bullion** — raw metal (bar, coin, scrap). The weight is **added
+    to the metal ledger** of that metal + purity (the ledger is auto-selected
+    from metal + purity, or created as `GOLD 22K`-style if it does not exist).
+    No inventory item is created.
+  - **Ornament / Jewellery** — readymade pieces. Every line is barcoded into
+    inventory and its **gross weight is deducted from the metal ledger** picked
+    on that line (defaults to the ledger matching the line's metal + purity).
+  Editing a purchase reverses and re-posts those metal movements, so the gram
+  stock always matches the bill.
+- **Metal / material ledgers**: Ledger → Accounts → *Add Account* → type
+  **Metal / Material (grams)**. Give it a metal, a purity and an **opening stock
+  in grams** (the opening value is auto-filled from today's rate). The account
+  card then shows live stock in grams (in / out) plus its value in ₹. Metal
+  ledgers are also listed on Purchases when you pick which ledger to use.
+- **Net weight is automatic**: Net Weight = Gross Weight − Stone Weight
+  (− other weight). Purchases, Jewellery items, URD and billing manual items
+  work it out as you type; nothing to key in twice.
+- **Barcode stickers**: choose what prints on a tag in **Settings → Barcode** —
+  tick any of jeweller name, item name, weight (g), purity, metal, gross, stone,
+  net, rate, amount, SKU, barcode number, HSN, category, ornament, hallmark,
+  making charge, size and date, then drag them into the order you want. The
+  first field prints as the heading, the rest under the barcode. The same
+  setting drives `Barcodes → print`, the 🖨 button on jewellery items and
+  `GET /api/barcodes/labels`.
 - **Job order actions**: marking a job READY / DELIVERED / IN PROGRESS etc.
   asks for the **action date + note** and appends it to the Action Log
   (status history) in the job detail. Advance and bill payments can be taken

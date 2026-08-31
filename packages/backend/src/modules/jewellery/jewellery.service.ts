@@ -158,6 +158,13 @@ export class JewelleryService {
       }
     }
 
+    // Net Weight = Weight (gross) − Stone Weight (− other weight)
+    const grossWeight = Number(data.grossWeight) || 0;
+    const stoneWeight = Number(data.stoneWeight) || 0;
+    const otherWeight = Number(data.otherWeight) || 0;
+    const autoNetWeight = Math.round(Math.max(0, grossWeight - stoneWeight - otherWeight) * 1000) / 1000;
+    const netWeight = Number(data.netWeight) > 0 ? Number(data.netWeight) : autoNetWeight;
+
     const item = await this.prisma.jewelleryItem.create({
       data: {
         organizationId,
@@ -170,12 +177,13 @@ export class JewelleryService {
         designCode: data.designCode || '',
         metalType: data.metalType || 'GOLD',
         purity: data.purity || '22K',
-        grossWeight: data.grossWeight || 0,
-        stoneWeight: data.stoneWeight || 0,
+        grossWeight,
+        stoneWeight,
         ornament: data.ornament || null,
         ornamentGender: data.ornamentGender || null,
-        otherWeight: data.otherWeight || 0,
-        netWeight: data.netWeight || 0,
+        otherWeight,
+        netWeight,
+        metalLedgerAccountId: data.metalLedgerAccountId || null,
         quantity: data.quantity || 1,
         size: data.size || '',
         color: data.color || '',
@@ -254,6 +262,20 @@ export class JewelleryService {
     delete updateData.id;
     delete updateData.organizationId;
     delete updateData.branchId;
+
+    // Keep Net Weight = Weight − Stone Weight in step when weights are edited
+    if (
+      updateData.grossWeight !== undefined ||
+      updateData.stoneWeight !== undefined ||
+      updateData.otherWeight !== undefined
+    ) {
+      const gross = Number(updateData.grossWeight ?? item.grossWeight) || 0;
+      const stone = Number(updateData.stoneWeight ?? item.stoneWeight) || 0;
+      const other = Number(updateData.otherWeight ?? item.otherWeight) || 0;
+      updateData.netWeight = Number(updateData.netWeight) > 0
+        ? Number(updateData.netWeight)
+        : Math.round(Math.max(0, gross - stone - other) * 1000) / 1000;
+    }
 
     return this.prisma.jewelleryItem.update({ where: { id }, data: updateData });
   }

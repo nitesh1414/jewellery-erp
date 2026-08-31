@@ -5,6 +5,10 @@ import toast from 'react-hot-toast';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Search, Plus, Gem, ArrowUpRight, Eye, Pencil, X } from 'lucide-react';
 
+/** Net Weight = Weight (gross) − Stone Weight. */
+const calcNet = (gross: number, stone: number) =>
+  Math.round(Math.max(0, (Number(gross) || 0) - (Number(stone) || 0)) * 1000) / 1000;
+
 export default function UrdPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
@@ -136,9 +140,9 @@ export default function UrdPage() {
               <div className="col-span-2"><label className="label">Customer Name *</label><input className="input-field" value={form.customerName} onChange={e => setForm({...form, customerName: e.target.value})} /></div>
               <div><label className="label">Metal</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
               <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({...form, purity: e.target.value})}>{(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_999', 'SILVER_925']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
-              <div><label className="label">Gross Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.grossWeight || ''} onChange={e => setForm({...form, grossWeight: Number(e.target.value)})} /></div>
-              <div><label className="label">Stone Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.stoneWeight || ''} onChange={e => setForm({...form, stoneWeight: Number(e.target.value)})} /></div>
-              <div><label className="label">Net Weight (g) *</label><input type="number" step="0.001" className="input-field" value={form.netWeight || ''} onChange={e => setForm({...form, netWeight: Number(e.target.value)})} /></div>
+              <div><label className="label">Gross Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.grossWeight || ''} onChange={e => { const grossWeight = Number(e.target.value); setForm({...form, grossWeight, netWeight: calcNet(grossWeight, form.stoneWeight)}); }} /></div>
+              <div><label className="label">Stone Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.stoneWeight || ''} onChange={e => { const stoneWeight = Number(e.target.value); setForm({...form, stoneWeight, netWeight: calcNet(form.grossWeight, stoneWeight)}); }} /></div>
+              <div><label className="label">Net Weight (g) * <span className="text-gray-400">auto</span></label><input type="number" step="0.001" className="input-field bg-gray-100" value={form.netWeight || ''} readOnly title="Net Weight = Gross Weight − Stone Weight" /><p className="text-[10px] text-gray-400 mt-0.5">Gross − stone</p></div>
               <div><label className="label">Rate (₹/g) *</label><input type="number" className="input-field" value={form.rate || ''} onChange={e => setForm({...form, rate: Number(e.target.value)})} /></div>
               <div><label className="label">Deduction (₹)</label><input type="number" className="input-field" value={form.deduction || ''} onChange={e => setForm({...form, deduction: Number(e.target.value)})} /></div>
               <div><label className="label">Melting Loss (%)</label><input type="number" step="0.1" className="input-field" value={form.meltingLoss || ''} onChange={e => setForm({...form, meltingLoss: Number(e.target.value)})} /></div>

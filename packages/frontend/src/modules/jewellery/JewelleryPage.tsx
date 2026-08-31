@@ -5,6 +5,10 @@ import toast from 'react-hot-toast';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Plus, Search, Package, Printer, Pencil, Diamond, X } from 'lucide-react';
 
+/** Net Weight = Weight (gross) − Stone Weight (− other weight). */
+const calcNet = (gross: number, stone: number, other: number = 0) =>
+  Math.round(Math.max(0, (Number(gross) || 0) - (Number(stone) || 0) - (Number(other) || 0)) * 1000) / 1000;
+
 export default function JewelleryPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
@@ -24,7 +28,7 @@ export default function JewelleryPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showBulk, setShowBulk] = useState(false);
   const [form, setForm] = useState<any>({
-    designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0,
+    designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, otherWeight: 0,
     netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113',
     makingChargeType: 'PERCENTAGE', makingChargeValue: 10,
     category: '', subCategory: '', location: '', ornament: '', ornamentGender: '',
@@ -83,6 +87,7 @@ export default function JewelleryPage() {
       purity: item.purity || '22K',
       grossWeight: item.grossWeight || 0,
       stoneWeight: item.stoneWeight || 0,
+      otherWeight: item.otherWeight || 0,
       netWeight: item.netWeight || 0,
       currentRate: item.currentRate || 0,
       quantity: item.quantity || 1,
@@ -102,7 +107,7 @@ export default function JewelleryPage() {
   };
 
   // Ctrl/Cmd+A → add item
-  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
+  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, otherWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
 
   const bulkMutation = useMutation({
     mutationFn: (items: any[]) => api.post('/jewellery/bulk', { items }),
@@ -261,9 +266,14 @@ export default function JewelleryPage() {
                 </select>
               </div>
               <div><label className="label">HSN Code</label><input className="input-field" value={form.hsnCode} onChange={e => setForm({...form, hsnCode: e.target.value})} /></div>
-              <div><label className="label">Gross Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.grossWeight || ''} onChange={e => setForm({...form, grossWeight: Number(e.target.value)})} /></div>
-              <div><label className="label">Stone Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.stoneWeight || ''} onChange={e => setForm({...form, stoneWeight: Number(e.target.value)})} /></div>
-              <div><label className="label">Net Weight (g) *</label><input type="number" step="0.001" className="input-field" value={form.netWeight || ''} onChange={e => setForm({...form, netWeight: Number(e.target.value)})} /></div>
+              <div><label className="label">Gross Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.grossWeight || ''} onChange={e => { const grossWeight = Number(e.target.value); setForm({...form, grossWeight, netWeight: calcNet(grossWeight, form.stoneWeight, form.otherWeight)}); }} /></div>
+              <div><label className="label">Stone Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.stoneWeight || ''} onChange={e => { const stoneWeight = Number(e.target.value); setForm({...form, stoneWeight, netWeight: calcNet(form.grossWeight, stoneWeight, form.otherWeight)}); }} /></div>
+              <div><label className="label">Other Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.otherWeight || ''} onChange={e => { const otherWeight = Number(e.target.value); setForm({...form, otherWeight, netWeight: calcNet(form.grossWeight, form.stoneWeight, otherWeight)}); }} /></div>
+              <div>
+                <label className="label">Net Weight (g) * <span className="text-gray-400">auto</span></label>
+                <input type="number" step="0.001" className="input-field bg-gray-100" value={form.netWeight || ''} readOnly title="Net Weight = Gross Weight − Stone Weight" />
+                <p className="text-[10px] text-gray-400 mt-0.5">Gross − stone − other</p>
+              </div>
               <div><label className="label">Rate / g (₹) *</label><input type="number" className="input-field" value={form.currentRate || ''} onChange={e => setForm({...form, currentRate: Number(e.target.value)})} /></div>
               <div><label className="label">Quantity</label><input type="number" className="input-field" value={form.quantity} onChange={e => setForm({...form, quantity: Number(e.target.value)})} /></div>
               <div><label className="label">Making Charge</label><select className="input-field" value={form.makingChargeType} onChange={e => setForm({...form, makingChargeType: e.target.value})}><option value="PERCENTAGE">Percentage</option><option value="PER_GRAM">Per Gram</option><option value="FIXED_AMOUNT">Fixed</option></select></div>

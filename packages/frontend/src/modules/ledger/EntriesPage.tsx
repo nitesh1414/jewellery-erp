@@ -7,7 +7,7 @@ export default function EntriesPage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [accountId, setAccountId] = useState('');
-  const [form, setForm] = useState({ accountId: '', type: 'CREDIT', amount: 0, date: new Date().toISOString().split('T')[0], description: '', reference: '' });
+  const [form, setForm] = useState<any>({ accountId: '', type: 'CREDIT', amount: 0, grams: 0, date: new Date().toISOString().split('T')[0], description: '', reference: '' });
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.get<any>('/ledger/accounts') });
   const { data: entriesData, isLoading } = useQuery({
     queryKey: ['entries', accountId],
@@ -25,10 +25,15 @@ export default function EntriesPage() {
 
   const list: any[] = ((entriesData as any)?.items) || [];
   const accList: any[] = (accounts as any) || [];
+  const selectedAccount = accList.find((a: any) => a.id === form.accountId);
+  const isMetal = selectedAccount?.type === 'METAL';
 
   function submit() {
-    if (!form.accountId || !form.amount) return;
-    createMut.mutate(form);
+    if (!form.accountId) return;
+    if (!form.amount && !(isMetal && form.grams)) return;
+    const body: any = { ...form };
+    if (!isMetal) delete body.grams;
+    createMut.mutate(body);
   }
 
   const fmtMoney = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
@@ -71,11 +76,11 @@ export default function EntriesPage() {
         <table className="w-full">
           <thead><tr className="border-b bg-gray-50">
             <th className="table-header">Date</th><th className="table-header">Account</th><th className="table-header">Description</th>
-            <th className="table-header text-right">Type</th><th className="table-header text-right">Amount</th><th className="table-header">Ref</th><th className="table-header"></th>
+            <th className="table-header text-right">Type</th><th className="table-header text-right">Amount</th><th className="table-header text-right">Weight (g)</th><th className="table-header">Ref</th><th className="table-header"></th>
           </tr></thead>
           <tbody>
-            {isLoading && <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading…</td></tr>}
-            {!isLoading && list.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-gray-400">No entries yet</td></tr>}
+            {isLoading && <tr><td colSpan={8} className="text-center py-12 text-gray-400">Loading…</td></tr>}
+            {!isLoading && list.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-gray-400">No entries yet</td></tr>}
             {list.map((e) => (
               <tr key={e.id} className="border-b border-gray-50 hover:bg-gray-50">
                 <td className="table-cell text-sm">{new Date(e.date).toLocaleDateString('en-IN')}</td>
@@ -92,6 +97,7 @@ export default function EntriesPage() {
                 <td className={'table-cell text-right font-semibold ' + (e.type === 'CREDIT' ? 'text-green-700' : 'text-red-700')}>
                   {e.type === 'CREDIT' ? '+' : '−'} {fmtMoney(e.amount)}
                 </td>
+                <td className="table-cell text-right text-sm">{Number(e.grams) ? Number(e.grams).toFixed(3) : '—'}</td>
                 <td className="table-cell text-xs text-gray-500">{e.reference || '—'}</td>
                 <td className="table-cell text-right">
                   {e.linkedTo === 'ADJUSTMENT' && (
@@ -128,14 +134,33 @@ export default function EntriesPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label">Amount (₹) *</label>
+                  <label className="label">Amount (₹){isMetal ? '' : ' *'}</label>
                   <input type="number" step="0.01" className="input-field" value={form.amount || ''} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} autoFocus />
                 </div>
+                {isMetal ? (
+                  <div>
+                    <label className="label">Weight (g) *</label>
+                    <input type="number" step="0.001" className="input-field" value={form.grams || ''} onChange={(e) => setForm({ ...form, grams: Number(e.target.value) })} placeholder="0.000" />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="label">Date</label>
+                    <input type="date" className="input-field" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+                  </div>
+                )}
+              </div>
+              {isMetal && (
                 <div>
                   <label className="label">Date</label>
                   <input type="date" className="input-field" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
                 </div>
-              </div>
+              )}
+              {isMetal && (
+                <p className="text-[11px] text-gray-400">
+                  Metal ledger — the weight is {form.type === 'CREDIT' ? 'added to' : 'deducted from'} the stock of this
+                  metal. Value is taken from the amount entered.
+                </p>
+              )}
               <div>
                 <label className="label">Description *</label>
                 <input className="input-field" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Cash deposited / withdrawn from bank" />
@@ -147,8 +172,8 @@ export default function EntriesPage() {
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
               <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="btn-primary" onClick={submit} disabled={!form.accountId || !form.amount || !form.description}>
-                {form.type === 'CREDIT' ? 'Credit' : 'Debit'} ₹{form.amount || 0}
+              <button className="btn-primary" onClick={submit} disabled={!form.accountId || !form.description || (!form.amount && !(isMetal && form.grams))}>
+                {form.type === 'CREDIT' ? 'Credit' : 'Debit'} ₹{form.amount || 0}{isMetal && form.grams ? ` · ${form.grams} g` : ''}
               </button>
             </div>
           </div>
