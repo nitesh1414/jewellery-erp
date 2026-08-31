@@ -20,7 +20,7 @@ export class PurchasesController {
 
   @Post()
   async create(@Body() body: any, @CurrentUser() user: any) {
-    return this.purchasesService.create({ ...body, createdById: user.id }, user.organizationId, user.branchId, user.id);
+    return this.purchasesService.create({ ...body, createdById: user.id }, user.organizationId, user.branchId, user.id, body.metalLedgerAccountId);
   }
 
   @Put(':id')

@@ -36,6 +36,8 @@ export class LedgerService {
       });
     }
     const opening = Number(data.openingBalance || 0);
+    const grams = Number(data.grams || 0);
+    const purity = data.purity || '';
     const created = await this.prisma.ledgerAccount.create({
       data: {
         organizationId,
@@ -47,6 +49,8 @@ export class LedgerService {
         ifscCode: data.ifscCode,
         openingBalance: opening,
         currentBalance: opening,
+        grams,
+        purity,
         isPrimary: !!data.isPrimary,
         notes: data.notes,
       },
@@ -59,7 +63,7 @@ export class LedgerService {
           accountId: created.id,
           type: opening >= 0 ? 'CREDIT' : 'DEBIT',
           amount: Math.abs(opening),
-          description: 'Opening balance',
+          description: `Opening balance - ${grams} ${purity}`,
           linkedTo: 'OPENING',
         },
       });
@@ -403,6 +407,89 @@ export class LedgerService {
         data: { currentBalance },
       });
     }
-    return { ...account, currentBalance, totals: { credits: sumCr, debits: sumDr } };
+    return { ...account, currentBalance, grams: account.grams, purity: account.purity, totals: { credits: sumCr, debits: sumDr } };
+  }
+}
+
+  // ====== METAL LEDGER ENTRIES ======
+
+  async createMetalLedgerEntry(organizationId: string, branchId: string | undefined, data: any, user: { id: string; name?: string }) {
+    const { metalType, purity, grams, amount, accountId, description, reference } = data;
+
+    if (!metalType) throw new BadRequestException('Metal type is required');
+    if (!purity) throw new BadRequestException('Purity is required');
+    if (!grams || Number(grams) <= 0) throw new BadRequestException('Grams must be positive');
+    if (!accountId) throw new BadRequestException('Metal ledger account is required');
+
+    const amountNum = Number(amount);
+    if (isNaN(amountNum) || amountNum <= 0) throw new BadRequestException('Amount must be positive');
+
+    const account = await this.prisma.ledgerAccount.findFirst({
+      where: { id: accountId, organizationId, isActive: true },
+    });
+    if (!account) throw new NotFoundException('Metal ledger account not found');
+
+    const date = new Date();
+
+    // Create the ledger entry
+    const entry = await this.prisma.ledgerEntry.create({
+      data: {
+        organizationId,
+        branchId,
+        accountId: accountId,
+        type: amountNum >= 0 ? 'CREDIT' : 'DEBIT',
+        amount: amountNum,
+        date,
+        description: description || `Metal entry - ${metalType} ${purity}`,
+        reference: reference,
+        linkedTo: 'METAL_LEDGER',
+      },
+    });
+
+    // Update the account balance
+    const delta = amountNum >= 0 ? amountNum : -amountNum;
+    await this.prisma.ledgerAccount.update({
+      where: { id: accountId },
+      data: { currentBalance: { increment: delta } },
+    });
+
+    return entry;
+  }
+
+  async createMetalLedgerOpeningEntry(organizationId: string, branchId: string | undefined, data: any, user: { id: string; name?: string }) {
+    const { metalType, purity, grams, openingBalance, accountId } = data;
+
+    if (!metalType) throw new BadRequestException('Metal type is required');
+    if (!purity) throw new BadRequestException('Purity is required');
+    if (!grams || Number(grams) <= 0) throw new BadRequestException('Grams must be positive');
+    if (!accountId) throw new BadRequestException('Metal ledger account is required');
+
+    const opening = Number(openingBalance || 0);
+    if (opening === 0) throw new BadRequestException('Opening balance must be non-zero');
+
+    const date = new Date();
+
+    // Create the ledger entry
+    const entry = await this.prisma.ledgerEntry.create({
+      data: {
+        organizationId,
+        branchId,
+        accountId: accountId,
+        type: opening >= 0 ? 'CREDIT' : 'DEBIT',
+        amount: Math.abs(opening),
+        date,
+        description: `Opening balance - ${grams} ${purity} ${metalType}`,
+        linkedTo: 'OPENING',
+      },
+    });
+
+    // Update the account balance
+    const delta = opening >= 0 ? opening : -opening;
+    await this.prisma.ledgerAccount.update({
+      where: { id: accountId },
+      data: { currentBalance: { increment: delta } },
+    });
+
+    return entry;
   }
 }
