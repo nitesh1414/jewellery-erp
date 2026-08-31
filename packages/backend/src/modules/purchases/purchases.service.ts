@@ -110,7 +110,7 @@ export class PurchasesService {
    * Create purchase with per-item jewellery creation (multiple metals allowed).
    * The supplier's invoice number is optional — pass it when available.
    */
-  async create(data: any, organizationId: string, branchId: string, userId: string) {
+  async create(data: any, organizationId: string, branchId: string, userId: string, metalLedgerAccountId?: string) {
     const totals = this.aggregateLineTotals(data);
     const totalAmount = Math.round((totals.amount
       + totals.makingCharges
@@ -170,7 +170,7 @@ export class PurchasesService {
               grossWeight: item.grossWeight || 0,
               stoneWeight: item.stoneWeight || 0,
               otherWeight: item.otherWeight || 0,
-              netWeight: item.netWeight || 0,
+              netWeight: item.netWeight !== undefined && item.netWeight !== null ? item.netWeight : Math.round((item.grossWeight || 0 - item.stoneWeight || 0) * 100) / 100,
               quantity: item.quantity || 1,
               rate: item.rate || data.rate || 0,
               makingChargeType: item.makingChargeType || 'PERCENTAGE',

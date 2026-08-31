@@ -42,6 +42,7 @@ export class SettingsService {
       customMetals,
       customPurities,
       customHallmarks,
+      barcodeLabel: settings.barcodeLabel || 'Jeweller|Item|Weight|Purity',
     };
   }
 
