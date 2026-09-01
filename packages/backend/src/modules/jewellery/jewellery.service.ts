@@ -1,10 +1,48 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { LedgerService } from '../ledger/ledger.service';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class JewelleryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private ledger: LedgerService) {}
+
+  /**
+   * An item made out of a metal ledger takes its GROSS weight out of that
+   * ledger and turns it into ornament stock. Re-posting is idempotent: every
+   * movement this item owns is removed first, then the current one is written.
+   * Pass no metalLedgerAccountId (or a gross weight of 0) and the metal is
+   * simply returned to the ledger.
+   */
+  private async syncMetalMovement(item: any, organizationId: string) {
+    await this.ledger.reverseMetalMovements(organizationId, 'JEWELLERY_ITEM', item.id);
+
+    const accountId = item.metalLedgerAccountId;
+    const grams = Number(item.grossWeight) || 0;
+    if (!accountId || grams <= 0) return null;
+
+    const account = await this.prisma.ledgerAccount.findFirst({
+      where: { id: accountId, organizationId },
+    });
+    if (!account) return null;
+
+    return this.ledger.postMetalMovement({
+      organizationId,
+      branchId: item.branchId,
+      accountId: account.id,
+      type: 'DEBIT',
+      grams,
+      rate: Number(item.currentRate) || 0,
+      metalType: item.metalType,
+      purity: item.purity,
+      date: item.purchaseDate || undefined,
+      description:
+        `Jewellery item ${item.designCode || item.barcode} — gross ${grams} g from ${account.name} → ornament stock`,
+      reference: item.barcode,
+      linkedTo: 'JEWELLERY_ITEM',
+      linkedId: item.id,
+    });
+  }
 
   async findAll(organizationId: string, query: {
     search?: string;
@@ -158,6 +196,14 @@ export class JewelleryService {
       }
     }
 
+    // A metal ledger was chosen — it must exist before the item is written.
+    if (data.metalLedgerAccountId) {
+      const account = await this.prisma.ledgerAccount.findFirst({
+        where: { id: data.metalLedgerAccountId, organizationId },
+      });
+      if (!account) throw new BadRequestException('Selected metal ledger account not found');
+    }
+
     // Net Weight = Weight (gross) − Stone Weight (− other weight)
     const grossWeight = Number(data.grossWeight) || 0;
     const stoneWeight = Number(data.stoneWeight) || 0;
@@ -233,6 +279,16 @@ export class JewelleryService {
       /* barcode record optional */
     }
 
+    // The metal for this ornament leaves the selected metal ledger
+    if (data.metalLedgerAccountId) {
+      try {
+        await this.syncMetalMovement(item, organizationId);
+      } catch (e) {
+        // Never lose the item because the ledger could not be moved
+        console.warn('Metal ledger movement failed for item', item.id, e?.message);
+      }
+    }
+
     return item;
   }
 
@@ -277,7 +333,36 @@ export class JewelleryService {
         : Math.round(Math.max(0, gross - stone - other) * 1000) / 1000;
     }
 
-    return this.prisma.jewelleryItem.update({ where: { id }, data: updateData });
+    const updated = await this.prisma.jewelleryItem.update({ where: { id }, data: updateData });
+
+    // Weight / rate / metal ledger changed → move the metal again
+    const metalTouched = ['metalLedgerAccountId', 'grossWeight', 'currentRate', 'metalType', 'purity', 'purchaseDate']
+      .some((key) => updateData[key] !== undefined);
+    if (metalTouched) {
+      try {
+        await this.syncMetalMovement(updated, organizationId);
+      } catch (e) {
+        console.warn('Metal ledger movement failed for item', id, e?.message);
+      }
+    }
+
+    return updated;
+  }
+
+  /**
+   * Delete an item and give its metal back to the ledger it came from.
+   */
+  async remove(id: string, organizationId: string) {
+    const item = await this.prisma.jewelleryItem.findFirst({ where: { id, organizationId } });
+    if (!item) throw new NotFoundException('Jewellery item not found');
+
+    await this.ledger.reverseMetalMovements(organizationId, 'JEWELLERY_ITEM', id);
+    await this.prisma.stockTransaction.deleteMany({ where: { jewelleryItemId: id } });
+    await this.prisma.barcode.updateMany({
+      where: { jewelleryItemId: id },
+      data: { jewelleryItemId: null, isAssigned: false },
+    });
+    return this.prisma.jewelleryItem.delete({ where: { id } });
   }
 
   /**

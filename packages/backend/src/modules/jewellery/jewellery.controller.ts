@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { JewelleryService } from './jewellery.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -46,6 +46,11 @@ export class JewelleryController {
   @Put(':id')
   async update(@Param('id') id: string, @Body() body: any, @CurrentUser() user: any) {
     return this.jewelleryService.update(id, user.organizationId, body);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.jewelleryService.remove(id, user.organizationId);
   }
 
   @Put(':id/status')

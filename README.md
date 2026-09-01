@@ -132,6 +132,12 @@ npm run build          # compile every package
   ledger's ornaments, and every option shows its **live stock** (pieces and
   grams) from inventory. Picking the ledger also sets the line's metal, purity
   and rate.
+- **Items made from a metal ledger deduct it automatically**: adding a jewellery
+  item with a *Metal ledger* selected takes the item’s **gross weight out of that
+  ledger** and adds the piece to **ornament stock**, so Inventory → Stock
+  Balance moves metal grams ↓ and ornament grams ↑ in one step. Editing the
+  weight, rate or ledger re-posts the movement, and deleting the item (🗑 on the
+  row) gives the metal back. Purchases do the same thing for ornament lines.
 - **Net weight is automatic**: Net Weight = Gross Weight − Stone Weight
   (− other weight). Purchases, Jewellery items, URD and billing manual items
   work it out as you type; nothing to key in twice.

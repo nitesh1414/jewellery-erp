@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
-import { Plus, Search, Package, Printer, Pencil, Diamond, X } from 'lucide-react';
+import { Plus, Search, Package, Printer, Pencil, Diamond, X, Trash2 } from 'lucide-react';
 import { formatPurity } from '../../utils/metalPurity';
 
 /** Net Weight = Weight (gross) − Stone Weight (− other weight). */
@@ -55,6 +55,10 @@ export default function JewelleryPage() {
   // shows the stock held in that metal + purity.
   const metalAccounts: any[] = ((accounts as any) || []).filter((a: any) => a.type === 'METAL' && a.isActive !== false);
   const metalAccountById = (id: string) => metalAccounts.find((a: any) => a.id === id);
+  /** The metal ledger that holds a metal + purity (used to pre-pick the ledger). */
+  const autoLedgerFor = (metal: string, pur: string) => metalAccounts.find((a: any) =>
+    (a.metalType || '').toUpperCase() === (metal || '').toUpperCase()
+    && (a.purity || '').toUpperCase() === (pur || '').toUpperCase());
   const { data: ornamentOptions } = useQuery({
     queryKey: ['ornaments-with-stock', form.metalLedgerAccountId || ''],
     queryFn: () => api.getOrnamentsWithStock({ isActive: 'true', metalLedgerAccountId: form.metalLedgerAccountId || undefined }),
@@ -97,7 +101,18 @@ export default function JewelleryPage() {
 
   const createMutation = useMutation({
     mutationFn: (b: any) => api.createJewelleryItem(b),
-    onSuccess: () => { toast.success('Item added!'); qc.invalidateQueries({ queryKey: ['jewellery'] }); setShowAdd(false); setEditingId(null); },
+    onSuccess: () => {
+      toast.success('Item added!');
+      qc.invalidateQueries({ queryKey: ['jewellery'] });
+      qc.invalidateQueries({ queryKey: ['jewellery-stats'] });
+      // The gross weight left the metal ledger and became ornament stock
+      qc.invalidateQueries({ queryKey: ['inventory-stock'] });
+      qc.invalidateQueries({ queryKey: ['inv-metal-stock'] });
+      qc.invalidateQueries({ queryKey: ['inventory-summary'] });
+      qc.invalidateQueries({ queryKey: ['accounts'] });
+      qc.invalidateQueries({ queryKey: ['ornaments-with-stock'] });
+      setShowAdd(false); setEditingId(null);
+    },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
 
@@ -106,6 +121,12 @@ export default function JewelleryPage() {
     onSuccess: () => {
       toast.success('Item updated!');
       qc.invalidateQueries({ queryKey: ['jewellery'] });
+      qc.invalidateQueries({ queryKey: ['jewellery-stats'] });
+      qc.invalidateQueries({ queryKey: ['inventory-stock'] });
+      qc.invalidateQueries({ queryKey: ['inv-metal-stock'] });
+      qc.invalidateQueries({ queryKey: ['inventory-summary'] });
+      qc.invalidateQueries({ queryKey: ['accounts'] });
+      qc.invalidateQueries({ queryKey: ['ornaments-with-stock'] });
       setShowAdd(false);
       setEditingId(null);
       setDetail(null);
@@ -140,8 +161,24 @@ export default function JewelleryPage() {
     setShowAdd(true);
   };
 
+  /** Open a fresh Add Item form — metal ledger pre-picked from metal + purity. */
+  const openAddItem = () => {
+    setEditingId(null);
+    const metalType = 'GOLD';
+    const purity = '22K';
+    setForm({
+      designCode: '', metalType, purity, grossWeight: 0, stoneWeight: 0, otherWeight: 0,
+      netWeight: 0, currentRate: getRateForPurity(purity), quantity: 1, hsnCode: '7113',
+      metalLedgerAccountId: autoLedgerFor(metalType, purity)?.id || '',
+      makingChargeType: 'PERCENTAGE', makingChargeValue: 10,
+      category: '', subCategory: '', location: '', ornament: '', ornamentGender: '',
+      hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0],
+    });
+    setShowAdd(true);
+  };
+
   // Ctrl/Cmd+A → add item
-  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, otherWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', metalLedgerAccountId: '', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
+  useAppShortcut('app:add', openAddItem);
 
   const bulkMutation = useMutation({
     mutationFn: (items: any[]) => api.post('/jewellery/bulk', { items }),
@@ -158,6 +195,25 @@ export default function JewelleryPage() {
     } catch (e: any) { toast.error(e.response?.data?.message || 'Error'); }
   };
 
+  /** Delete an item and give its gross weight back to the metal ledger it came from. */
+  const handleDeleteItem = async (item: any) => {
+    const account = metalAccountById(item.metalLedgerAccountId);
+    const message = `Delete ${item.designCode || item.barcode}?`
+      + (account ? `\n\nIts gross weight (${(Number(item.grossWeight) || 0).toFixed(3)} g) will be given back to ${account.name}.` : '');
+    if (!window.confirm(message)) return;
+    try {
+      await api.delete('/jewellery/' + item.id);
+      toast.success(account ? 'Item deleted — metal returned to ' + account.name : 'Item deleted');
+      qc.invalidateQueries({ queryKey: ['jewellery'] });
+      qc.invalidateQueries({ queryKey: ['jewellery-stats'] });
+      qc.invalidateQueries({ queryKey: ['inventory-stock'] });
+      qc.invalidateQueries({ queryKey: ['inv-metal-stock'] });
+      qc.invalidateQueries({ queryKey: ['inventory-summary'] });
+      qc.invalidateQueries({ queryKey: ['accounts'] });
+      qc.invalidateQueries({ queryKey: ['ornaments-with-stock'] });
+    } catch (e: any) { toast.error(e.response?.data?.message || 'Error'); }
+  };
+
   const fm = (n: number) => (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   return (
@@ -166,7 +222,7 @@ export default function JewelleryPage() {
         <div><h1 className="page-title">Jewellery Items</h1><p className="text-gray-500 text-sm mt-1">Material entry and inventory management</p></div>
         <div className="flex gap-2">
           <button onClick={() => setShowBulk(true)} className="btn-secondary"><Package className="w-4 h-4" /> Bulk Import</button>
-          <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus className="w-4 h-4" /> Add Item</button>
+          <button onClick={openAddItem} className="btn-primary"><Plus className="w-4 h-4" /> Add Item</button>
         </div>
       </div>
 
@@ -233,7 +289,7 @@ export default function JewelleryPage() {
                     {item.category || '—'}{item.ornament ? ` · ${item.ornament}` : ''}{item.ornamentGender ? ` (${item.ornamentGender[0]}${item.ornamentGender.slice(1).toLowerCase()})` : ''}
                   </p>
                 </td>
-                <td className="table-cell text-xs">{item.metalType}<br /><span className="text-gray-400">{item.purity}</span></td>
+                <td className="table-cell text-xs">{item.metalType}<br /><span className="text-gray-400">{item.purity}</span>{item.metalLedgerAccountId && metalAccountById(item.metalLedgerAccountId) ? (<><br /><span className="text-amber-700">from {metalAccountById(item.metalLedgerAccountId)?.name}</span></>) : null}</td>
                 <td className="table-cell text-right text-xs">{item.grossWeight?.toFixed(3)} / {item.stoneWeight?.toFixed(3) ?? '0.000'} / <strong>{item.netWeight?.toFixed(3)}</strong> g</td>
                 <td className="table-cell text-right">₹{item.currentRate?.toLocaleString('en-IN')}</td>
                 <td className="table-cell text-right font-medium">₹{(item.netWeight * item.currentRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
@@ -246,6 +302,10 @@ export default function JewelleryPage() {
                     <button onClick={() => openEditItem(item)} className="p-1 text-amber-600 hover:text-amber-700" title="Edit item"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(item.barcode), '_blank')}
                       className="p-1 text-gray-400 hover:text-primary-600" title="Print barcode sticker"><Printer className="w-4 h-4" /></button>
+                    {item.metalLedgerAccountId && (
+                      <button onClick={() => handleDeleteItem(item)} className="p-1 text-red-400 hover:text-red-600"
+                        title="Delete item — returns the metal to its ledger"><Trash2 className="w-4 h-4" /></button>
+                    )}
                     {item.status === 'IN_STOCK' && (
                       <select onChange={e => handleStatusChange(item.id, e.target.value)} value="" className="text-xs border rounded p-1">
                         <option value="">Set Status</option>
@@ -279,8 +339,8 @@ export default function JewelleryPage() {
             <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Jewellery Item' : 'Add Jewellery Item (Material Entry)'}</h3>
             <div className="grid grid-cols-3 gap-4">
               <div><label className="label">Design Code</label><input className="input-field" value={form.designCode} onChange={e => setForm({...form, designCode: e.target.value})} placeholder="RING-001" /></div>
-              <div><label className="label">Metal Type</label><select className="input-field" value={form.metalType} onChange={e => setForm({...form, metalType: e.target.value})}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
-              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => { const purity = e.target.value; const autoRate = getRateForPurity(purity); setForm({...form, purity, currentRate: autoRate}); }}>{(settings?.allPurities || ['24K','22K','18K']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
+              <div><label className="label">Metal Type</label><select className="input-field" value={form.metalType} onChange={e => { const metalType = e.target.value; setForm({...form, metalType, metalLedgerAccountId: autoLedgerFor(metalType, form.purity)?.id || ''}); }}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
+              <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => { const purity = e.target.value; const autoRate = getRateForPurity(purity); setForm({...form, purity, currentRate: autoRate, metalLedgerAccountId: autoLedgerFor(form.metalType, purity)?.id || ''}); }}>{(settings?.allPurities || ['24K','22K','18K']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
               <div><label className="label">Category</label><input className="input-field" value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="Ring" /></div>
               <div><label className="label">Sub Category</label><input className="input-field" value={form.subCategory} onChange={e => setForm({...form, subCategory: e.target.value})} /></div>
               <div>
@@ -295,6 +355,11 @@ export default function JewelleryPage() {
                   {metalAccountById(form.metalLedgerAccountId)
                     ? `Stock in this ledger: ${(Number(metalAccountById(form.metalLedgerAccountId)?.grams) || 0).toFixed(3)} g`
                     : 'Pick a metal ledger to filter the ornament master and set metal + purity'}
+                </p>
+                <p className="text-[10px] mt-0.5 text-amber-700">
+                  {form.metalLedgerAccountId
+                    ? `On save ${(Number(form.grossWeight) || 0).toFixed(3)} g (gross) is deducted from ${metalAccountById(form.metalLedgerAccountId)?.name || 'this ledger'} and added to ornament stock.`
+                    : 'No ledger selected — the metal stock will not change.'}
                 </p>
               </div>
               <div>
