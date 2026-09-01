@@ -14,6 +14,16 @@ function round2(n: number): number {
   return Math.round((Number(n) || 0) * 100) / 100;
 }
 
+/** Grams with up to 3 decimals and no trailing zeros: 15, 12.5, 10.25 … */
+function g3(value: any): string {
+  return String(Math.round((Number(value) || 0) * 1000) / 1000);
+}
+
+/** Ledger wording for an ornament line: GROSS … - STONE WEIGHT … - OTHER … */
+function ornamentWeightNote(item: any): string {
+  return `GROSS ${g3(item?.grossWeight)} g - STONE WEIGHT ${g3(item?.stoneWeight)} g - OTHER ${g3(item?.otherWeight)} g`;
+}
+
 @Injectable()
 export class PurchasesService {
   constructor(
@@ -549,20 +559,25 @@ export class PurchasesService {
           },
         });
 
-        // Ornament entry — the GROSS weight leaves the selected metal ledger
-        if (metalAccountId && Number(item.grossWeight) > 0) {
+        // Ornament entry — the NET weight (gross − stone − other) leaves the selected metal ledger
+        const netGrams = this.lineWeight(item);
+        if (metalAccountId && netGrams > 0) {
+          const metalAccount = await tx.ledgerAccount.findFirst({
+            where: { id: metalAccountId },
+            select: { name: true },
+          });
           await this.ledger.postMetalMovement(
             {
               organizationId,
               branchId,
               accountId: metalAccountId,
               type: 'DEBIT',
-              grams: Number(item.grossWeight),
+              grams: netGrams,
               rate: Number(item.rate) || data.rate || 0,
               metalType: jewelleryItem.metalType,
               purity: jewelleryItem.purity,
               date: data.invoiceDate ? new Date(data.invoiceDate) : new Date(),
-              description: `Ornament purchase — ${jewelleryItem.designCode || jewelleryItem.sku} · gross ${Number(item.grossWeight)} g`,
+              description: `Ornament purchase — ${jewelleryItem.designCode || jewelleryItem.sku} — ${ornamentWeightNote(item)} from ${metalAccount?.name || 'metal ledger'} → ornament stock`,
               reference: data.invoiceNumber || record.invoiceNumber,
               linkedTo: 'PURCHASE',
               linkedId: record.id,
@@ -800,8 +815,8 @@ export class PurchasesService {
             await tx.purchase.update({ where: { id }, data: { metalLedgerAccountId: account.id } });
           }
         } else {
-          const gross = Number(item.grossWeight) || 0;
-          if (gross <= 0) continue;
+          const netGrams = this.lineWeight(item);
+          if (netGrams <= 0) continue;
           const metalAccountId = await this.resolveOrnamentMetalAccount(
             tx,
             {
@@ -814,18 +829,22 @@ export class PurchasesService {
             false,
           );
           if (!metalAccountId) continue;
+          const metalAccount = await tx.ledgerAccount.findFirst({
+            where: { id: metalAccountId },
+            select: { name: true },
+          });
           await this.ledger.postMetalMovement(
             {
               organizationId,
               branchId,
               accountId: metalAccountId,
               type: 'DEBIT',
-              grams: gross,
+              grams: netGrams,
               rate: Number(item.rate) || 0,
               metalType: item.metalType || totals.metalType,
               purity: item.purity || totals.purity,
               date: data.invoiceDate ? new Date(data.invoiceDate) : existing.invoiceDate,
-              description: `Ornament purchase — ${item.designCode || ''} · gross ${gross} g`.trim(),
+              description: `Ornament purchase — ${item.designCode || ''} — ${ornamentWeightNote(item)} from ${metalAccount?.name || 'metal ledger'} → ornament stock`.trim(),
               reference: data.invoiceNumber || existing.invoiceNumber,
               linkedTo: 'PURCHASE',
               linkedId: id,

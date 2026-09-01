@@ -103,7 +103,8 @@ npm run build          # compile every package
     from metal + purity, or created as `GOLD 22K`-style if it does not exist).
     No inventory item is created.
   - **Ornament / Jewellery** — readymade pieces. Every line is barcoded into
-    inventory and its **gross weight is deducted from the metal ledger** picked
+    inventory and its **net weight (gross − stone − other) is deducted from the
+    metal ledger** picked
     on that line (defaults to the ledger matching the line's metal + purity).
   Editing a purchase reverses and re-posts those metal movements, so the gram
   stock always matches the bill.
@@ -140,7 +141,10 @@ npm run build          # compile every package
   `DEBIT 10 g · Jewellery item RING-900 — GROSS 15 g - STONE WEIGHT 3 g -
   OTHER 2 g from GOLD 22K → ornament stock`. Editing any weight, the rate or the
   ledger re-posts the movement, and deleting the item (🗑 on the row) gives the
-  metal back.
+  metal back. **Ornament purchases do the same** — every ornament line debits its
+  net weight (`DEBIT 10 g · Ornament purchase — NECK-500 — GROSS 15 g -
+  STONE WEIGHT 3 g - OTHER 2 g from GOLD 22K → ornament stock`), while a
+  *Metal / Bullion* line still credits the full weight it bought.
 - **Net weight is automatic**: Net Weight = Gross Weight − Stone Weight
   (− other weight). Purchases, Jewellery items, URD and billing manual items
   work it out as you type; nothing to key in twice.

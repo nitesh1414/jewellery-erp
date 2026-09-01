@@ -17,6 +17,7 @@ interface PurchaseItem {
   hsnCode: string;
   grossWeight: number;
   stoneWeight: number;
+  otherWeight: number;
   netWeight: number;
   rate: number;
   quantity: number;
@@ -31,13 +32,15 @@ const emptyItem = (): PurchaseItem => ({
   id: 'item-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
   designCode: '', metalType: 'GOLD', purity: '22K', category: '', subCategory: '',
   ornament: '', ornamentGender: '', hsnCode: '7113',
-  grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, quantity: 1,
+  grossWeight: 0, stoneWeight: 0, otherWeight: 0, netWeight: 0, rate: 0, quantity: 1,
   makingChargeType: 'PERCENTAGE', makingChargeValue: 10,
   hallmarkNumber: '', certificateNumber: '',
   metalLedgerAccountId: '',
 });
 
 const round3 = (n: number) => Math.round((Number(n) || 0) * 1000) / 1000;
+/** Grams without trailing zeros: 15, 12.5, 10.25 … */
+const fmtG = (n: any) => String(Math.round((Number(n) || 0) * 1000) / 1000);
 /** Net Weight = Weight (gross) − Stone Weight (− other weight). */
 const calcNet = (gross: number, stone: number, other: number = 0) => round3(Math.max(0, (Number(gross) || 0) - (Number(stone) || 0) - (Number(other) || 0)));
 
@@ -88,7 +91,7 @@ export default function PurchasesPage() {
   };
   const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
   // Metal / material ledgers — metal purchases credit these, ornament purchases
-  // deduct the gross weight from the one selected on the line.
+  // deduct the net weight (gross − stone − other) from the one selected on the line.
   const metalAccounts: any[] = ((accounts as any) || []).filter((a: any) => a.isActive !== false && a.type === 'METAL');
   const ornaments = (ornamentsData?.items || []).map((o: any) => o);
   const ornamentList: any[] = (ornamentOptions as any) || [];
@@ -213,6 +216,8 @@ export default function PurchasesPage() {
   const fm = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   // Item line value
+  // Net weight of the line being keyed in — this is what leaves the metal ledger
+  const netWeightOfForm = calcNet(itemForm.grossWeight, itemForm.stoneWeight, itemForm.otherWeight);
   const itemValue = (i: any) => (i.netWeight || 0) * (i.rate || 0) + (i.makingCharges || 0) + (i.stoneCharges || 0) + (i.otherCharges || 0);
   const totalItemsWeight = items.reduce((s, i) => s + (i.netWeight || 0), 0);
   const totalItemsGross = items.reduce((s, i) => s + (i.grossWeight || 0), 0);
@@ -260,7 +265,7 @@ export default function PurchasesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h1 className="page-title">Purchases</h1><p className="text-gray-500 text-sm mt-1">Metal (bullion) purchases add weight to a metal ledger — ornament purchases add items to inventory and deduct their gross weight from it</p></div>
+        <div><h1 className="page-title">Purchases</h1><p className="text-gray-500 text-sm mt-1">Metal (bullion) purchases add weight to a metal ledger — ornament purchases add items to inventory and deduct their net weight (gross − stone − other) from it</p></div>
         <button onClick={() => { resetForm(); setShowCreate(true); }} className="btn-primary"><Plus className="w-4 h-4" /> New Purchase</button>
       </div>
 
@@ -396,7 +401,7 @@ export default function PurchasesPage() {
                   className={'text-left border rounded-xl p-3 transition-all ' + (!isMetalEntry ? 'border-primary-400 bg-primary-50 ring-2 ring-primary-200' : 'border-gray-200 hover:border-gray-300')}
                 >
                   <div className="flex items-center gap-2 font-semibold text-sm"><Package className="w-4 h-4 text-primary-600" /> Ornament / Jewellery</div>
-                  <p className="text-[11px] text-gray-500 mt-1">Readymade pieces. Each line is barcoded into inventory and its <strong>gross weight is deducted</strong> from the metal ledger you select.</p>
+                  <p className="text-[11px] text-gray-500 mt-1">Readymade pieces. Each line is barcoded into inventory and its <strong>net weight (gross − stone − other) is deducted</strong> from the metal ledger you select.</p>
                 </button>
               </div>
             </div>
@@ -578,7 +583,7 @@ export default function PurchasesPage() {
                     </p>
                   )}
                   <p className="text-[11px] text-gray-500 mt-3">
-                    Saving deducts the <strong>gross weight ({itemForm.grossWeight?.toFixed?.(3) ?? '0.000'} g)</strong> from{' '}
+                    Saving deducts the <strong>net weight ({netWeightOfForm.toFixed(3)} g)</strong> — gross {fmtG(itemForm.grossWeight)} − stone {fmtG(itemForm.stoneWeight)} − other {fmtG(itemForm.otherWeight)} — from{' '}
                     <strong>{metalAccountName(itemForm.metalLedgerAccountId) || autoMetalAccount(itemForm.metalType, itemForm.purity)?.name || 'no ledger'}</strong>.
                   </p>
                 </>
