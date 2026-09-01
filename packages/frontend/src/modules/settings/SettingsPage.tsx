@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { Save, Building, Receipt, Percent, Diamond, Plus, X, Gem, Tag, BadgeCheck, Upload, Barcode, ArrowUp, ArrowDown, Check } from 'lucide-react';
 import { BARCODE_LABEL_FIELDS, parseBarcodeLabel, serializeBarcodeLabel, barcodeFieldValue } from '../../utils/barcodeLabel';
+import { puritiesForMetal, formatPurity, metalKey } from '../../utils/metalPurity';
 import toast from 'react-hot-toast';
 
 const SAMPLE_ITEM: any = {
@@ -30,6 +31,7 @@ export default function SettingsPage() {
 
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings() });
   const { data: rates } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates() });
+  const { data: rateHistory } = useQuery({ queryKey: ['rate-history'], queryFn: () => api.getRateHistory(200) });
 
   const updateMutation = useMutation({
     mutationFn: (b: any) => api.updateSettings(b),
@@ -82,6 +84,17 @@ export default function SettingsPage() {
   const updateRateMutation = useMutation({
     mutationFn: ({ id, rate }: { id: string; rate: number }) => api.updateRate(id, Number(rate)),
     onSuccess: () => { toast.success('Rate updated'); qc.invalidateQueries({ queryKey: ['rates'] }); qc.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
+  });
+
+  // Add or update the daily rate of any metal + purity (row stays visible after saving)
+  const upsertRateMutation = useMutation({
+    mutationFn: (body: { metalType: string; purity: string; rate: number }) => api.upsertRate(body),
+    onSuccess: () => {
+      toast.success('Rate saved');
+      qc.invalidateQueries({ queryKey: ['rates'] });
+      qc.invalidateQueries({ queryKey: ['rate-history'] });
+    },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
 
@@ -284,7 +297,13 @@ export default function SettingsPage() {
 
         {/* Rates */}
         {tab === 'rates' && (
-          <RatesTab rates={rates || []} onUpdate={(id: string, rate: number) => updateRateMutation.mutate({ id, rate })} />
+          <RatesTab
+            rates={rates || []}
+            history={rateHistory || []}
+            allMetals={settings?.allMetals || []}
+            allPurities={settings?.allPurities || []}
+            onSave={(body: { metalType: string; purity: string; rate: number }) => upsertRateMutation.mutate(body)}
+          />
         )}
 
         {/* Barcode sticker content */}
@@ -442,74 +461,146 @@ function PuritiesTab({ purities, defaultPurities, newPurity, setNewPurity, onAdd
   );
 }
 
-function RatesTab({ rates, onUpdate }: any) {
-  const [rateEdits, setRateEdits] = useState<Record<string, number>>({});
-  const [savingId, setSavingId] = useState<string | null>(null);
+function RatesTab({ rates, history, allMetals, allPurities, onSave }: any) {
+  const [rateEdits, setRateEdits] = useState<Record<string, string>>({});
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
 
-  const saveRate = (id: string, value: number) => {
-    const next = Number(value);
-    if (!id || isNaN(next)) return;
-    setSavingId(id);
-    // Commit on blur/Enter — the mutation shows a success toast and refreshes.
-    onUpdate(id, next);
-    setRateEdits(prev => { const c = { ...prev }; delete c[id]; return c; });
-    setTimeout(() => setSavingId(null), 700);
+  // Existing rate for a metal + purity
+  const byKey = new Map<string, any>(
+    (rates || []).map((r: any) => [metalKey(r.metalType, r.purity), r]),
+  );
+
+  const commit = (metalType: string, purity: string, raw: string, current?: number) => {
+    const key = metalKey(metalType, purity);
+    const value = raw === '' ? NaN : Number(raw);
+    setRateEdits(prev => { const c = { ...prev }; delete c[key]; return c; });
+    if (!Number.isFinite(value) || value < 0) return;
+    if (current !== undefined && Number(current) === value) return; // nothing changed
+    setSavingKey(key);
+    onSave({ metalType, purity, rate: value });
+    setTimeout(() => { setSavingKey(null); setSavedKey(key); }, 700);
+    setTimeout(() => setSavedKey((k) => (k === key ? null : k)), 2600);
   };
 
-  // Group the schedule by metal so each metal lists its purities with their rates.
-  const grouped = (rates || []).reduce((acc: Record<string, any[]>, r: any) => {
-    (acc[r.metalType] = acc[r.metalType] || []).push(r);
-    return acc;
-  }, {});
-  const metalOrder = Object.keys(grouped).sort();
-  const metals = metalOrder.map(m => ({ metal: m, items: [...grouped[m]].sort((a: any, b: any) => a.purity.localeCompare(b.purity)) }));
+  // Every metal with the purities that belong to it, so a rate can be added
+  // for any combination — even one that has never been priced before.
+  const usedPurities = (metal: string): string[] => Array.from(new Set<string>(
+    (rates || [])
+      .filter((r: any) => String(r.metalType || '').toUpperCase() === metal)
+      .map((r: any) => String(r.purity || '')),
+  )).filter(Boolean);
+  const metalList: string[] = Array.from(new Set<string>([
+    ...((allMetals || []) as string[]).map((m: string) => String(m).toUpperCase()),
+    ...(rates || []).map((r: any) => String(r.metalType || '').toUpperCase()),
+  ])).filter(Boolean).sort();
+
+  const sections = metalList.map((metal) => ({
+    metal,
+    purities: puritiesForMetal(metal, allPurities || [], usedPurities(metal)),
+  }));
+
+  const fmtRate = (n: any) => (Number(n) ? `₹${Number(n).toLocaleString('en-IN')}` : '—');
+  const fmtDate = (d: any) => (d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 
   return (
-    <div className="card space-y-4">
-      <h3 className="section-title">Daily Rate Schedule</h3>
-      <p className="text-sm text-gray-500">
-        Rates are grouped by metal, listing each purity with its rate. Edit any rate — it saves automatically and is
-        used by Billing, Inventory, Purchases &amp; Jewellery entries.
-      </p>
+    <div className="space-y-6">
+      {/* ---------- Daily rate schedule ---------- */}
+      <div className="card space-y-4">
+        <div>
+          <h3 className="section-title">Daily Rate Schedule</h3>
+          <p className="text-sm text-gray-500">
+            Every metal and its purities is listed — type a rate and click away (or press Enter) to save it.
+            A rate that does not exist yet is created on save, and the row stays here afterwards.
+            These rates feed Billing, Inventory, Purchases &amp; Jewellery entries.
+          </p>
+        </div>
 
-      {metals.length === 0 && (
-        <div className="text-center text-gray-400 text-sm py-8">No rates defined yet. Add rates for each metal &amp; purity.</div>
-      )}
+        {sections.length === 0 && (
+          <div className="text-center text-gray-400 text-sm py-8">Add metals &amp; purities in their tabs to build the rate schedule.</div>
+        )}
 
-      <div className="space-y-4">
-        {metals.map(({ metal, items }) => (
-          <div key={metal} className="overflow-hidden rounded-lg border">
-            <div className="px-4 py-2.5 bg-gray-50 border-b font-semibold text-sm text-gray-800 flex items-center justify-between">
-              <span>{metal.replace('_', ' ')}</span>
-              <span className="text-[11px] font-medium text-gray-400">Rate in ₹ / gram</span>
+        <div className="space-y-4">
+          {sections.map(({ metal, purities }) => (
+            <div key={metal} className="overflow-hidden rounded-lg border">
+              <div className="px-4 py-2.5 bg-gray-50 border-b font-semibold text-sm text-gray-800 flex items-center justify-between">
+                <span>{metal.replace(/_/g, ' ')}</span>
+                <span className="text-[11px] font-medium text-gray-400">Rate in ₹ / gram</span>
+              </div>
+              <table className="w-full">
+                <thead><tr className="border-b bg-white">
+                  <th className="table-header w-1/2">Purity</th>
+                  <th className="table-header text-right">Rate (₹ / gram)</th>
+                  <th className="table-header w-48">Last updated</th>
+                </tr></thead>
+                <tbody>
+                  {purities.map((purity: string) => {
+                    const key = metalKey(metal, purity);
+                    const existing = byKey.get(key);
+                    return (
+                      <tr key={key} className="border-b border-gray-50 hover:bg-gray-50/60">
+                        <td className="table-cell font-medium">
+                          {formatPurity(purity)}
+                          {!existing && <span className="ml-2 text-[10px] uppercase tracking-wide text-gray-400">no rate yet</span>}
+                        </td>
+                        <td className="table-cell text-right">
+                          <input
+                            type="number"
+                            className="input-field text-right w-40"
+                            placeholder="Add rate"
+                            value={rateEdits[key] ?? (existing ? String(existing.rate) : '')}
+                            onBlur={(e) => commit(metal, purity, e.target.value, existing?.rate)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                            onChange={e => setRateEdits({ ...rateEdits, [key]: e.target.value })}
+                            title="Type the rate and click away / press Enter to save"
+                          />
+                          {savingKey === key && <span className="text-[10px] text-gray-400 ml-1">saving…</span>}
+                          {savedKey === key && <span className="text-[10px] text-green-600 ml-1">saved ✓</span>}
+                        </td>
+                        <td className="table-cell text-xs text-gray-400">
+                          {existing?.effectiveDate ? fmtDate(existing.effectiveDate) : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-            <table className="w-full">
-              <thead><tr className="border-b bg-white">
-                <th className="table-header w-1/2">Purity</th>
-                <th className="table-header text-right w-1/2">Rate (₹ / gram)</th>
-              </tr></thead>
-              <tbody>
-                {items.map((r: any) => (
-                  <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50/60">
-                    <td className="table-cell font-medium">{r.purity}</td>
-                    <td className="table-cell text-right">
-                      <input
-                        type="number"
-                        className="input-field text-right w-40"
-                        value={rateEdits[r.id] ?? r.rate}
-                        onBlur={(e) => { if (Number(rateEdits[r.id] ?? r.rate) !== Number(r.rate)) saveRate(r.id, Number(rateEdits[r.id] ?? r.rate)); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                        onChange={e => setRateEdits({ ...rateEdits, [r.id]: Number(e.target.value) })}
-                        title="Edit rate and click away / press Enter to save"
-                      />
-                      {savingId === r.id && <span className="text-[10px] text-gray-400 ml-1">saving…</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+
+      {/* ---------- Historical rate schedule ---------- */}
+      <div className="card space-y-4">
+        <div>
+          <h3 className="section-title">Historical Rate Schedule</h3>
+          <p className="text-sm text-gray-500">Every rate change, newest first — old rate, new rate and when it changed.</p>
+        </div>
+        <div className="overflow-hidden rounded-lg border">
+          <table className="w-full">
+            <thead><tr className="border-b bg-gray-50">
+              <th className="table-header">Date</th>
+              <th className="table-header">Metal</th>
+              <th className="table-header">Purity</th>
+              <th className="table-header text-right">Old rate</th>
+              <th className="table-header text-right">New rate</th>
+            </tr></thead>
+            <tbody>
+              {(history || []).map((h: any) => (
+                <tr key={h.id} className="border-b border-gray-50 hover:bg-gray-50/60">
+                  <td className="table-cell text-sm text-gray-600">{fmtDate(h.changedAt)}</td>
+                  <td className="table-cell">{String(h.metalType || '').replace(/_/g, ' ')}</td>
+                  <td className="table-cell">{formatPurity(h.purity)}</td>
+                  <td className="table-cell text-right text-gray-500">{fmtRate(h.previousRate)}</td>
+                  <td className="table-cell text-right font-semibold">{fmtRate(h.currentRate ?? h.rate)}</td>
+                </tr>
+              ))}
+              {(!history || history.length === 0) && (
+                <tr><td colSpan={5} className="text-center py-10 text-gray-400">No rate changes recorded yet — change a rate above and it appears here.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

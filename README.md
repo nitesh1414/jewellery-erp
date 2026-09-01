@@ -112,6 +112,26 @@ npm run build          # compile every package
   in grams** (the opening value is auto-filled from today's rate). The account
   card then shows live stock in grams (in / out) plus its value in ₹. Metal
   ledgers are also listed on Purchases when you pick which ledger to use.
+- **Inventory stock from the metal ledgers**: Inventory → Stock Balance now
+  shows, for every metal + purity, the **metal / material stock in grams taken
+  from its metal ledger account** next to the **ornament stock in grams** from
+  the jewellery items, plus the total available and its value. The summary card
+  above it lists **all** metals and purities (including the ones with zero
+  stock) with the grams available, so nothing is hidden.
+- **Rate schedule (daily + historical)**: Settings → Rate Schedule is one page
+  with two parts. On top, the **daily rate grid** — every metal with all of its
+  purities, an input per row, "no rate yet" tags and a last-updated column;
+  type a rate and click away (or press Enter) to save it, and the row **stays
+  put** afterwards (a rate that did not exist is simply created). Below it, the
+  **historical rate schedule**: every change in list format with date, metal,
+  purity and old → new rate, newest first.
+- **Ornament master linked to a metal ledger**: Ledger → Ornament Master now
+  lets you link each ornament to a metal ledger and shows the stock held in it.
+  In **Jewellery → Add Item** and in a **Purchase** line, picking a *Metal
+  ledger* (metal + purity, with its grams) filters the *Ornament* list to that
+  ledger's ornaments, and every option shows its **live stock** (pieces and
+  grams) from inventory. Picking the ledger also sets the line's metal, purity
+  and rate.
 - **Net weight is automatic**: Net Weight = Gross Weight − Stone Weight
   (− other weight). Purchases, Jewellery items, URD and billing manual items
   work it out as you type; nothing to key in twice.

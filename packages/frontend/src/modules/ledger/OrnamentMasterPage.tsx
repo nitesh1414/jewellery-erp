@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
-import { Plus, Search, Pencil, Trash2, User, Heart, Users } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, User, Heart, Users, Gem } from 'lucide-react';
 
 const GENDERS = [
   { value: 'MALE', label: 'Male Ornament', icon: User, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
@@ -19,8 +19,13 @@ export default function OrnamentMasterPage() {
   const [editing, setEditing] = useState<any>(null);
 
   // Ctrl/Cmd+A → add ornament
-  useAppShortcut('app:add', () => { setEditing(null); setForm({ name: '', gender: 'FEMALE', category: '', notes: '' }); setShowAdd(true); });
-  const [form, setForm] = useState({ name: '', gender: 'FEMALE', category: '', notes: '' });
+  useAppShortcut('app:add', () => { setEditing(null); setForm({ name: '', gender: 'FEMALE', category: '', notes: '', metalLedgerAccountId: '' }); setShowAdd(true); });
+  const [form, setForm] = useState<any>({ name: '', gender: 'FEMALE', category: '', notes: '', metalLedgerAccountId: '' });
+
+  // Metal (material) ledgers an ornament can be linked to
+  const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
+  const metalAccounts: any[] = ((accounts as any) || []).filter((a: any) => a.type === 'METAL' && a.isActive !== false);
+  const metalName = (id: string) => metalAccounts.find((a: any) => a.id === id)?.name || '';
 
   const { data, isLoading } = useQuery({
     queryKey: ['ornaments', search, genderFilter],
@@ -54,7 +59,7 @@ export default function OrnamentMasterPage() {
           <h1 className="page-title">Ledger Master — Ornaments</h1>
           <p className="text-gray-500 text-sm mt-1">Master list of ornaments classified as male / female / unisex. Used in item entry, inventory and job work.</p>
         </div>
-        <button onClick={() => { setEditing(null); setForm({ name: '', gender: 'FEMALE', category: '', notes: '' }); setShowAdd(true); }} className="btn-primary">
+        <button onClick={() => { setEditing(null); setForm({ name: '', gender: 'FEMALE', category: '', notes: '', metalLedgerAccountId: '' }); setShowAdd(true); }} className="btn-primary">
           <Plus className="w-4 h-4" /> Add Ornament
         </button>
       </div>
@@ -91,10 +96,20 @@ export default function OrnamentMasterPage() {
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{o.name}</p>
                       <p className="text-[11px] text-gray-400">{o.category || '—'}{!o.isActive ? ' · inactive' : ''}</p>
+                      <p className="text-[11px] mt-0.5 flex flex-wrap items-center gap-1">
+                        {o.metalLedgerAccountId && (
+                          <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5">
+                            <Gem className="w-3 h-3" /> {metalName(o.metalLedgerAccountId) || 'metal ledger'}
+                          </span>
+                        )}
+                        <span className="text-gray-500">
+                          {Number(o.stockPieces) || 0} pc · {Number(o.stockWeight || 0).toFixed(3)} g in stock
+                        </span>
+                      </p>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => { setEditing(o); setForm({ name: o.name, gender: o.gender, category: o.category || '', notes: o.notes || '' }); setShowAdd(true); }}
+                        onClick={() => { setEditing(o); setForm({ name: o.name, gender: o.gender, category: o.category || '', notes: o.notes || '', metalLedgerAccountId: o.metalLedgerAccountId || '' }); setShowAdd(true); }}
                         className="p-1 text-gray-400 hover:text-primary-600"><Pencil className="w-3.5 h-3.5" /></button>
                       <button
                         onClick={() => { if (confirm(`Delete "${o.name}"?`)) deleteMutation.mutate(o.id); }}
@@ -126,6 +141,18 @@ export default function OrnamentMasterPage() {
                 </div>
               </div>
               <div><label className="label">Category</label><input className="input-field" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Ring / Bangle / Chain…" /></div>
+              <div>
+                <label className="label">Metal ledger (which metal it is made from)</label>
+                <select className="input-field" value={form.metalLedgerAccountId || ''} onChange={(e) => setForm({ ...form, metalLedgerAccountId: e.target.value })}>
+                  <option value="">— not linked —</option>
+                  {metalAccounts.map((a: any) => (
+                    <option key={a.id} value={a.id}>{a.name} · {(Number(a.grams) || 0).toFixed(3)} g</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Linking an ornament to a metal ledger filters it in Jewellery / Purchase item entry and shows the stock held in that metal + purity.
+                </p>
+              </div>
               <div><label className="label">Notes</label><input className="input-field" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">

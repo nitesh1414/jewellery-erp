@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { Package, Filter, AlertTriangle, TrendingUp, RotateCcw, ArrowRight, Search } from 'lucide-react';
+import { Package, Filter, AlertTriangle, TrendingUp, RotateCcw, ArrowRight, Search, Gem, Layers } from 'lucide-react';
+import { puritiesForMetal, formatPurity, formatGrams, metalKey } from '../../utils/metalPurity';
 
 export default function InventoryPage() {
   const qc = useQueryClient();
@@ -14,6 +15,8 @@ export default function InventoryPage() {
 
   const { data: summary } = useQuery({ queryKey: ['inv-summary'], queryFn: () => api.getInventorySummary() });
   const { data: stock } = useQuery({ queryKey: ['inv-stock'], queryFn: () => api.getInventoryStock() });
+  const { data: metalStock } = useQuery({ queryKey: ['inv-metal-stock'], queryFn: () => api.getInventoryMetalStock() });
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
   const { data: transactions } = useQuery({ queryKey: ['inv-tx', txPage, txType], queryFn: () => api.getStockTransactions({ page: txPage, limit: 20, transactionType: txType }) });
   const { data: valuation } = useQuery({ queryKey: ['inv-valuation'], queryFn: () => api.get('/inventory/valuation') });
   const { data: alerts } = useQuery({ queryKey: ['inv-alerts'], queryFn: () => api.getLowStockAlerts() });
@@ -25,6 +28,39 @@ export default function InventoryPage() {
   });
 
   const fm = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+  // Every metal + purity with the stock available in grams (metals/purities that
+  // hold nothing are listed too, so the sheet is complete).
+  const stockByKey = new Map<string, any>(
+    (stock?.stock || []).map((s: any) => [metalKey(s.metalType, s.purity), s]),
+  );
+  const metalsInUse = new Set<string>([
+    ...(stock?.stock || []).map((s: any) => String(s.metalType || '').toUpperCase()),
+    ...((metalStock?.items || []) as any[]).map((m: any) => String(m.metalType || '').toUpperCase()),
+  ]);
+  const allMetals: string[] = Array.from(new Set([
+    ...((settings?.allMetals || []) as string[]).map((m: string) => m.toUpperCase()),
+    ...metalsInUse,
+  ])).filter(Boolean).sort();
+  const allPurities: string[] = (settings?.allPurities || []) as string[];
+
+  const allPurityRows = allMetals.flatMap((metal) => {
+    const used = Array.from(new Set([
+      ...(stock?.stock || []).filter((s: any) => String(s.metalType || '').toUpperCase() === metal).map((s: any) => s.purity),
+      ...((metalStock?.items || []) as any[]).filter((m: any) => String(m.metalType || '').toUpperCase() === metal).map((m: any) => m.purity),
+    ]));
+    return puritiesForMetal(metal, allPurities, used).map((purity) => {
+      const row = stockByKey.get(metalKey(metal, purity));
+      return {
+        key: metalKey(metal, purity),
+        metal,
+        purity,
+        metalGrams: Number(row?.metalWeight || 0),
+        ornamentGrams: Number(row?.ornamentWeight || 0),
+        total: Number(row?.totalWeight || 0),
+      };
+    });
+  });
 
   return (
     <div className="space-y-6">
@@ -54,37 +90,90 @@ export default function InventoryPage() {
 
       {/* Stock Balance Tab */}
       {tab === 'balance' && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <table className="w-full">
-            <thead><tr className="border-b bg-gray-50">
-              <th className="table-header">Metal</th><th className="table-header">Purity</th>
-              <th className="table-header text-right">Weight (g)</th><th className="table-header text-right">Pieces</th>
-              <th className="table-header text-right">Current Value</th><th className="table-header text-right">Purchase Value</th>
-            </tr></thead>
-            <tbody>
-              {stock?.stock?.map((s: any, i: number) => (
-                <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="table-cell font-medium">
-                    <span className={'badge ' + (s.metalType === 'GOLD' ? 'badge-warning' : 'badge-gray')}>{s.metalType}</span>
-                  </td>
-                  <td className="table-cell">{s.purity}</td>
-                  <td className="table-cell text-right font-medium">{s.totalWeight.toFixed(3)}</td>
-                  <td className="table-cell text-right">{s.pieceCount}</td>
-                  <td className="table-cell text-right">{fm(s.totalValue)}</td>
-                  <td className="table-cell text-right text-gray-500">{fm(s.totalPurchaseValue)}</td>
-                </tr>
+        <div className="space-y-6">
+          {/* Metal & purity stock at a glance (all metals, including empty ones) */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="section-title flex items-center gap-2"><Gem className="w-4 h-4 text-amber-600" /> Metal &amp; purity stock</h3>
+              <span className="text-xs text-gray-400">Stock available in grams — metal ledger + ornaments</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
+              {allPurityRows.map((row) => (
+                <div key={row.key}
+                  className={'rounded-lg border px-3 py-2 flex items-center justify-between gap-2 ' + (row.total > 0 ? 'bg-amber-50/50 border-amber-200' : 'bg-gray-50 border-gray-200')}>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{row.metal.replace(/_/g, ' ')}</p>
+                    <p className="text-[11px] text-gray-500 truncate">{formatPurity(row.purity)}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={'text-sm font-bold ' + (row.total > 0 ? 'text-amber-800' : 'text-gray-400')}>{formatGrams(row.total)} g</p>
+                    {(row.metalGrams > 0 || row.ornamentGrams > 0) && (
+                      <p className="text-[10px] text-gray-500">
+                        {row.metalGrams > 0 ? `metal ${formatGrams(row.metalGrams)}` : ''}
+                        {row.metalGrams > 0 && row.ornamentGrams > 0 ? ' · ' : ''}
+                        {row.ornamentGrams > 0 ? `orn ${formatGrams(row.ornamentGrams)}` : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
               ))}
-              {stock?.grandTotal && (
-                <tr className="bg-gray-50 font-semibold">
-                  <td colSpan={2} className="table-cell">Total</td>
-                  <td className="table-cell text-right">{stock.grandTotal.totalWeight.toFixed(3)} g</td>
-                  <td className="table-cell text-right">{stock.grandTotal.totalPieces}</td>
-                  <td className="table-cell text-right">{fm(stock.grandTotal.totalValue)}</td>
-                  <td className="table-cell text-right">{fm(stock.grandTotal.totalPurchaseValue)}</td>
-                </tr>
+              {allPurityRows.length === 0 && (
+                <p className="text-sm text-gray-400 col-span-full">Add metals &amp; purities in Settings to see the full stock list.</p>
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
+
+          {/* Combined stock table */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-2.5 border-b bg-gray-50 flex items-center gap-2 text-sm text-gray-600">
+              <Layers className="w-4 h-4 text-gray-400" />
+              Metal / material stock comes from the metal ledger accounts, ornament stock from jewellery items in stock.
+            </div>
+            <table className="w-full">
+              <thead><tr className="border-b bg-gray-50">
+                <th className="table-header">Metal</th><th className="table-header">Purity</th>
+                <th className="table-header">Source</th>
+                <th className="table-header text-right">Metal / material (g)</th>
+                <th className="table-header text-right">Ornament (g)</th>
+                <th className="table-header text-right">Available (g)</th>
+                <th className="table-header text-right">Pieces</th>
+                <th className="table-header text-right">Current Value</th>
+              </tr></thead>
+              <tbody>
+                {stock?.stock?.map((s: any, i: number) => (
+                  <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
+                    <td className="table-cell font-medium">
+                      <span className={'badge ' + (s.metalType === 'GOLD' ? 'badge-warning' : 'badge-gray')}>{s.metalType}</span>
+                    </td>
+                    <td className="table-cell">{formatPurity(s.purity)}</td>
+                    <td className="table-cell text-xs text-gray-500">
+                      {s.ledgerAccountName ? (
+                        <span className="inline-flex items-center gap-1"><Gem className="w-3 h-3 text-amber-500" /> {s.ledgerAccountName}</span>
+                      ) : '—'}
+                    </td>
+                    <td className="table-cell text-right">{s.metalWeight ? formatGrams(s.metalWeight) : '—'}</td>
+                    <td className="table-cell text-right">{s.ornamentWeight ? formatGrams(s.ornamentWeight) : '—'}</td>
+                    <td className="table-cell text-right font-bold">{formatGrams(s.totalWeight)}</td>
+                    <td className="table-cell text-right">{s.pieceCount || '—'}</td>
+                    <td className="table-cell text-right">{fm(s.totalValue)}</td>
+                  </tr>
+                ))}
+                {(!stock?.stock || stock.stock.length === 0) && (
+                  <tr><td colSpan={8} className="text-center py-12 text-gray-400">No stock yet — add metal ledgers or purchase stock</td></tr>
+                )}
+                {stock?.grandTotal && (
+                  <tr className="bg-gray-50 font-semibold">
+                    <td colSpan={3} className="table-cell">Total</td>
+                    <td className="table-cell text-right">{formatGrams(stock.grandTotal.metalWeight || 0)}</td>
+                    <td className="table-cell text-right">{formatGrams(stock.grandTotal.ornamentWeight || 0)}</td>
+                    <td className="table-cell text-right">{formatGrams(stock.grandTotal.totalWeight || 0)}</td>
+                    <td className="table-cell text-right">{stock.grandTotal.totalPieces}</td>
+                    <td className="table-cell text-right">{fm(stock.grandTotal.totalValue)}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

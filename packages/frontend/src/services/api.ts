@@ -179,6 +179,12 @@ class ApiService {
     return data;
   }
 
+  /** Raw metal / material stock held in the metal ledger accounts. */
+  async getInventoryMetalStock() {
+    const { data } = await this.client.get('/inventory/metal-stock');
+    return data;
+  }
+
   async getStockTransactions(params?: any) {
     const { data } = await this.client.get('/inventory/transactions', { params });
     return data;
@@ -312,14 +318,25 @@ class ApiService {
     return data;
   }
 
-  // Rates
+  // Rates — daily schedule + history
   async getRates() {
     const { data } = await this.client.get('/rates');
     return data;
   }
 
+  async getRateHistory(limit?: number) {
+    const { data } = await this.client.get('/rates/history', { params: { limit: limit || 200 } });
+    return data;
+  }
+
   async updateRate(id: string, rate: number) {
     const { data } = await this.client.put(`/rates/${id}`, { rate });
+    return data;
+  }
+
+  /** Add the rate for a metal + purity, or update it when it already exists. */
+  async upsertRate(body: { metalType: string; purity: string; rate: number; effectiveDate?: string }) {
+    const { data } = await this.client.post('/rates', body);
     return data;
   }
 
@@ -548,6 +565,12 @@ class ApiService {
   // ====== Ornament (ledger) master ======
   async getOrnaments(params?: any) {
     const { data } = await this.client.get('/ornaments', { params });
+    return data;
+  }
+
+  /** Ornaments with the stock held in a metal + purity (optionally from a metal ledger). */
+  async getOrnamentsWithStock(params?: any) {
+    const { data } = await this.client.get('/ornaments/with-stock', { params });
     return data;
   }
 

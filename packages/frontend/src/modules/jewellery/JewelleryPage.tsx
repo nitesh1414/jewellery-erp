@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
 import { Plus, Search, Package, Printer, Pencil, Diamond, X } from 'lucide-react';
+import { formatPurity } from '../../utils/metalPurity';
 
 /** Net Weight = Weight (gross) − Stone Weight (− other weight). */
 const calcNet = (gross: number, stone: number, other: number = 0) =>
@@ -29,7 +30,7 @@ export default function JewelleryPage() {
   const [showBulk, setShowBulk] = useState(false);
   const [form, setForm] = useState<any>({
     designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, otherWeight: 0,
-    netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113',
+    netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', metalLedgerAccountId: '',
     makingChargeType: 'PERCENTAGE', makingChargeValue: 10,
     category: '', subCategory: '', location: '', ornament: '', ornamentGender: '',
     hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0],
@@ -39,6 +40,7 @@ export default function JewelleryPage() {
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
   const { data: rateMaster } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
   const { data: ornamentsData } = useQuery({ queryKey: ['ornaments-active'], queryFn: () => api.getOrnaments({ isActive: 'true' }), staleTime: 60000 });
+  const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
 
   // Rate for a purity from the DB rate schedule (used to auto-fill the item rate).
   const getRateForPurity = (purity: string): number => {
@@ -48,6 +50,37 @@ export default function JewelleryPage() {
   };
   const hallmarkMaster: any[] = settings?.allHallmarks || [];
   const ornaments = (ornamentsData?.items || []).map((o: any) => o);
+
+  // Metal (material) ledgers — picking one filters the ornament master below and
+  // shows the stock held in that metal + purity.
+  const metalAccounts: any[] = ((accounts as any) || []).filter((a: any) => a.type === 'METAL' && a.isActive !== false);
+  const metalAccountById = (id: string) => metalAccounts.find((a: any) => a.id === id);
+  const { data: ornamentOptions } = useQuery({
+    queryKey: ['ornaments-with-stock', form.metalLedgerAccountId || ''],
+    queryFn: () => api.getOrnamentsWithStock({ isActive: 'true', metalLedgerAccountId: form.metalLedgerAccountId || undefined }),
+    staleTime: 30000,
+  });
+  const ornamentList: any[] = (ornamentOptions as any) || [];
+  const ornamentStockLabel = (o: any) => {
+    const pieces = Number(o.stockPieces ?? o.totalPieces) || 0;
+    const weight = Number(o.stockWeight ?? o.totalWeight) || 0;
+    return pieces || weight ? ` · ${pieces} pc${pieces === 1 ? '' : 's'} · ${weight.toFixed(3)} g` : ' · no stock';
+  };
+
+  /** Choose the metal ledger: it sets the metal + purity and filters the ornament master. */
+  const pickMetalLedger = (accountId: string) => {
+    const account = metalAccountById(accountId);
+    const purity = account?.purity || form.purity;
+    const rate = purity ? getRateForPurity(purity) : form.currentRate;
+    setForm({
+      ...form,
+      metalLedgerAccountId: accountId,
+      metalType: account?.metalType || form.metalType,
+      purity,
+      currentRate: rate || form.currentRate,
+      ornament: accountId ? '' : form.ornament,
+    });
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['jewellery', search, status, metalType, purity, category, lkGender, lkOrnament, location, minWt, maxWt, sort, page],
@@ -85,6 +118,7 @@ export default function JewelleryPage() {
       designCode: item.designCode || '',
       metalType: item.metalType || 'GOLD',
       purity: item.purity || '22K',
+      metalLedgerAccountId: item.metalLedgerAccountId || '',
       grossWeight: item.grossWeight || 0,
       stoneWeight: item.stoneWeight || 0,
       otherWeight: item.otherWeight || 0,
@@ -107,7 +141,7 @@ export default function JewelleryPage() {
   };
 
   // Ctrl/Cmd+A → add item
-  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, otherWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
+  useAppShortcut('app:add', () => { setEditingId(null); setForm({ designCode: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, otherWeight: 0, netWeight: 0, currentRate: 0, quantity: 1, hsnCode: '7113', metalLedgerAccountId: '', makingChargeType: 'PERCENTAGE', makingChargeValue: 10, category: '', subCategory: '', location: '', ornament: '', ornamentGender: '', hallmarkNumber: '', purchaseDate: new Date().toISOString().split('T')[0] }); setShowAdd(true); });
 
   const bulkMutation = useMutation({
     mutationFn: (items: any[]) => api.post('/jewellery/bulk', { items }),
@@ -152,7 +186,7 @@ export default function JewelleryPage() {
           {['IN_STOCK', 'RESERVED', 'IN_MANUFACTURING', 'IN_REPAIR', 'SOLD', 'SCRAPPED'].map((st) => <option key={st} value={st}>{st.replace(/_/g, ' ')}</option>)}
         </select>
         <select className="input-field w-28" value={metalType} onChange={e => { setMetalType(e.target.value); setPage(1); }}><option value="">All Metal</option>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m}</option>)}</select>
-        <select className="input-field w-28" value={purity} onChange={e => { setPurity(e.target.value); setPage(1); }}><option value="">Purity</option>{(settings?.allPurities || ['24K','22K','18K','SILVER_925']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', '925 ')}</option>)}</select>
+        <select className="input-field w-28" value={purity} onChange={e => { setPurity(e.target.value); setPage(1); }}><option value="">Purity</option>{(settings?.allPurities || ['24K','22K','18K','SILVER_925']).map((p: string) => <option key={p} value={p}>{formatPurity(p)}</option>)}</select>
         <input className="input-field w-28" placeholder="Category" value={category} onChange={e => { setCategory(e.target.value); setPage(1); }} />
         <select className="input-field w-40" value={lkOrnament} onChange={e => { setLkOrnament(e.target.value); setLkGender(''); setPage(1); }}>
           <option value="">All ornaments</option>
@@ -250,14 +284,37 @@ export default function JewelleryPage() {
               <div><label className="label">Category</label><input className="input-field" value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="Ring" /></div>
               <div><label className="label">Sub Category</label><input className="input-field" value={form.subCategory} onChange={e => setForm({...form, subCategory: e.target.value})} /></div>
               <div>
+                <label className="label">Metal ledger (metal stock)</label>
+                <select className="input-field" value={form.metalLedgerAccountId || ''} onChange={e => pickMetalLedger(e.target.value)}>
+                  <option value="">— none —</option>
+                  {metalAccounts.map((a: any) => (
+                    <option key={a.id} value={a.id}>{a.name} · {(Number(a.grams) || 0).toFixed(3)} g</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  {metalAccountById(form.metalLedgerAccountId)
+                    ? `Stock in this ledger: ${(Number(metalAccountById(form.metalLedgerAccountId)?.grams) || 0).toFixed(3)} g`
+                    : 'Pick a metal ledger to filter the ornament master and set metal + purity'}
+                </p>
+              </div>
+              <div>
                 <label className="label">Ornament (ledger master)</label>
                 <select className="input-field" value={form.ornament} onChange={e => {
-                  const o = ornaments.find((x: any) => x.name === e.target.value);
+                  const o = ornamentList.find((x: any) => x.name === e.target.value);
                   setForm({ ...form, ornament: e.target.value, ornamentGender: o?.gender || '' });
                 }}>
                   <option value="">— none —</option>
-                  {ornaments.map((o: any) => <option key={o.id} value={o.name}>{o.name} ({o.gender === 'MALE' ? 'Male' : o.gender === 'FEMALE' ? 'Female' : 'Unisex'})</option>)}
+                  {ornamentList.map((o: any) => (
+                    <option key={o.id} value={o.name}>
+                      {o.name}{o.gender === 'MALE' ? ' (Male)' : o.gender === 'FEMALE' ? ' (Female)' : ' (Unisex)'}{ornamentStockLabel(o)}
+                    </option>
+                  ))}
                 </select>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  {form.metalLedgerAccountId
+                    ? `Stock shown is for ${metalAccountById(form.metalLedgerAccountId)?.metalType || ''} ${metalAccountById(form.metalLedgerAccountId)?.purity || ''}`
+                    : 'Stock shown is the total across all metals'}
+                </p>
               </div>
               <div>
                 <label className="label">Ornament For</label>

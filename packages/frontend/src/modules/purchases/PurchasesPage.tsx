@@ -66,6 +66,18 @@ export default function PurchasesPage() {
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
   const { data: rateMaster } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
   const { data: ornamentsData } = useQuery({ queryKey: ['ornaments-active'], queryFn: () => api.getOrnaments({ isActive: 'true' }), staleTime: 60000 });
+  // Ornament master filtered by the metal ledger picked on the line, with the
+  // stock held in that metal + purity (from inventory stock).
+  const { data: ornamentOptions } = useQuery({
+    queryKey: ['ornaments-with-stock', itemForm.metalLedgerAccountId || '', itemForm.metalType, itemForm.purity],
+    queryFn: () => api.getOrnamentsWithStock({
+      isActive: 'true',
+      metalLedgerAccountId: itemForm.metalLedgerAccountId || undefined,
+      metalType: itemForm.metalType,
+      purity: itemForm.purity,
+    }),
+    staleTime: 30000,
+  });
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
   const hallmarkMaster: any[] = settings?.allHallmarks || [];
   // Rate for a purity from the DB rate schedule (used to auto-fill the item rate).
@@ -79,6 +91,25 @@ export default function PurchasesPage() {
   // deduct the gross weight from the one selected on the line.
   const metalAccounts: any[] = ((accounts as any) || []).filter((a: any) => a.isActive !== false && a.type === 'METAL');
   const ornaments = (ornamentsData?.items || []).map((o: any) => o);
+  const ornamentList: any[] = (ornamentOptions as any) || [];
+  const ornamentStockLabel = (o: any) => {
+    const pieces = Number(o.stockPieces ?? o.totalPieces) || 0;
+    const weight = Number(o.stockWeight ?? o.totalWeight) || 0;
+    return pieces || weight ? ` · ${pieces} pc${pieces === 1 ? '' : 's'} · ${weight.toFixed(3)} g` : ' · no stock';
+  };
+  /** Pick the metal ledger for the line: aligns metal + purity and filters the ornament master. */
+  const pickLineMetalLedger = (accountId: string) => {
+    const account = metalAccounts.find((a: any) => a.id === accountId);
+    const purity = account?.purity || itemForm.purity;
+    setItemForm({
+      ...itemForm,
+      metalLedgerAccountId: accountId,
+      metalType: account?.metalType || itemForm.metalType,
+      purity,
+      rate: purity ? getRateForPurity(purity) : itemForm.rate,
+      ornament: accountId ? '' : itemForm.ornament,
+    });
+  };
 
   /** Ledger that would be used automatically for a metal + purity. */
   const autoMetalAccount = (metalType: string, purity: string) =>
@@ -475,12 +506,17 @@ export default function PurchasesPage() {
                     <div>
                       <label className="label">Ornament (master)</label>
                       <select className="input-field text-xs" value={itemForm.ornament} onChange={e => {
-                        const o = ornaments.find((x: any) => x.name === e.target.value);
+                        const o = ornamentList.find((x: any) => x.name === e.target.value);
                         setItemForm({ ...itemForm, ornament: e.target.value, ornamentGender: o?.gender || '' });
                       }}>
                         <option value="">— none —</option>
-                        {ornaments.map((o: any) => <option key={o.id} value={o.name}>{o.name} ({o.gender === 'MALE' ? 'Male' : o.gender === 'FEMALE' ? 'Female' : 'Unisex'})</option>)}
+                        {ornamentList.map((o: any) => (
+                          <option key={o.id} value={o.name}>
+                            {o.name}{o.gender === 'MALE' ? ' (Male)' : o.gender === 'FEMALE' ? ' (Female)' : ' (Unisex)'}{ornamentStockLabel(o)}
+                          </option>
+                        ))}
                       </select>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Stock from inventory for {itemForm.metalType} {itemForm.purity}</p>
                     </div>
                     <div>
                       <label className="label">Ornament For</label>
@@ -510,7 +546,7 @@ export default function PurchasesPage() {
                       <input type="number" className="input-field text-xs" value={itemForm.quantity || 1} onChange={e => setItemForm({...itemForm, quantity: Number(e.target.value)})} /></div>
                     <div>
                       <label className="label">Metal ledger</label>
-                      <select className="input-field text-xs" value={itemForm.metalLedgerAccountId} onChange={e => setItemForm({...itemForm, metalLedgerAccountId: e.target.value})}>
+                      <select className="input-field text-xs" value={itemForm.metalLedgerAccountId} onChange={e => pickLineMetalLedger(e.target.value)}>
                         <option value="">{autoMetalAccount(itemForm.metalType, itemForm.purity) ? `Auto — ${autoMetalAccount(itemForm.metalType, itemForm.purity)?.name}` : '— no deduction —'}</option>
                         {metalAccounts.map((a: any) => (
                           <option key={a.id} value={a.id}>{a.name} · {(Number(a.grams) || 0).toFixed(3)} g</option>
