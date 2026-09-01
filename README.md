@@ -133,11 +133,14 @@ npm run build          # compile every package
   grams) from inventory. Picking the ledger also sets the line's metal, purity
   and rate.
 - **Items made from a metal ledger deduct it automatically**: adding a jewellery
-  item with a *Metal ledger* selected takes the item’s **gross weight out of that
-  ledger** and adds the piece to **ornament stock**, so Inventory → Stock
-  Balance moves metal grams ↓ and ornament grams ↑ in one step. Editing the
-  weight, rate or ledger re-posts the movement, and deleting the item (🗑 on the
-  row) gives the metal back. Purchases do the same thing for ornament lines.
+  item with a *Metal ledger* selected takes the item’s **net weight
+  (gross − stone − other) out of that ledger** and adds the piece to **ornament
+  stock**, so Inventory → Stock Balance moves metal grams ↓ and ornament grams ↑
+  in one step. The ledger entry spells the sum out —
+  `DEBIT 10 g · Jewellery item RING-900 — GROSS 15 g - STONE WEIGHT 3 g -
+  OTHER 2 g from GOLD 22K → ornament stock`. Editing any weight, the rate or the
+  ledger re-posts the movement, and deleting the item (🗑 on the row) gives the
+  metal back.
 - **Net weight is automatic**: Net Weight = Gross Weight − Stone Weight
   (− other weight). Purchases, Jewellery items, URD and billing manual items
   work it out as you type; nothing to key in twice.

@@ -199,7 +199,7 @@ export default function JewelleryPage() {
   const handleDeleteItem = async (item: any) => {
     const account = metalAccountById(item.metalLedgerAccountId);
     const message = `Delete ${item.designCode || item.barcode}?`
-      + (account ? `\n\nIts gross weight (${(Number(item.grossWeight) || 0).toFixed(3)} g) will be given back to ${account.name}.` : '');
+      + (account ? `\n\nIts net weight (${fmtG(item.netWeight)} g) will be given back to ${account.name}.` : '');
     if (!window.confirm(message)) return;
     try {
       await api.delete('/jewellery/' + item.id);
@@ -214,6 +214,8 @@ export default function JewelleryPage() {
     } catch (e: any) { toast.error(e.response?.data?.message || 'Error'); }
   };
 
+  /** Grams without trailing zeros: 15, 12.5, 10.25 … */
+  const fmtG = (n: any) => String(Math.round((Number(n) || 0) * 1000) / 1000);
   const fm = (n: number) => (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   return (
@@ -358,7 +360,7 @@ export default function JewelleryPage() {
                 </p>
                 <p className="text-[10px] mt-0.5 text-amber-700">
                   {form.metalLedgerAccountId
-                    ? `On save ${(Number(form.grossWeight) || 0).toFixed(3)} g (gross) is deducted from ${metalAccountById(form.metalLedgerAccountId)?.name || 'this ledger'} and added to ornament stock.`
+                    ? `On save ${fmtG(form.netWeight)} g (net) is deducted from ${metalAccountById(form.metalLedgerAccountId)?.name || 'this ledger'} and added to ornament stock — gross ${fmtG(form.grossWeight)} − stone ${fmtG(form.stoneWeight)} − other ${fmtG(form.otherWeight)}.`
                     : 'No ledger selected — the metal stock will not change.'}
                 </p>
               </div>

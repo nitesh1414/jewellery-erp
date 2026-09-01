@@ -3,28 +3,39 @@ import { PrismaService } from '../../common/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
 import { v4 as uuid } from 'uuid';
 
+/** Grams with up to 3 decimals and no trailing zeros: 15, 12.5, 10.25 … */
+function grams3(value: any): string {
+  return String(Math.round((Number(value) || 0) * 1000) / 1000);
+}
+
 @Injectable()
 export class JewelleryService {
   constructor(private prisma: PrismaService, private ledger: LedgerService) {}
 
   /**
-   * An item made out of a metal ledger takes its GROSS weight out of that
-   * ledger and turns it into ornament stock. Re-posting is idempotent: every
-   * movement this item owns is removed first, then the current one is written.
-   * Pass no metalLedgerAccountId (or a gross weight of 0) and the metal is
-   * simply returned to the ledger.
+   * An item made out of a metal ledger takes its NET weight out of that ledger
+   * (gross − stone − other; stones and other material are not metal) and turns
+   * it into ornament stock. Re-posting is idempotent: every movement this item
+   * owns is removed first, then the current one is written. Pass no
+   * metalLedgerAccountId (or a net weight of 0) and the metal is simply
+   * returned to the ledger.
    */
   private async syncMetalMovement(item: any, organizationId: string) {
     await this.ledger.reverseMetalMovements(organizationId, 'JEWELLERY_ITEM', item.id);
 
     const accountId = item.metalLedgerAccountId;
-    const grams = Number(item.grossWeight) || 0;
+    // Net Weight = Gross − Stone − Other → only the metal leaves the ledger
+    const grams = Number(item.netWeight) || 0;
     if (!accountId || grams <= 0) return null;
 
     const account = await this.prisma.ledgerAccount.findFirst({
       where: { id: accountId, organizationId },
     });
     if (!account) return null;
+
+    const gross = grams3(item.grossWeight);
+    const stone = grams3(item.stoneWeight);
+    const other = grams3(item.otherWeight);
 
     return this.ledger.postMetalMovement({
       organizationId,
@@ -37,7 +48,7 @@ export class JewelleryService {
       purity: item.purity,
       date: item.purchaseDate || undefined,
       description:
-        `Jewellery item ${item.designCode || item.barcode} — gross ${grams} g from ${account.name} → ornament stock`,
+        `Jewellery item ${item.designCode || item.barcode} — GROSS ${gross} g - STONE WEIGHT ${stone} g - OTHER ${other} g from ${account.name} → ornament stock`,
       reference: item.barcode,
       linkedTo: 'JEWELLERY_ITEM',
       linkedId: item.id,
@@ -336,7 +347,7 @@ export class JewelleryService {
     const updated = await this.prisma.jewelleryItem.update({ where: { id }, data: updateData });
 
     // Weight / rate / metal ledger changed → move the metal again
-    const metalTouched = ['metalLedgerAccountId', 'grossWeight', 'currentRate', 'metalType', 'purity', 'purchaseDate']
+    const metalTouched = ['metalLedgerAccountId', 'grossWeight', 'stoneWeight', 'otherWeight', 'netWeight', 'currentRate', 'metalType', 'purity', 'purchaseDate']
       .some((key) => updateData[key] !== undefined);
     if (metalTouched) {
       try {
