@@ -47,6 +47,7 @@ export default function CustomerDetailPage() {
         <div className="card">
           <h2 className="section-title mb-4">Ledger</h2>
           <div className="overflow-auto max-h-80">
+            <div className="table-wrap">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b"><th className="text-left py-2 text-gray-500 font-medium">Date</th><th className="text-left py-2 text-gray-500 font-medium">Description</th><th className="text-right py-2 text-gray-500 font-medium">Debit</th><th className="text-right py-2 text-gray-500 font-medium">Credit</th><th className="text-right py-2 text-gray-500 font-medium">Balance</th></tr>
@@ -66,6 +67,7 @@ export default function CustomerDetailPage() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 
@@ -73,6 +75,7 @@ export default function CustomerDetailPage() {
         <div className="card">
           <h2 className="section-title mb-4">Recent Bills</h2>
           <div className="overflow-auto max-h-80">
+            <div className="table-wrap">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b"><th className="text-left py-2 text-gray-500 font-medium">Bill No.</th><th className="text-left py-2 text-gray-500 font-medium">Date</th><th className="text-right py-2 text-gray-500 font-medium">Amount</th><th className="text-right py-2 text-gray-500 font-medium">Status</th></tr>
@@ -91,6 +94,7 @@ export default function CustomerDetailPage() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </div>

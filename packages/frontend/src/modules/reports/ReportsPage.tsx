@@ -104,6 +104,7 @@ export default function ReportsPage() {
             </button>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="table-wrap">
             <table className="w-full">
               <thead><tr className="border-b bg-gray-50">
                 <th className="table-header">Bill No.</th><th className="table-header">Date</th><th className="table-header">Customer</th>
@@ -127,6 +128,7 @@ export default function ReportsPage() {
                 {(!salesReport?.sales || salesReport.sales.length === 0) && <tr><td colSpan={9} className="text-center py-12 text-gray-400">No sales in selected period</td></tr>}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -174,6 +176,7 @@ export default function ReportsPage() {
               <button onClick={() => exportCSV(hsnReport, 'hsn-summary')} className="btn-secondary text-sm"><Download className="w-4 h-4" /> Export</button>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="table-wrap">
               <table className="w-full">
                 <thead><tr className="border-b bg-gray-50">
                   <th className="table-header">HSN Code</th><th className="table-header text-right">Taxable</th>
@@ -194,6 +197,7 @@ export default function ReportsPage() {
                   {(!hsnReport || hsnReport.length === 0) && <tr><td colSpan={6} className="text-center py-12 text-gray-400">No HSN data</td></tr>}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>
@@ -274,6 +278,7 @@ export default function ReportsPage() {
               <span className="text-xs text-gray-400">{salesReport?.sales?.length || 0} invoices</span>
             </div>
             <div className="overflow-x-auto">
+              <div className="table-wrap">
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-gray-50">
@@ -325,6 +330,7 @@ export default function ReportsPage() {
                   </tfoot>
                 )}
               </table>
+              </div>
             </div>
           </div>
 
@@ -333,6 +339,7 @@ export default function ReportsPage() {
             <div className="px-4 py-3 border-b bg-gray-50">
               <h3 className="font-semibold text-gray-700">HSN-wise Summary (for GSTR-1 Table 12)</h3>
             </div>
+            <div className="table-wrap">
             <table className="w-full">
               <thead><tr className="border-b bg-gray-50">
                 <th className="table-header">HSN</th><th className="table-header text-right">UQC</th>
@@ -353,6 +360,7 @@ export default function ReportsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           <p className="text-xs text-gray-400">
@@ -402,6 +410,7 @@ export default function ReportsPage() {
           {/* Live preview */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             {customEntity === 'sales' && (
+              <div className="table-wrap">
               <table className="w-full">
                 <thead><tr className="border-b bg-gray-50">
                   <th className="table-header">Bill</th><th className="table-header">Date</th><th className="table-header">Customer</th>
@@ -418,8 +427,10 @@ export default function ReportsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
             {customEntity === 'customers' && (
+              <div className="table-wrap">
               <table className="w-full">
                 <thead><tr className="border-b bg-gray-50">
                   <th className="table-header">Customer ID</th><th className="table-header">Name</th><th className="table-header">Mobile</th>
@@ -436,8 +447,10 @@ export default function ReportsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
             {customEntity === 'payments' && (
+              <div className="table-wrap">
               <table className="w-full">
                 <thead><tr className="border-b bg-gray-50">
                   <th className="table-header">Transaction</th><th className="table-header">Type</th><th className="table-header text-right">Amount</th>
@@ -456,6 +469,7 @@ export default function ReportsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
@@ -476,6 +490,7 @@ export default function ReportsPage() {
               <button onClick={() => exportCSV(customers?.items, 'customer-ledger')} className="btn-secondary text-sm"><Download className="w-4 h-4" /> Export</button>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="table-wrap">
               <table className="w-full">
                 <thead><tr className="border-b bg-gray-50">
                   <th className="table-header">Customer</th><th className="table-header">ID</th><th className="table-header">Mobile</th>
@@ -499,6 +514,7 @@ export default function ReportsPage() {
                   {(!salesReport?.sales || salesReport.sales.length === 0) && <tr><td colSpan={5} className="text-center py-12 text-gray-400">No sales to show ledger</td></tr>}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>
@@ -514,6 +530,7 @@ export default function ReportsPage() {
             <div className="stat-card"><p className="stat-label">Bank / Cheque</p><p className="stat-value">{fm((payments?.items || []).filter((p: any) => ['BANK_TRANSFER', 'CHEQUE'].includes(p.paymentMode)).reduce((s: number, p: any) => s + p.amount, 0))}</p></div>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="table-wrap">
             <table className="w-full">
               <thead><tr className="border-b bg-gray-50">
                 <th className="table-header">Transaction</th><th className="table-header">Type</th><th className="table-header text-right">Amount</th>
@@ -533,6 +550,7 @@ export default function ReportsPage() {
                 {(!payments?.items || payments.items.length === 0) && <tr><td colSpan={6} className="text-center py-12 text-gray-400">No payments recorded</td></tr>}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -551,6 +569,7 @@ export default function ReportsPage() {
             <button onClick={() => exportCSV(inventoryReport?.byMetal, 'inventory-report')} className="btn-secondary text-sm"><Download className="w-4 h-4" /> Export</button>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="table-wrap">
             <table className="w-full">
               <thead><tr className="border-b bg-gray-50">
                 <th className="table-header">Metal</th><th className="table-header text-right">Weight (g)</th>
@@ -567,6 +586,7 @@ export default function ReportsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -578,6 +598,7 @@ export default function ReportsPage() {
             <button onClick={() => exportCSV(jobReport, 'job-work-report')} className="btn-secondary text-sm"><Download className="w-4 h-4" /> Export</button>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="table-wrap">
             <table className="w-full">
               <thead><tr className="border-b bg-gray-50">
                 <th className="table-header">Job No.</th><th className="table-header">Customer</th><th className="table-header">Product</th>
@@ -601,6 +622,7 @@ export default function ReportsPage() {
                 {(!jobReport || jobReport.length === 0) && <tr><td colSpan={9} className="text-center py-12 text-gray-400">No job orders</td></tr>}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}

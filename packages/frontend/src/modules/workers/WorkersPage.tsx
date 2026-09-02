@@ -90,6 +90,7 @@ export default function WorkersPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Workers list */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="table-wrap">
           <table className="w-full">
             <thead><tr className="border-b bg-gray-50">
               <th className="table-header">Worker</th><th className="table-header">Role</th>
@@ -122,6 +123,7 @@ export default function WorkersPage() {
                 ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Worker detail — payments */}
@@ -150,6 +152,7 @@ export default function WorkersPage() {
 
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="px-4 py-3 border-b bg-gray-50 text-sm font-medium">Payment history ({payments?.total || 0}) — Total {fm(payments?.totalAmount || 0)}</div>
+                <div className="table-wrap">
                 <table className="w-full">
                   <thead><tr className="border-b bg-gray-50">
                     <th className="table-header">Date</th><th className="table-header">Type</th>
@@ -168,6 +171,7 @@ export default function WorkersPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
@@ -177,7 +181,7 @@ export default function WorkersPage() {
       {/* Add/Edit worker modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => { setShowAdd(false); setEditing(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Worker' : 'Add Worker'}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2"><label className="label">Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus /></div>
@@ -205,7 +209,7 @@ export default function WorkersPage() {
       {/* Payment modal */}
       {showPay && selected && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowPay(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Payment — {selected.name}</h3>
               <button onClick={() => setShowPay(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>

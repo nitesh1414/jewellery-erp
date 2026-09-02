@@ -6,7 +6,6 @@ const actions = [
   { label: 'New Bill', icon: ShoppingCart, path: '/billing', color: 'bg-blue-600' },
   { label: 'Add Customer', icon: UserPlus, path: '/customers', color: 'bg-purple-600' },
   { label: 'New Purchase', icon: ShoppingBag, path: '/purchases', color: 'bg-orange-600' },
-  { label: 'New Job Order', icon: Briefcase, path: '/job-orders', color: 'bg-teal-600' },
   { label: 'Job Work Out', icon: Hammer, path: '/job-work', color: 'bg-emerald-600' },
   { label: 'New Estimate', icon: FileText, path: '/billing', color: 'bg-indigo-600' },
 ];

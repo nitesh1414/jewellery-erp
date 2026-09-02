@@ -41,6 +41,7 @@ export default function PaymentsPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead><tr className="border-b bg-gray-50">
             <th className="table-header">Transaction ID</th><th className="table-header">Type</th><th className="table-header">Customer/Supplier</th>
@@ -66,11 +67,12 @@ export default function PaymentsPage() {
             {(!data?.items || data.items.length === 0) && <tr><td colSpan={7} className="text-center py-12 text-gray-400">No payments recorded</td></tr>}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Record Payment</h3>
             <div className="space-y-4">
               <div><label className="label">Customer</label>

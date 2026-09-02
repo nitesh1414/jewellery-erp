@@ -152,6 +152,7 @@ export default function BillsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -246,6 +247,7 @@ export default function BillsPage() {
             )}
           </tbody>
         </table>
+        </div>
 
         {data && data.totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
@@ -294,6 +296,7 @@ export default function BillsPage() {
             {/* Items */}
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Items</h3>
             <div className="overflow-x-auto rounded-lg border mb-4">
+              <div className="table-wrap">
               <table className="w-full">
                 <thead><tr className="border-b bg-gray-50">
                   <th className="table-header">#</th><th className="table-header">Item</th><th className="table-header">Purity</th>
@@ -317,6 +320,7 @@ export default function BillsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             {/* Payments */}
@@ -324,6 +328,7 @@ export default function BillsPage() {
               <>
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Payments</h3>
                 <div className="rounded-lg border mb-4 overflow-hidden">
+                  <div className="table-wrap">
                   <table className="w-full">
                     <thead><tr className="border-b bg-gray-50">
                       <th className="table-header">Mode</th><th className="table-header text-right">Amount</th><th className="table-header">Reference</th><th className="table-header">Date</th>
@@ -339,6 +344,7 @@ export default function BillsPage() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </>
             )}
@@ -384,7 +390,7 @@ export default function BillsPage() {
       {/* Receive Payment Modal */}
       {payBill && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setPayBill(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">Receive Payment</h3>
             <p className="text-sm text-gray-500 mb-4">
               {payBill.billNumber} · {payBill.customerName}<br/>
@@ -428,7 +434,7 @@ export default function BillsPage() {
       {/* Confirm Estimate → Bill modal */}
       {confirmingEstimate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setConfirmingEstimate(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">Confirm Estimated Bill</h3>
             <p className="text-sm text-gray-500 mb-4">
               {confirmingEstimate.billNumber} · {confirmingEstimate.customerName} · ₹{confirmingEstimate.netAmount?.toLocaleString('en-IN')}

@@ -84,6 +84,7 @@ export default function SuppliersPage() {
               <div className="card">
                 <h3 className="section-title mb-3">Ledger</h3>
                 <div className="overflow-auto max-h-64">
+                  <div className="table-wrap">
                   <table className="w-full text-sm">
                     <thead><tr className="border-b"><th className="text-left py-2 text-gray-500">Date</th><th className="text-left py-2 text-gray-500">Type</th><th className="text-right py-2 text-gray-500">Debit</th><th className="text-right py-2 text-gray-500">Credit</th><th className="text-right py-2 text-gray-500">Balance</th></tr></thead>
                     <tbody>
@@ -101,6 +102,7 @@ export default function SuppliersPage() {
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             </div>
@@ -118,7 +120,7 @@ export default function SuppliersPage() {
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Add Supplier</h3>
             <div className="space-y-3">
               <div><label className="label">Name *</label><input className="input-field" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>

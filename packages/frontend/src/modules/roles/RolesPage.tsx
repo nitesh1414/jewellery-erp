@@ -70,6 +70,7 @@ export default function RolesPage() {
 
       {/* Roles list */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead><tr className="border-b bg-gray-50">
             <th className="table-header">Role</th><th className="table-header">Type</th><th className="table-header">Modules</th><th className="table-header">Description</th><th className="table-header text-right">Actions</th>
@@ -95,12 +96,13 @@ export default function RolesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Role form modal — permission matrix */}
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{editing ? 'Edit Role Access' : 'New Custom Role'}</h3>
               <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>

@@ -10,9 +10,7 @@ import CustomerDetailPage from './modules/customers/CustomerDetailPage';
 import InventoryPage from './modules/inventory/InventoryPage';
 import JewelleryPage from './modules/jewellery/JewelleryPage';
 import BarcodesPage from './modules/barcodes/BarcodesPage';
-import JobOrdersPage from './modules/job-orders/JobOrdersPage';
 import JobWorkPage from './modules/job-work/JobWorkPage';
-import JobOrderDetailPage from './modules/job-orders/JobOrderDetailPage';
 import ReportsPage from './modules/reports/ReportsPage';
 import PurchasesPage from './modules/purchases/PurchasesPage';
 import SuppliersPage from './modules/suppliers/SuppliersPage';
@@ -67,9 +65,7 @@ export default function App() {
         <Route path="inventory" element={<InventoryPage />} />
         <Route path="jewellery" element={<JewelleryPage />} />
         <Route path="barcodes" element={<BarcodesPage />} />
-        <Route path="job-orders" element={<JobOrdersPage />} />
         <Route path="job-work" element={<JobWorkPage />} />
-        <Route path="job-orders/:id" element={<JobOrderDetailPage />} />
         <Route path="purchases" element={<PurchasesPage />} />
         <Route path="suppliers" element={<SuppliersPage />} />
         <Route path="urd" element={<UrdPage />} />

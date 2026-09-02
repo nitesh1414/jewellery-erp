@@ -201,6 +201,7 @@ export default function BarcodesPage() {
 
       {/* Barcode Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead>
             <tr className="border-b bg-gray-50">
@@ -269,6 +270,7 @@ export default function BarcodesPage() {
             )}
           </tbody>
         </table>
+        </div>
 
         {data && data.totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
@@ -284,7 +286,7 @@ export default function BarcodesPage() {
       {/* Generate Modal */}
       {showGenerate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowGenerate(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Generate Barcodes</h3>
             <div className="space-y-4">
               <div>
@@ -333,7 +335,7 @@ export default function BarcodesPage() {
       {/* Assign Modal */}
       {showAssign && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAssign(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Assign Barcode: {assignBarcode}</h3>
             <div>
               <label className="label">Jewellery Item Barcode</label>

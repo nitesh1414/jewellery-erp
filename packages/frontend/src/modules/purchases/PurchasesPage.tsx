@@ -276,6 +276,7 @@ export default function PurchasesPage() {
 
       {/* Purchase List */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead><tr className="border-b bg-gray-50">
             <th className="table-header">Invoice No</th><th className="table-header">Type</th><th className="table-header">Supplier</th><th className="table-header">Date</th>
@@ -311,6 +312,7 @@ export default function PurchasesPage() {
             ))}
           </tbody>
         </table>
+        </div>
         {data && data.totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <span className="text-sm text-gray-500">Page {page} of {data.totalPages}</span>
@@ -325,7 +327,7 @@ export default function PurchasesPage() {
       {/* View Purchase Modal */}
       {viewing && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setViewing(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold">Purchase {viewing.invoiceNumber}</h3>
@@ -342,6 +344,7 @@ export default function PurchasesPage() {
               <div><p className="text-xs text-gray-400">Paid / Balance</p><p className="font-medium text-green-600">{fm(viewing.paidAmount)}</p><p className="text-red-600">{viewing.balanceAmount > 0 ? fm(viewing.balanceAmount) : 'Settled'}</p></div>
             </div>
             <div className="border rounded-xl overflow-hidden mb-4">
+              <div className="table-wrap">
               <table className="w-full text-sm">
                 <thead><tr className="bg-gray-50 border-b">
                   <th className="text-left px-3 py-2 text-gray-500">Design</th>
@@ -368,6 +371,7 @@ export default function PurchasesPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <button onClick={() => { setViewing(null); openEdit(viewing); }} className="btn-secondary text-sm"><Pencil className="w-4 h-4" /> Edit</button>
@@ -380,7 +384,7 @@ export default function PurchasesPage() {
       {/* Create / Edit Purchase Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowCreate(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 p-6 max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 p-6 max-h-[92vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Purchase' : 'New Purchase'} — Material Entry (multiple metals)</h3>
 
             {/* Purchase type: raw metal (bullion) or finished ornament */}
@@ -593,6 +597,7 @@ export default function PurchasesPage() {
 
             {items.length > 0 && (
               <div className="mb-4">
+                <div className="table-wrap">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b">
                     <th className="text-left py-2 text-gray-500">Design</th>
@@ -624,6 +629,7 @@ export default function PurchasesPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
                 <div className="flex justify-between items-center mt-3 p-3 bg-green-50 rounded-lg">
                   <span className="font-medium text-green-800 flex items-center gap-3">
                     <span>Total Weight: <strong>{totalItemsWeight.toFixed(3)} g</strong></span>

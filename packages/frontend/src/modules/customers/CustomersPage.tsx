@@ -97,6 +97,7 @@ export default function CustomersPage() {
 
       {/* Compact table — handles large datasets */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
             <tr>
@@ -155,6 +156,7 @@ export default function CustomersPage() {
             )}
           </tbody>
         </table>
+        </div>
         {/* Pagination footer */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-sm bg-gray-50">
           <span className="text-gray-600">
@@ -179,7 +181,7 @@ export default function CustomersPage() {
       {/* Add / Edit modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editingCustomer ? 'Edit Customer' : 'Add Customer'}</h3>
             <div className="space-y-3">
               <div><label className="label">Name *</label><input className="input-field" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>

@@ -239,7 +239,7 @@ export default function AccountsPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-3">{editing ? 'Edit' : 'New'} Ledger Account</h3>
             <p className="text-xs text-gray-500 mb-4">
               {isMetal

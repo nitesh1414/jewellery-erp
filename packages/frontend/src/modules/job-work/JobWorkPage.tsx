@@ -369,6 +369,7 @@ export default function JobWorkPage() {
 
       {/* ------------------------------------------------------------- table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead>
             <tr className="border-b bg-gray-50">
@@ -441,6 +442,7 @@ export default function JobWorkPage() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {data?.totalPages > 1 && (
@@ -725,6 +727,7 @@ export default function JobWorkPage() {
           </div>
 
           <h4 className="font-medium text-sm mb-2">Material given</h4>
+          <div className="table-wrap">
           <table className="w-full text-sm mb-4">
             <thead><tr className="border-b bg-gray-50">
               <th className="table-header">Material</th><th className="table-header text-right">Weight / Qty</th>
@@ -741,8 +744,10 @@ export default function JobWorkPage() {
               ))}
             </tbody>
           </table>
+          </div>
 
           <h4 className="font-medium text-sm mb-2">Ornaments</h4>
+          <div className="table-wrap">
           <table className="w-full text-sm mb-4">
             <thead><tr className="border-b bg-gray-50">
               <th className="table-header">Ornament</th><th className="table-header">Metal</th>
@@ -766,6 +771,7 @@ export default function JobWorkPage() {
               ))}
             </tbody>
           </table>
+          </div>
 
           {!!viewing.history?.length && (
             <>

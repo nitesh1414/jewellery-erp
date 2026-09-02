@@ -129,6 +129,7 @@ export default function InventoryPage() {
               <Layers className="w-4 h-4 text-gray-400" />
               Metal / material stock comes from the metal ledger accounts, ornament stock from jewellery items in stock.
             </div>
+            <div className="table-wrap">
             <table className="w-full">
               <thead><tr className="border-b bg-gray-50">
                 <th className="table-header">Metal</th><th className="table-header">Purity</th>
@@ -173,6 +174,7 @@ export default function InventoryPage() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -193,6 +195,7 @@ export default function InventoryPage() {
             </select>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="table-wrap">
             <table className="w-full">
               <thead><tr className="border-b bg-gray-50">
                 <th className="table-header">Date</th><th className="table-header">Type</th><th className="table-header">Metal</th>
@@ -225,6 +228,7 @@ export default function InventoryPage() {
                 )}
               </tbody>
             </table>
+            </div>
             {transactions && transactions.totalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-3 border-t">
                 <span className="text-sm text-gray-500">Page {txPage} of {transactions.totalPages}</span>
@@ -274,6 +278,7 @@ export default function InventoryPage() {
             <AlertTriangle className="w-5 h-5 text-orange-500" />
             <span className="font-medium text-orange-800">{alerts?.totalItems || 0} items with low stock (≤ {alerts?.threshold || 2})</span>
           </div>
+          <div className="table-wrap">
           <table className="w-full">
             <thead><tr className="border-b bg-gray-50">
               <th className="table-header">Barcode</th><th className="table-header">Design</th><th className="table-header">Purity</th>
@@ -297,13 +302,14 @@ export default function InventoryPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
       {/* Adjust Stock Modal */}
       {showAdjust && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdjust(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Adjust Stock</h3>
             <div className="space-y-4">
               <div><label className="label">Jewellery Item Barcode or ID</label>

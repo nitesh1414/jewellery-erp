@@ -608,6 +608,7 @@ export default function BillingPage() {
               </div>
             ) : (
               <div className="overflow-auto">
+                <div className="table-wrap">
                 <table className="w-full">
                   <thead><tr className="border-b border-gray-100 sticky top-0 bg-white">
                     <th className="table-header">#</th><th className="table-header">Item</th><th className="table-header">Purity</th>
@@ -645,6 +646,7 @@ export default function BillingPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </div>
@@ -855,7 +857,7 @@ export default function BillingPage() {
       {/* Generate Bill Confirmation Modal */}
       {showConfirmBill && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirmBill(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 flex flex-col max-h-[88vh]" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 flex flex-col max-h-[88vh] modal-panel" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
@@ -871,6 +873,7 @@ export default function BillingPage() {
             {/* Body: items + totals side by side */}
             <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-0 flex-1 min-h-0">
               <div className="overflow-y-auto px-6 py-4 border-r border-gray-100">
+                <div className="table-wrap">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b border-gray-100 text-gray-500"><th className="text-left py-2 font-medium">Item</th><th className="text-right py-2 font-medium">Wt</th><th className="text-right py-2 font-medium">Amount</th></tr></thead>
                   <tbody>
@@ -883,6 +886,7 @@ export default function BillingPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               {/* Totals */}
@@ -938,7 +942,7 @@ export default function BillingPage() {
       {/* Manual Item Modal */}
       {showManualItem && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowManualItem(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Add Manual Item <span className="text-xs text-gray-400 font-normal">(F5)</span></h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2"><label className="label">Particular</label><input className="input-field" value={manualItem.particular} onChange={e => setManualItem({ ...manualItem, particular: e.target.value })} placeholder="Gold Ring" autoFocus /></div>
@@ -1006,7 +1010,7 @@ export default function BillingPage() {
       {/* Inventory Select Modal */}
       {showInventorySelect && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowInventorySelect(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[85vh] modal-panel" onClick={e => e.stopPropagation()}>
             <div className="px-6 pt-6 pb-3">
               <h3 className="text-lg font-semibold">Select from Inventory <span className="text-xs text-gray-400 font-normal">(F9)</span></h3>
               <div className="relative mt-3">
@@ -1059,7 +1063,7 @@ export default function BillingPage() {
       {/* New Customer Modal */}
       {showNewCustomer && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowNewCustomer(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">New Customer</h3>
             <div className="space-y-3">
               <div><label className="label">Name *</label><input className="input-field" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} placeholder="Customer name" autoFocus /></div>
@@ -1081,7 +1085,7 @@ export default function BillingPage() {
       {/* Edit Line Modal */}
       {editingItemId && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setEditingItemId(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[85vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">Edit Line — change rate, making, URD, GST</h3>
             <p className="text-xs text-gray-500 mb-4">Override gold rate, making charge, URD value, or exclude GST for this line only</p>
             <div className="grid grid-cols-2 gap-3">

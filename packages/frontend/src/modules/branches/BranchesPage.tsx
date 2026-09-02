@@ -75,7 +75,7 @@ export default function BranchesPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Branch' : 'New Branch'}</h3>
             <div className="space-y-3">
               <div><label className="label">Branch Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Main Branch" /></div>

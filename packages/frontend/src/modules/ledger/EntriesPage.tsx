@@ -73,6 +73,7 @@ export default function EntriesPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead><tr className="border-b bg-gray-50">
             <th className="table-header">Date</th><th className="table-header">Account</th><th className="table-header">Description</th>
@@ -108,11 +109,12 @@ export default function EntriesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">New Credit / Debit Entry</h3>
             <p className="text-xs text-gray-500 mb-4">Add to any account. Balance updates automatically.</p>
             <div className="space-y-3">

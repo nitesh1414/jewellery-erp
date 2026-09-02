@@ -90,7 +90,7 @@ export default function DashboardPage() {
     { label: 'Scan Barcode', icon: Scan, color: 'bg-green-600', action: () => navigate('/billing') },
     { label: 'Add Customer', icon: UserPlus, color: 'bg-purple-600', action: () => navigate('/customers') },
     { label: 'New Purchase', icon: ShoppingBag, color: 'bg-orange-600', action: () => navigate('/purchases') },
-    { label: 'New Job Order', icon: Briefcase, color: 'bg-teal-600', action: () => navigate('/job-orders') },
+    { label: 'Job Work Out', icon: Briefcase, color: 'bg-teal-600', action: () => navigate('/job-work') },
     { label: 'Receive Payment', icon: CircleDollarSign, color: 'bg-indigo-600', action: () => navigate('/payments') },
     { label: 'Generate Barcode', icon: Barcode, color: 'bg-rose-600', action: () => navigate('/barcodes') },
     { label: 'Daily Rates', icon: Diamond, color: 'bg-yellow-600', action: () => navigate('/settings') },
@@ -261,31 +261,31 @@ export default function DashboardPage() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="section-title flex items-center gap-2"><Briefcase className="w-4 h-4" />Job Work</h3>
-            <button onClick={() => navigate('/job-orders')} className="text-xs text-primary-600 hover:text-primary-700 font-medium">View</button>
+            <button onClick={() => navigate('/job-work')} className="text-xs text-primary-600 hover:text-primary-700 font-medium">View</button>
           </div>
           <div className="space-y-3">
-            <div onClick={() => navigate('/job-orders?status=ASSIGNED')} className="flex items-center justify-between p-2 hover:bg-blue-50 rounded cursor-pointer -mx-2 px-2">
+            <div onClick={() => navigate('/job-work')} className="flex items-center justify-between p-2 hover:bg-blue-50 rounded cursor-pointer -mx-2 px-2">
               <div className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-blue-500" />
-                <span className="text-sm text-gray-600">Pending</span>
+                <span className="text-sm text-gray-600">Given to worker</span>
               </div>
               <span className="badge-info">{jobs.pending || 0}</span>
             </div>
-            <div onClick={() => navigate('/job-orders?status=IN_PROGRESS')} className="flex items-center justify-between p-2 hover:bg-yellow-50 rounded cursor-pointer -mx-2 px-2">
+            <div onClick={() => navigate('/job-work')} className="flex items-center justify-between p-2 hover:bg-yellow-50 rounded cursor-pointer -mx-2 px-2">
               <div className="flex items-center gap-2">
                 <Package className="w-3.5 h-3.5 text-yellow-500" />
                 <span className="text-sm text-gray-600">In Progress</span>
               </div>
               <span className="badge-warning">{jobs.inProgress || 0}</span>
             </div>
-            <div onClick={() => navigate('/job-orders?status=READY')} className="flex items-center justify-between p-2 hover:bg-green-50 rounded cursor-pointer -mx-2 px-2">
+            <div onClick={() => navigate('/job-work')} className="flex items-center justify-between p-2 hover:bg-green-50 rounded cursor-pointer -mx-2 px-2">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-                <span className="text-sm text-gray-600">Ready</span>
+                <span className="text-sm text-gray-600">Completed</span>
               </div>
               <span className="badge-success">{jobs.ready || 0}</span>
             </div>
-            <div onClick={() => navigate('/job-orders')} className="flex items-center justify-between pt-3 border-t">
+            <div onClick={() => navigate('/job-work')} className="flex items-center justify-between pt-3 border-t">
               <span className="text-sm font-medium text-gray-700">Delayed</span>
               <span className="badge-danger">{jobs.delayed || 0}</span>
             </div>

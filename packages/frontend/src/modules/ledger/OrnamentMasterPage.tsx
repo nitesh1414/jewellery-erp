@@ -125,7 +125,7 @@ export default function OrnamentMasterPage() {
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => { setShowAdd(false); setEditing(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Ornament' : 'Add Ornament'}</h3>
             <div className="space-y-4">
               <div><label className="label">Ornament Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ladies Ring" autoFocus /></div>

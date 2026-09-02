@@ -51,7 +51,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 modal-panel">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign In</h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">

@@ -201,7 +201,7 @@ export default function SettingsPage() {
               <div><label className="label">Email</label><input className="input-field" value={shopForm.shopEmail || ''} onChange={e => setShopForm({ ...shopForm, shopEmail: e.target.value })} /></div>
               <div><label className="label">GSTIN</label><input className="input-field" value={shopForm.shopGstin || ''} onChange={e => setShopForm({ ...shopForm, shopGstin: e.target.value })} /></div>
               <div className="col-span-1 sm:col-span-2 border-t pt-4">
-                <label className="label">Shop Logo (shown in header, prints & quotations)</label>
+                <label className="label">Shop Logo (shown in header, prints &amp; estimates)</label>
                 <div className="flex items-center gap-4">
                   {shopForm.logo ? (
                     <img src={shopForm.logo} alt="logo" className="w-14 h-14 rounded-lg border object-cover" />
@@ -527,6 +527,7 @@ function RatesTab({ rates, history, allMetals, allPurities, onSave }: any) {
                 <span>{metal.replace(/_/g, ' ')}</span>
                 <span className="text-[11px] font-medium text-gray-400">Rate in ₹ / gram</span>
               </div>
+              <div className="table-wrap">
               <table className="w-full">
                 <thead><tr className="border-b bg-white">
                   <th className="table-header w-1/2">Purity</th>
@@ -565,6 +566,7 @@ function RatesTab({ rates, history, allMetals, allPurities, onSave }: any) {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           ))}
         </div>
@@ -577,6 +579,7 @@ function RatesTab({ rates, history, allMetals, allPurities, onSave }: any) {
           <p className="text-sm text-gray-500">Every rate change, newest first — old rate, new rate and when it changed.</p>
         </div>
         <div className="overflow-hidden rounded-lg border">
+          <div className="table-wrap">
           <table className="w-full">
             <thead><tr className="border-b bg-gray-50">
               <th className="table-header">Date</th>
@@ -600,6 +603,7 @@ function RatesTab({ rates, history, allMetals, allPurities, onSave }: any) {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
@@ -648,6 +652,7 @@ function HallmarksTab({ hallmarks, hallmarkCharge, defaultPurities, onAdd, onUpd
       </div>
 
       <div className="border-t pt-5">
+        <div className="table-wrap">
         <table className="w-full">
           <thead><tr className="border-b bg-gray-50">
             <th className="table-header">Label</th><th className="table-header">Purity</th>
@@ -678,6 +683,7 @@ function HallmarksTab({ hallmarks, hallmarkCharge, defaultPurities, onAdd, onUpd
             ))}
           </tbody>
         </table>
+        </div>
         <p className="text-xs text-gray-400 mt-2">Tip: double-click a charge to edit it inline. Entries marked as default can be edited but not deleted.</p>
       </div>
     </div>
