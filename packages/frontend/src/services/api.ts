@@ -605,6 +605,49 @@ class ApiService {
     return data;
   }
 
+  // ====== Job work (OUT → IN) ======
+  async getJobWorks(params?: any) {
+    const { data } = await this.client.get('/job-work', { params });
+    return data;
+  }
+
+  async getJobWorkStats(params?: any) {
+    const { data } = await this.client.get('/job-work/stats', { params });
+    return data;
+  }
+
+  async getJobWork(id: string) {
+    const { data } = await this.client.get('/job-work/' + id);
+    return data;
+  }
+
+  /** Job work OUT — issue metal / material to a worker. */
+  async createJobWork(body: any) {
+    const { data } = await this.client.post('/job-work', body);
+    return data;
+  }
+
+  async updateJobWork(id: string, body: any) {
+    const { data } = await this.client.put('/job-work/' + id, body);
+    return data;
+  }
+
+  async updateJobWorkStatus(id: string, body: any) {
+    const { data } = await this.client.put('/job-work/' + id + '/status', body);
+    return data;
+  }
+
+  /** Job work IN — receive the finished ornaments (creates items + barcodes). */
+  async receiveJobWork(id: string, body: any) {
+    const { data } = await this.client.post('/job-work/' + id + '/receive', body);
+    return data;
+  }
+
+  async deleteJobWork(id: string) {
+    const { data } = await this.client.delete('/job-work/' + id);
+    return data;
+  }
+
   // ====== Setup wizard ======
   async getSetupStatus() {
     const { data } = await this.client.get('/settings/setup/status');

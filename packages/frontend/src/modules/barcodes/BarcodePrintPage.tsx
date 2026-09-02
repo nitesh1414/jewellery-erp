@@ -51,7 +51,8 @@ export default function BarcodePrintPage() {
   const ids = params.get('ids');
   const codes = params.get('codes'); // barcode strings (e.g. from jewellery items)
   const scope = params.get('scope'); // unassigned | all
-  const [sizeKey, setSizeKey] = useState('38x25');
+  // ?size=220x120 lets other screens (job work IN …) jump straight to the big tag
+  const [sizeKey, setSizeKey] = useState(params.get('size') || '38x25');
   const [copies, setCopies] = useState(1);
 
   const size = STICKER_SIZES.find((s) => s.key === sizeKey)!;

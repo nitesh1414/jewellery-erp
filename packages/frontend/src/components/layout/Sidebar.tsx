@@ -4,7 +4,7 @@ import {
   LayoutDashboard, ShoppingCart, Users, Package, Barcode,
   Briefcase, ShoppingBag, Truck, HandCoins,
   FileBarChart, Settings, LogOut, Diamond, ChevronLeft, ChevronRight,
-  Receipt, CircleDollarSign, Gem, HardHat, BookOpen,
+  Receipt, CircleDollarSign, Gem, HardHat, BookOpen, Hammer,
 } from 'lucide-react';
 
 const navItems = [
@@ -18,6 +18,7 @@ const navItems = [
   { to: '/purchases', label: 'Purchases', icon: ShoppingBag, permission: null },
   { to: '/suppliers', label: 'Suppliers', icon: Truck, permission: null },
   { to: '/job-orders', label: 'Job Orders', icon: Briefcase, permission: 'JOB_WORK_VIEW' },
+  { to: '/job-work', label: 'Job Work In / Out', icon: Hammer, permission: 'JOB_WORK_VIEW' },
   { to: '/workers', label: 'Workers', icon: HardHat, permission: null },
   { to: '/urd', label: 'URD / Old Gold', icon: Gem, permission: null },
   { to: '/payments', label: 'Payments', icon: CircleDollarSign, permission: null },

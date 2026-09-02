@@ -14,6 +14,7 @@ import { SalesModule } from './modules/sales/sales.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { UrdModule } from './modules/urd/urd.module';
 import { JobOrdersModule } from './modules/job-orders/job-orders.module';
+import { JobWorkModule } from './modules/job-work/job-work.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { SettingsModule } from './modules/settings/settings.module';
@@ -46,6 +47,7 @@ import { QuotationsModule } from './modules/quotations/quotations.module';
     PurchasesModule,
     UrdModule,
     JobOrdersModule,
+    JobWorkModule,
     PaymentsModule,
     ReportsModule,
     SettingsModule,

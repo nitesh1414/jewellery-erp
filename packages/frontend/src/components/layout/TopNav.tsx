@@ -6,10 +6,7 @@ import { useBranchStore } from '../../stores/branchStore';
 import { api } from '../../services/api';
 import { BranchSelector } from './BranchSelector';
 import {
-  LayoutDashboard, ShoppingCart, Receipt, Users, Diamond, Package, Barcode,
-  ShoppingBag, Truck, Briefcase, Gem, Wrench, FileBarChart, Settings, LogOut,
-  Bell, ChevronDown, HandCoins, Clock, Wallet, CreditCard,
-  Building, Users as UsersIcon,
+  LayoutDashboard, ShoppingCart, Receipt, Users, Diamond, Package, Barcode, ShoppingBag, Truck, Briefcase, Gem, Wrench, FileBarChart, Settings, LogOut, Bell, ChevronDown, HandCoins, Clock, Wallet, CreditCard, Building, Users as UsersIcon, ArrowLeftRight,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -57,6 +54,7 @@ const menuItems: MenuItem[] = [
     icon: Briefcase,
     submenu: [
       { to: '/job-orders', label: 'Job Orders', icon: Briefcase },
+      { to: '/job-work', label: 'Job Work In / Out', icon: ArrowLeftRight },
       { to: '/urd', label: 'URD / Old Gold', icon: Gem },
       { to: '/reports', label: 'Repairs', icon: Wrench },
     ],

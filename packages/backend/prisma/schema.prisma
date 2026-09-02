@@ -47,6 +47,7 @@ model Organization {
   purchases       Purchase[]
   urdTransactions UrdTransaction[]
   jobOrders       JobOrder[]
+  jobWorks        JobWork[]
   repairs         Repair[]
   payments        Payment[]
   notifications   Notification[]
@@ -84,6 +85,7 @@ model Branch {
   purchases       Purchase[]
   urdTransactions UrdTransaction[]
   jobOrders       JobOrder[]
+  jobWorks        JobWork[]
   payments        Payment[]
   notifications   Notification[]
   auditLogs       AuditLog[]
@@ -356,6 +358,7 @@ organization Organization @relation(fields: [organizationId], references: [id])
   branch       Branch       @relation(fields: [branchId], references: [id])
   product      Product?     @relation(fields: [productId], references: [id])
   barcodeRef   Barcode?
+  jobWorkLine  JobWorkItem?
 }
 
 model Barcode {
@@ -790,6 +793,114 @@ model JobStatusHistory {
 }
 
 // ============================
+// JOB WORK — OUT (issue to a worker) → IN (finished ornaments received)
+// ============================
+
+/// Job work OUT: metal / material handed to a worker (karigar).
+/// The metal is debited from its metal ledger the moment it is issued and
+/// credited back when the worker returns wastage / scrap (job work IN).
+model JobWork {
+  id                 String    @id @default(uuid())
+  organizationId     String
+  branchId           String
+  jobNumber          String    @unique          // JWO-2026-00001
+  workerId           String?
+  workerName         String
+  workerMobile       String?
+  issueDate          DateTime  @default(now())
+  dueDate            DateTime?
+  completedDate      DateTime?
+  status             String    @default("GIVEN")  // GIVEN | IN_PROCESS | COMPLETED | CANCELLED
+  totalIssuedWeight  Float     @default(0)      // grams of metal handed to the worker
+  totalIssuedValue   Float     @default(0)      // value of that metal at issue
+  totalReceivedWeight Float    @default(0)      // net weight of the finished ornaments received
+  returnWeight       Float     @default(0)      // wastage / scrap metal returned & credited back
+  wages              Float     @default(0)      // labour / making charges payable to the worker
+  wagesPaid          Float     @default(0)
+  notes              String?
+  createdById        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id])
+  branch       Branch              @relation(fields: [branchId], references: [id])
+  worker       Employee?           @relation("jobWorkWorker", fields: [workerId], references: [id])
+  items        JobWorkItem[]
+  materials    JobWorkMaterial[]
+  history      JobWorkStatusLog[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, workerId])
+}
+
+/// Material given to the worker: metal (grams, from a metal ledger) or other
+/// material (stones, chemicals, findings …).
+model JobWorkMaterial {
+  id                   String   @id @default(uuid())
+  jobWorkId            String
+  kind                 String   @default("METAL")   // METAL | OTHER
+  metalType            String?
+  purity               String?
+  name                 String?                      // description for OTHER material
+  weight               Float    @default(0)         // grams (METAL)
+  quantity             Float    @default(1)         // pieces (OTHER)
+  rate                 Float    @default(0)         // rate per gram (METAL) / per piece (OTHER)
+  value                Float    @default(0)
+  metalLedgerAccountId String?
+  notes                String?
+  createdAt            DateTime @default(now())
+
+  jobWork            JobWork        @relation(fields: [jobWorkId], references: [id], onDelete: Cascade)
+  metalLedgerAccount LedgerAccount? @relation(fields: [metalLedgerAccountId], references: [id])
+}
+
+/// An ornament to be made (job work OUT) and, once received, the jewellery
+/// item + barcode created from it (job work IN).
+model JobWorkItem {
+  id                String    @id @default(uuid())
+  jobWorkId         String
+  ornament          String?
+  category          String?
+  metalType         String    @default("GOLD")
+  purity            String    @default("22K")
+  quantity          Int       @default(1)
+  expectedWeight    Float     @default(0)   // weight asked for (OUT)
+  grossWeight       Float     @default(0)   // received (IN)
+  stoneWeight       Float     @default(0)
+  otherWeight       Float     @default(0)
+  netWeight         Float     @default(0)   // gross − stone − other
+  currentRate       Float     @default(0)
+  makingChargeType  String?                 // PERCENTAGE | PER_GRAM | FIXED
+  makingChargeValue Float     @default(0)
+  labourCharge      Float     @default(0)
+  huid              String?
+  hsnCode           String?
+  size              String?
+  jewelleryItemId   String?
+  barcode           String?
+  receivedAt        DateTime?
+  status            String    @default("PENDING")   // PENDING | RECEIVED
+  notes             String?
+  createdAt         DateTime  @default(now())
+
+  jobWork       JobWork        @relation(fields: [jobWorkId], references: [id], onDelete: Cascade)
+  jewelleryItem JewelleryItem? @relation(fields: [jewelleryItemId], references: [id])
+}
+
+model JobWorkStatusLog {
+  id           String   @id @default(uuid())
+  jobWorkId    String
+  fromStatus   String?
+  toStatus     String
+  changedBy    String?
+  changedByName String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  jobWork JobWork @relation(fields: [jobWorkId], references: [id], onDelete: Cascade)
+}
+
+// ============================
 // REPAIRS
 // ============================
 
@@ -878,6 +989,7 @@ model LedgerAccount {
   expenses     Expense[]
   income       Income[]
   payments     Payment[]
+  jobWorkMaterials JobWorkMaterial[]
 }
 
 model LedgerEntry {
@@ -993,6 +1105,7 @@ model Employee {
   organization Organization     @relation(fields: [organizationId], references: [id])
   branch       Branch?          @relation(fields: [branchId], references: [id])
   payments     WorkerPayment[]
+  jobWorks     JobWork[]
 }
 
 model WorkerPayment {

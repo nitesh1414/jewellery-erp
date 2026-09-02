@@ -112,6 +112,22 @@ npm run build          # compile every package
   income, URD, payment…) are recorded against the selected branch; the default
   is the user's primary branch. Estimated bills never affect sales,
   outstanding, today's totals or GST until confirmed into a real bill.
+- **Job work OUT → IN** (`/job-work`): hand metal and other material to a
+  worker (karigar) and track it until the finished ornaments come back.
+  - **OUT (issue)**: worker, issue/due date, the metal (metal + purity, grams,
+    rate) taken from a **metal ledger** and any other material (stones,
+    polish…), plus the ornaments to be made. Saving **debits the metal from its
+    metal ledger** straight away — the grams show as *Metal with workers*.
+  - **Tracking**: status moves **Given to worker → In process → Completed**,
+    with a status history on every job, due-date highlighting and a cancel
+    button that puts the issued metal back into the ledger.
+  - **IN (receive)**: enter gross / stone / other weight per ornament — each
+    received line is **added to Jewellery Items with its own barcode** (same
+    `G0000000x` series), the **wastage / scrap returned is credited back** to
+    the metal ledger, and the **labour charges become payable to the worker**
+    (pay part or all of it now and it is recorded as a worker payment).
+  - After receiving you can jump straight to the **22 × 12 cm barcode tag**
+    print for the new barcodes.
 - **Purchase → inventory**: a purchase is a material entry. It uses the same
   fields as the inventory "Add Item" form (metal, purity, category,
   sub-category, ornament, HSN, making charge, hallmark, certificate no.) and can
