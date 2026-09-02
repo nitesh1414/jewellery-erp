@@ -5,12 +5,24 @@ import { PrismaService } from '../../common/prisma.service';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(organizationId: string, query: { search?: string; page?: number; limit?: number }) {
+  /** Cities that actually exist in the customer book — powers the filter. */
+  async listCities(organizationId: string) {
+    const rows = await this.prisma.customer.findMany({
+      where: { organizationId, city: { not: null } },
+      select: { city: true },
+      distinct: ['city'],
+      orderBy: { city: 'asc' },
+    });
+    return rows.map((r: any) => r.city).filter(Boolean).sort((a: string, b: string) => a.localeCompare(b));
+  }
+
+  async findAll(organizationId: string, query: { search?: string; city?: string; page?: number; limit?: number }) {
     const search = query.search; const page = +(query.page || 1); const limit = +(query.limit || 20);
     const skip = (page - 1) * limit;
 
     const where: any = { organizationId };
-    
+    if (query.city) where.city = query.city;
+
     if (search) {
       where.OR = [
         { name: { contains: search } },

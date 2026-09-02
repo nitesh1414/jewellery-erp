@@ -16,11 +16,21 @@ export default function CustomersPage() {
   const [form, setForm] = useState({ name: '', mobile: '', email: '', address: '', city: '', state: '', gstin: '', notes: '' });
   const limit = 25;
 
+  const [city, setCity] = useState('');
+
   const { data, isLoading } = useQuery({
-    queryKey: ['customers', search, page],
-    queryFn: () => api.getCustomers({ search, page, limit }),
+    queryKey: ['customers', search, page, city],
+    queryFn: () => api.getCustomers({ search, page, limit, city: city || undefined }),
     placeholderData: keepPreviousData,
   });
+
+  // cities that customers actually live in
+  const { data: citiesData } = useQuery({
+    queryKey: ['customers', 'cities'],
+    queryFn: () => api.getCustomerCities(),
+    staleTime: 300000,
+  });
+  const cities: string[] = Array.isArray(citiesData) ? citiesData : [];
 
   const createMutation = useMutation({
     mutationFn: (body: any) => api.createCustomer(body),
@@ -61,6 +71,7 @@ export default function CustomersPage() {
             <UsersIcon className="w-3 h-3 inline mr-1" />
             {total.toLocaleString('en-IN')} registered
             {searchInput && <span className="text-orange-600 ml-2">· filtered to "{searchInput}"</span>}
+            {city && <span className="text-orange-600 ml-2">· {city}</span>}
           </p>
         </div>
         <button onClick={() => { setEditingCustomer(null); resetForm(); setShowAdd(true); }} className="btn-primary">
@@ -82,16 +93,12 @@ export default function CustomersPage() {
           />
         </div>
         <select
-          className="input-field w-32"
-          onChange={e => {
-            // quick filter by city (simple approach: navigate to customer with that search)
-            if (e.target.value) { setSearchInput(e.target.value); setPage(1); }
-          }}
+          className="input-field w-32 sm:w-40"
+          value={city}
+          onChange={e => { setCity(e.target.value); setPage(1); }}
         >
           <option value="">All Cities</option>
-          <option value="Nagpur">Nagpur</option>
-          <option value="Mumbai">Mumbai</option>
-          <option value="Pune">Pune</option>
+          {cities.map((c: string) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 

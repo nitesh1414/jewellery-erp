@@ -101,6 +101,12 @@ class ApiService {
     return data;
   }
 
+  /** Cities present in the customer book (for the filter dropdown). */
+  async getCustomerCities() {
+    const { data } = await this.client.get('/customers/cities');
+    return data as string[];
+  }
+
   async createCustomer(body: any) {
     const { data } = await this.client.post('/customers', body);
     return data;

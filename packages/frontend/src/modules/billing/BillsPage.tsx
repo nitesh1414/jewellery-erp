@@ -23,6 +23,8 @@ export default function BillsPage() {
   const [endDate, setEndDate] = useState('');
   const [tab, setTab] = useState<'ALL' | 'BILLS' | 'ESTIMATES'>('ALL');
   const [confirmingEstimate, setConfirmingEstimate] = useState<any>(null);
+  // the settlement proposed on the estimate — carried into the real bill
+  const [proposed, setProposed] = useState<{ payments: any[]; urd: any[] }>({ payments: [], urd: [] });
   const [confirmForm, setConfirmForm] = useState({ billType: 'GST', amount: 0, paymentMode: 'CASH' });
 
   const { data, isLoading } = useQuery({
@@ -48,6 +50,24 @@ export default function BillsPage() {
     },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Error'),
   });
+
+  /** Open the confirm dialog and load what the estimate proposed. */
+  const openConfirm = async (bill: any) => {
+    setConfirmingEstimate(bill);
+    setConfirmForm({ billType: 'GST', amount: 0, paymentMode: 'CASH' });
+    setProposed({ payments: [], urd: [] });
+    try {
+      const full: any = await api.getSale(bill.id);
+      const payments = (full?.payments || []).filter((p: any) => p.isProposed !== false);
+      const urd = (full?.urdTransactions || []).filter((u: any) => u.status === 'PROPOSED');
+      setProposed({ payments, urd });
+      const already = payments.reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0)
+        + urd.reduce((s: number, u: any) => s + (Number(u.finalValue) || 0), 0);
+      setConfirmForm({ billType: 'GST', amount: Math.max(0, Math.round(((Number(full?.netAmount) || bill.netAmount) - already) * 100) / 100), paymentMode: 'CASH' });
+    } catch {
+      setConfirmForm({ billType: 'GST', amount: bill.netAmount, paymentMode: 'CASH' });
+    }
+  };
 
   const payMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: any }) => api.addSalePayment(id, body),
@@ -209,7 +229,7 @@ export default function BillsPage() {
                               <Pencil className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => { setConfirmingEstimate(bill); setConfirmForm({ billType: 'GST', amount: bill.netAmount, paymentMode: 'CASH' }); }}
+                              onClick={() => openConfirm(bill)}
                               className="btn-ghost p-2 text-green-600" title="Confirm → generate bill">
                               <ArrowRightCircle className="w-4 h-4" />
                             </button>
@@ -454,6 +474,22 @@ export default function BillsPage() {
               {confirmingEstimate.billNumber} · {confirmingEstimate.customerName} · ₹{confirmingEstimate.netAmount?.toLocaleString('en-IN')}
             </p>
             <div className="space-y-4">
+              {(proposed.payments.length > 0 || proposed.urd.length > 0) && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs space-y-1">
+                  <p className="font-semibold text-amber-800">Proposed on the estimate — carried into the bill</p>
+                  {proposed.payments.map((p: any, i: number) => (
+                    <div key={'p' + i} className="flex justify-between text-amber-900">
+                      <span>{humanize(p.paymentMode)}</span><span className="font-medium">₹{Number(p.amount).toLocaleString('en-IN')}</span>
+                    </div>
+                  ))}
+                  {proposed.urd.map((u: any, i: number) => (
+                    <div key={'u' + i} className="flex justify-between text-amber-900">
+                      <span>Old gold · {u.netWeight} g {u.purity}</span>
+                      <span className="font-medium">₹{Number(u.finalValue).toLocaleString('en-IN')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div>
                 <label className="label">Generate as</label>
                 <div className="flex gap-2">
@@ -477,7 +513,7 @@ export default function BillsPage() {
                   </select>
                 </div>
               </div>
-              <p className="text-xs text-gray-400">Leave amount 0 to generate the bill with full balance due. Stock and customer ledger are updated now (not for the estimate).</p>
+              <p className="text-xs text-gray-400">Whatever the estimate proposed is carried over; add what you collect now on top. Leave it at 0 to generate the bill with the balance still due. Stock, metal ledger and the customer ledger are updated now — they were not touched by the estimate.</p>
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
               <button onClick={() => setConfirmingEstimate(null)} className="btn-secondary">Cancel</button>
@@ -487,7 +523,16 @@ export default function BillsPage() {
                     id: confirmingEstimate.id,
                     body: {
                       billType: confirmForm.billType,
-                      payments: confirmForm.amount > 0 ? [{ amount: confirmForm.amount, paymentMode: confirmForm.paymentMode }] : [],
+                      payments: [
+                        ...proposed.payments.map((p: any) => ({ amount: Number(p.amount) || 0, paymentMode: p.paymentMode || 'CASH', reference: p.reference || '' })),
+                        ...(confirmForm.amount > 0 ? [{ amount: confirmForm.amount, paymentMode: confirmForm.paymentMode }] : []),
+                      ],
+                      urdEntries: proposed.urd.map((u: any) => ({
+                        metalType: u.metalType, purity: u.purity,
+                        grossWeight: u.grossWeight, stoneWeight: u.stoneWeight, netWeight: u.netWeight,
+                        rate: u.rate, value: u.value, deduction: u.deduction, meltingLoss: u.meltingLoss,
+                        finalValue: u.finalValue, notes: u.notes,
+                      })),
                     },
                   })
                 }

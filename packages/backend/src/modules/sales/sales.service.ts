@@ -753,7 +753,7 @@ export class SalesService {
    * (new bill number, stock movement, ledger, payments) and marks the
    * estimate CONVERTED for the audit trail.
    */
-  async confirmEstimate(id: string, data: { billType?: string; payments?: any[] }, userId: string, organizationId: string, branchId: string) {
+  async confirmEstimate(id: string, data: { billType?: string; payments?: any[]; urdEntries?: any[] }, userId: string, organizationId: string, branchId: string) {
     const estimate = await this.prisma.sale.findFirst({
       where: { id, organizationId },
       include: { items: { orderBy: { sortOrder: 'asc' } } },
@@ -767,6 +767,30 @@ export class SalesService {
     }
 
     const billType = data.billType === 'NON_GST' ? 'NON_GST' : 'GST';
+
+    // Anything the estimate proposed (money and old gold) becomes real now:
+    // the caller may send it, otherwise we carry over what was stored.
+    const proposedPayments = await this.prisma.salePayment.findMany({ where: { saleId: id, isProposed: true } });
+    const proposedUrd = await this.prisma.urdTransaction.findMany({ where: { referenceBillId: id, status: 'PROPOSED' } });
+    const payments = (data.payments && data.payments.length ? data.payments : proposedPayments)
+      .filter((p: any) => (Number(p?.amount) || 0) > 0)
+      .map((p: any) => ({ amount: Number(p.amount) || 0, paymentMode: p.paymentMode || 'CASH', reference: p.reference || '' }));
+    const urdEntries = (data.urdEntries && data.urdEntries.length ? data.urdEntries : proposedUrd)
+      .filter((u: any) => (Number(u?.netWeight) || 0) > 0)
+      .map((u: any) => ({
+        metalType: u.metalType,
+        purity: u.purity,
+        grossWeight: Number(u.grossWeight) || 0,
+        stoneWeight: Number(u.stoneWeight) || 0,
+        netWeight: Number(u.netWeight) || 0,
+        rate: Number(u.rate) || 0,
+        value: Number(u.value) || 0,
+        deduction: Number(u.deduction) || 0,
+        meltingLoss: Number(u.meltingLoss) || 0,
+        finalValue: Number(u.finalValue) || 0,
+        notes: u.notes || null,
+      }));
+
     const saleData: any = {
       billType,
       customerId: estimate.customerId,
@@ -776,7 +800,8 @@ export class SalesService {
       customerAddress: estimate.customerAddress,
       isGst: billType === 'GST',
       narration: (estimate.narration ? estimate.narration + ' | ' : '') + 'Confirmed from estimate ' + estimate.billNumber,
-      payments: data.payments || [],
+      payments,
+      urdEntries,
       items: estimate.items.map((item) => ({
         jewelleryItemId: item.jewelleryItemId,
         barcode: item.barcode,
@@ -798,8 +823,12 @@ export class SalesService {
       })),
     };
 
-    // create() runs the full bill pipeline (stock, ledger, payments)
+    // create() runs the full bill pipeline (stock, metal ledger, GST, payments)
     const sale = await this.create(saleData, userId, organizationId, branchId);
+
+    // the estimate's placeholders are replaced by the real rows on the bill
+    await this.prisma.urdTransaction.deleteMany({ where: { referenceBillId: id, status: 'PROPOSED' } });
+    await this.prisma.salePayment.deleteMany({ where: { saleId: id, isProposed: true } });
 
     await this.prisma.sale.update({
       where: { id },
