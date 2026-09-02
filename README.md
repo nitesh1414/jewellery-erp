@@ -81,12 +81,32 @@ npm run build          # compile every package
   top-right tabs between **Bill** and **Estimated Bill**. Estimates get their
   own `EST-…` number, stay editable (Bills → Estimated Bills → ✏) and are
   converted into a real GST/Non-GST bill with one click (→ button).
+- **URD (old gold) in billing**: on the billing screen take the customer's old
+  gold through **Add Payment → URD / Old Gold** — metal, purity, gross, stone
+  and net weight, rate, deduction (₹) and melting loss (%). The value is worked
+  out as `net weight × rate − deduction − melting loss %` and that **final value
+  pays the bill**. A URD entry is recorded (URD register, linked to the bill)
+  and, on a real bill, the old gold is **credited to the metal ledger** of that
+  metal + purity, so it shows up as available metal stock.
+- **Multiple payment modes on one bill**: a single bill can be settled with any
+  mix of **URD, Cash, Online, UPI, Debit Card, Credit Card, Bank Transfer and
+  Cheque** — add each mode with its own amount and reference. Every line (mode,
+  reference, amount) plus the URD details are printed on the bill.
+- **Same on every bill type**: the settlement block and URD details print on
+  **GST, Non-GST, A5, thermal and estimate** prints. On an **estimated bill**
+  the settlement is recorded as a **proposed payment** — it shows as
+  *“Proposed settlement (not collected)”*, nothing is collected and neither
+  stock, metal ledger nor GST is touched until the estimate is confirmed.
 - **Print sizes**: on any print screen choose A4 GST / A4 plain / A5 /
   thermal 80 / 76 / 58 mm / estimate.
 - **Barcodes**: Barcodes → print stickers on every common label size; item
   rows in *Jewellery Items* have a 🖨 print-barcode button too. What appears on
   the sticker (jeweller name, item, weight, purity …) is configured in
-  Settings → Barcode.
+  Settings → Barcode. The **22 × 12 cm tag** is a large card: the **left half**
+  carries the jewellery shop name with the **barcode printed under the name**,
+  the **right half** lists ornament, item, purity, metal, gross weight, stone
+  weight, net weight, **HUID**, rate, making, amount, SKU, HSN and date — one
+  tag per page (`@page size 220mm 120mm`).
 - **Multi-branch**: if the user has access to more than one branch, a branch
   selector appears in the top bar. All actions (sale, purchase, expense,
   income, URD, payment…) are recorded against the selected branch; the default

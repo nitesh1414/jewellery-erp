@@ -486,6 +486,7 @@ model Sale {
   items        SaleItem[]
   payments     SalePayment[]
   returns      SaleReturn[]
+  urdTransactions UrdTransaction[] @relation("SaleUrd")
 }
 
 model SaleItem {
@@ -524,6 +525,7 @@ model SalePayment {
   paymentMode String
   reference   String?
   accountId   String?  // cash / bank ledger account the money was received into
+  isProposed  Boolean  @default(false) // estimate: planned payment, not collected yet
   date        DateTime @default(now())
   employeeId  String?
   notes       String?
@@ -674,12 +676,13 @@ model UrdTransaction {
   paymentMode    String?
   referenceBillId String?
   notes          String?
-  status         String   @default("ACTIVE")
+  status         String   @default("ACTIVE") // ACTIVE | PROPOSED (estimate) | ADJUSTED (used in a bill)
   createdAt      DateTime @default(now())
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  branch       Branch       @relation(fields: [branchId], references: [id])
-  customer     Customer?    @relation(fields: [customerId], references: [id])
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  branch        Branch       @relation(fields: [branchId], references: [id])
+  customer      Customer?    @relation(fields: [customerId], references: [id])
+  referenceBill Sale?        @relation("SaleUrd", fields: [referenceBillId], references: [id])
 }
 
 // ============================

@@ -1,10 +1,47 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { LedgerService } from '../ledger/ledger.service';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class SalesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private ledger: LedgerService) {}
+
+  /**
+   * URD (old gold) handed over at the counter.
+   * value       = net weight × rate
+   * net value   = value − deduction (₹)
+   * final value = net value − melting loss %
+   * The final value is what the customer is credited with against the bill.
+   */
+  private normalizeUrdEntries(raw: any): any[] {
+    const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    return list
+      .map((entry: any) => {
+        const netWeight = Number(entry?.netWeight) || 0;
+        const rate = Number(entry?.rate) || 0;
+        const deduction = Number(entry?.deduction) || 0;
+        const meltingLoss = Number(entry?.meltingLoss) || 0;
+        const value = Math.round(netWeight * rate * 100) / 100;
+        const netValue = Math.round(Math.max(0, value - deduction) * 100) / 100;
+        const finalValue = Math.round(netValue * (1 - meltingLoss / 100) * 100) / 100;
+        return {
+          metalType: (entry?.metalType || 'GOLD').toUpperCase(),
+          purity: entry?.purity || '',
+          grossWeight: Number(entry?.grossWeight) || 0,
+          stoneWeight: Number(entry?.stoneWeight) || 0,
+          netWeight,
+          rate,
+          deduction,
+          meltingLoss,
+          notes: entry?.notes || null,
+          value,
+          netValue,
+          finalValue,
+        };
+      })
+      .filter((e: any) => e.netWeight > 0 && e.finalValue > 0);
+  }
 
   async findAll(organizationId: string, query: {
     search?: string;
@@ -68,6 +105,7 @@ export class SalesService {
         items: { orderBy: { sortOrder: 'asc' } },
         payments: true,
         returns: { include: { items: true } },
+        urdTransactions: true,
       },
     });
 
@@ -81,7 +119,7 @@ export class SalesService {
   async findByBillNumber(billNumber: string, organizationId: string) {
     return this.prisma.sale.findFirst({
       where: { billNumber, organizationId },
-      include: { items: true, payments: true },
+      include: { items: true, payments: true, urdTransactions: true },
     });
   }
 
@@ -110,11 +148,15 @@ export class SalesService {
     // Calculate bill using backend engine (GST rate from admin settings)
     const calculated = this.calculateBill(data.items, settings.defaultGstRate ?? 3, data.isGst !== false);
 
-    // Estimates cannot take payments
-    if (isEstimate) data.payments = [];
+    // URD (old gold) handed over at the counter — its final value pays the bill.
+    // An estimate keeps the payment plan as "proposed": it is recorded and
+    // printed, but nothing is collected until the estimate becomes a bill.
+    const urdEntries = this.normalizeUrdEntries(data.urdEntries || data.urd);
+    const urdTotal = Math.round(urdEntries.reduce((sum: number, e: any) => sum + e.finalValue, 0) * 100) / 100;
     // Validate payment
-    const totalPaid = (data.payments || []).reduce((sum: number, p: any) => sum + p.amount, 0);
-    const balanceAmount = calculated.netAmount - totalPaid;
+    const cashlessTotal = (data.payments || []).reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+    const totalPaid = isEstimate ? 0 : Math.round((cashlessTotal + urdTotal) * 100) / 100;
+    const balanceAmount = Math.round((calculated.netAmount - totalPaid) * 100) / 100;
 
     // Use a transaction to create the sale and update inventory
     const sale = await this.prisma.$transaction(async (tx) => {
@@ -125,7 +167,7 @@ export class SalesService {
           branchId,
           billNumber,
           billType: data.billType || 'GST',
-          status: isEstimate ? 'ESTIMATE' : (totalPaid >= calculated.netAmount ? 'CONFIRMED' : 'DRAFT'),
+          status: isEstimate ? 'ESTIMATE' : (totalPaid >= calculated.netAmount && calculated.netAmount > 0 ? 'CONFIRMED' : 'DRAFT'),
           customerId: data.customerId,
           customerName: data.customerName,
           customerMobile: data.customerMobile,
@@ -215,9 +257,97 @@ export class SalesService {
         }
       }
 
-      // Create payments (estimates never have payments)
-      if (!isEstimate && data.payments && data.payments.length > 0) {
-        for (const payment of data.payments) {
+      // URD / old gold received at the counter — record it against this bill and,
+      // for a real bill, credit the metal ledger with the metal taken in.
+      for (const entry of urdEntries) {
+        const count = await tx.urdTransaction.count({ where: { organizationId } });
+        const urdNumber = `URD-${new Date().getFullYear()}-${String(count + 1).padStart(5, '0')}`;
+        entry.urdNumber = urdNumber;
+
+        const record = await tx.urdTransaction.create({
+          data: {
+            organizationId,
+            branchId,
+            urdNumber,
+            customerId: data.customerId || null,
+            customerName: data.customerName || 'Walk-in Customer',
+            metalType: entry.metalType,
+            purity: entry.purity,
+            grossWeight: entry.grossWeight,
+            stoneWeight: entry.stoneWeight,
+            netWeight: entry.netWeight,
+            rate: entry.rate,
+            value: entry.value,
+            deduction: entry.deduction,
+            meltingLoss: entry.meltingLoss,
+            finalValue: entry.finalValue,
+            paymentMode: 'URD',
+            referenceBillId: saleRecord.id,
+            notes: entry.notes ?? (isEstimate
+              ? `Proposed against estimate ${billNumber}`
+              : `Adjusted against bill ${billNumber}`),
+            status: isEstimate ? 'PROPOSED' : 'ADJUSTED',
+          },
+        });
+
+        // A real bill: the old gold joins the metal stock of that metal + purity.
+        if (!isEstimate && entry.netWeight > 0) {
+          try {
+            const account = await this.ledger.resolveMetalAccount(
+              { organizationId, branchId, metalType: entry.metalType, purity: entry.purity, accountId: entry.metalLedgerAccountId || null },
+              tx,
+            );
+            if (account) {
+              await this.ledger.postMetalMovement(
+                {
+                  organizationId,
+                  branchId,
+                  accountId: account.id,
+                  type: 'CREDIT',
+                  grams: entry.netWeight,
+                  rate: entry.netWeight ? entry.finalValue / entry.netWeight : 0,
+                  metalType: entry.metalType,
+                  purity: entry.purity,
+                  date: data.billDate ? new Date(data.billDate) : new Date(),
+                  description:
+                    `URD / old gold — ${data.customerName || 'Walk-in Customer'} · ${billNumber} · ${entry.netWeight} g ${entry.metalType} ${entry.purity}`.trim(),
+                  reference: urdNumber,
+                  linkedTo: 'URD',
+                  linkedId: record.id,
+                  employeeId: userId,
+                },
+                tx,
+              );
+            }
+          } catch (e) {
+            // Never fail a bill because the metal ledger could not be moved
+            console.warn('URD metal ledger movement failed', urdNumber, e?.message);
+          }
+        }
+      }
+
+      // Create payments (estimates record them as proposed — nothing is collected)
+      const paymentRows = [
+        ...(data.payments || [])
+          .filter((p: any) => (Number(p.amount) || 0) > 0)
+          .map((p: any) => ({
+            amount: Number(p.amount) || 0,
+            paymentMode: p.paymentMode,
+            reference: p.reference,
+            accountId: isEstimate ? null : (p.accountId || null),
+          })),
+        // URD pays through its own payment line so the bill reads
+        // "URD ₹… · CASH ₹… · ONLINE ₹…" exactly as the customer settled it.
+        ...urdEntries.map((e: any) => ({
+          amount: e.finalValue,
+          paymentMode: 'URD',
+          reference: e.urdNumber || null,
+          accountId: null,
+        })),
+      ];
+
+      if (paymentRows.length > 0) {
+        for (const payment of paymentRows) {
           const created = await tx.salePayment.create({
             data: {
               saleId: saleRecord.id,
@@ -225,12 +355,13 @@ export class SalesService {
               paymentMode: payment.paymentMode,
               reference: payment.reference,
               accountId: payment.accountId || null,
+              isProposed: isEstimate,
               date: new Date(),
               employeeId: userId,
             },
           });
           // Record the money into the chosen cash/bank ledger account.
-          if (payment.accountId) {
+          if (payment.accountId && !isEstimate) {
             const acc = await tx.ledgerAccount.findFirst({ where: { id: payment.accountId, organizationId } });
             if (acc) {
               await tx.ledgerEntry.create({
@@ -413,6 +544,60 @@ export class SalesService {
           },
         });
       }
+      // Proposed settlement (URD / cash / online …) — stored and printed,
+      // never collected while the document is still an estimate.
+      await tx.salePayment.deleteMany({ where: { saleId: id } });
+      await tx.urdTransaction.deleteMany({ where: { referenceBillId: id, status: 'PROPOSED' } });
+      const urdEntries = this.normalizeUrdEntries(data.urdEntries || data.urd);
+      for (const entry of urdEntries) {
+        const count = await tx.urdTransaction.count({ where: { organizationId } });
+        const urdNumber = `URD-${new Date().getFullYear()}-${String(count + 1).padStart(5, '0')}`;
+        entry.urdNumber = urdNumber;
+        await tx.urdTransaction.create({
+          data: {
+            organizationId,
+            branchId: estimate.branchId,
+            urdNumber,
+            customerId: data.customerId || estimate.customerId || null,
+            customerName: data.customerName || estimate.customerName,
+            metalType: entry.metalType,
+            purity: entry.purity,
+            grossWeight: entry.grossWeight,
+            stoneWeight: entry.stoneWeight,
+            netWeight: entry.netWeight,
+            rate: entry.rate,
+            value: entry.value,
+            deduction: entry.deduction,
+            meltingLoss: entry.meltingLoss,
+            finalValue: entry.finalValue,
+            paymentMode: 'URD',
+            referenceBillId: id,
+            notes: entry.notes ?? `Proposed against estimate ${estimate.billNumber}`,
+            status: 'PROPOSED',
+          },
+        });
+      }
+      const paymentRows = [
+        ...(data.payments || [])
+          .filter((p: any) => (Number(p.amount) || 0) > 0)
+          .map((p: any) => ({ amount: Number(p.amount) || 0, paymentMode: p.paymentMode, reference: p.reference })),
+        ...urdEntries.map((e: any) => ({ amount: e.finalValue, paymentMode: 'URD', reference: e.urdNumber || null })),
+      ];
+      for (const payment of paymentRows) {
+        await tx.salePayment.create({
+          data: {
+            saleId: id,
+            amount: payment.amount,
+            paymentMode: payment.paymentMode,
+            reference: payment.reference,
+            accountId: null,
+            isProposed: true,
+            date: new Date(),
+            employeeId: userId,
+          },
+        });
+      }
+
       return tx.sale.update({
         where: { id },
         data: {

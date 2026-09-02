@@ -38,6 +38,22 @@ interface BillItem {
 const calcNet = (gross: number, stone: number) =>
   Math.round(Math.max(0, (Number(gross) || 0) - (Number(stone) || 0)) * 1000) / 1000;
 
+/**
+ * Settlement modes a single bill can be paid with. A customer may split one
+ * bill across any of them — URD (old gold), cash, online transfer, card …
+ */
+const PAYMENT_MODES = ['CASH', 'ONLINE', 'UPI', 'DEBIT_CARD', 'CREDIT_CARD', 'BANK_TRANSFER', 'CHEQUE'];
+const PAYMENT_MODE_LABELS: Record<string, string> = {
+  CASH: 'Cash',
+  ONLINE: 'Online',
+  UPI: 'UPI',
+  DEBIT_CARD: 'Debit Card',
+  CREDIT_CARD: 'Credit Card',
+  BANK_TRANSFER: 'Bank Transfer',
+  CHEQUE: 'Cheque',
+  URD: 'URD / Old Gold',
+};
+
 export default function BillingPage() {
   const queryClient = useQueryClient();
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +77,12 @@ export default function BillingPage() {
   const [narration, setNarration] = useState('');
   const [payments, setPayments] = useState<{ amount: number; mode: string; reference: string; accountId?: string }[]>([]);
   const [showPaymentPanel, setShowPaymentPanel] = useState(false);
+  // URD / old gold handed over at the counter — its final value pays the bill,
+  // just like cash or an online transfer.
+  const [urdEntries, setUrdEntries] = useState<any[]>([]);
+  const [showUrdPanel, setShowUrdPanel] = useState(false);
+  const emptyUrdForm = () => ({ metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, deduction: 0, meltingLoss: 0, notes: '' });
+  const [urdForm, setUrdForm] = useState<any>(emptyUrdForm());
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentReference, setPaymentReference] = useState('');
   const [paymentAccount, setPaymentAccount] = useState('');
@@ -82,6 +104,7 @@ export default function BillingPage() {
   const handleNewBill = () => {
     setItems([]); setCustomer(null); setCustomerSearch('');
     setPayments([]); setDiscount(0); setShowPaymentPanel(false);
+    setUrdEntries([]); setUrdForm(emptyUrdForm()); setShowUrdPanel(false);
     setEditingEstimateId(null);
     if (window.location.search.includes('estimate=')) window.history.replaceState({}, '', '/billing');
     barcodeInputRef.current?.focus();
@@ -116,6 +139,7 @@ export default function BillingPage() {
           if (showManualItem) setShowManualItem(false);
           else if (showInventorySelect) setShowInventorySelect(false);
           else if (showNewCustomer) setShowNewCustomer(false);
+          else if (showUrdPanel) setShowUrdPanel(false);
           else if (showPaymentPanel) setShowPaymentPanel(false);
           else if (showConfirmBill) setShowConfirmBill(false);
           break;
@@ -353,8 +377,21 @@ export default function BillingPage() {
   const netAmountBeforeRound = Math.round((taxableAmount + totalTax) * 100) / 100;
   const roundOff = Math.round(Math.round(netAmountBeforeRound) - netAmountBeforeRound);
   const netAmount = Math.round((netAmountBeforeRound + roundOff) * 100) / 100;
-  const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
+  // URD (old gold) — value = net wt × rate, less deduction and melting loss
+  const urdTotal = Math.round(urdEntries.reduce((s, e) => s + (e.finalValue || 0), 0) * 100) / 100;
+  const totalPaid = Math.round((payments.reduce((s, p) => s + p.amount, 0) + urdTotal) * 100) / 100;
   const balanceAmount = Math.round((netAmount - totalPaid) * 100) / 100;
+
+  const urdValue = Math.round((Number(urdForm.netWeight) * Number(urdForm.rate)) * 100) / 100;
+  const urdNetValue = Math.round(Math.max(0, urdValue - (Number(urdForm.deduction) || 0)) * 100) / 100;
+  const urdFinal = Math.round(urdNetValue * (1 - (Number(urdForm.meltingLoss) || 0) / 100) * 100) / 100;
+  const addUrdEntry = () => {
+    if (!(Number(urdForm.netWeight) > 0)) { toast.error('Enter the net weight of the old gold'); return; }
+    if (!(urdFinal > 0)) { toast.error('URD value must be more than zero'); return; }
+    setUrdEntries(prev => [...prev, { ...urdForm, value: urdValue, netValue: urdNetValue, finalValue: urdFinal }]);
+    setUrdForm({ ...emptyUrdForm(), metalType: urdForm.metalType, purity: urdForm.purity, rate: urdForm.rate, meltingLoss: urdForm.meltingLoss });
+    setShowUrdPanel(false);
+  };
 
   // === CREATE SALE ===
   const createSaleMutation = useMutation({
@@ -399,7 +436,14 @@ export default function BillingPage() {
       })),
       discount: discountAmount, discountType, isGst: billType === 'GST',
       narration,
-      payments: billKind === 'ESTIMATE' ? [] : payments.map(p => ({ amount: p.amount, paymentMode: p.mode, reference: p.reference, accountId: p.accountId })),
+      // Estimated bills keep the settlement plan (URD / cash / online …) as a
+      // proposed payment — it prints on the estimate but nothing is collected.
+      payments: payments.map(p => ({ amount: p.amount, paymentMode: p.mode, reference: p.reference, accountId: p.accountId })),
+      urdEntries: urdEntries.map(e => ({
+        metalType: e.metalType, purity: e.purity, grossWeight: e.grossWeight, stoneWeight: e.stoneWeight,
+        netWeight: e.netWeight, rate: e.rate, deduction: e.deduction, meltingLoss: e.meltingLoss,
+        notes: e.notes || undefined, finalValue: e.finalValue,
+      })),
     };
     createSaleMutation.mutate({ data: billData, kind: billKind, estimateId: editingEstimateId || undefined });
   };
@@ -683,22 +727,33 @@ export default function BillingPage() {
                     {activeAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
                   </select>
 
-                  {payments.length > 0 && (
+                  {(payments.length > 0 || urdEntries.length > 0) && (
                     <div className="space-y-1 pt-1">
                       {payments.map((p, i) => (
-                        <div key={i} className="flex items-center justify-between bg-green-50 border border-green-200 rounded px-3 py-1.5 text-xs">
-                          <span className="font-medium text-green-800">{p.mode}</span>
+                        <div key={'p' + i} className="flex items-center justify-between bg-green-50 border border-green-200 rounded px-3 py-1.5 text-xs">
+                          <span className="font-medium text-green-800">{PAYMENT_MODE_LABELS[p.mode] || p.mode.replace(/_/g, ' ')}{p.reference ? <span className="text-green-600 font-normal"> · {p.reference}</span> : null}</span>
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-green-900">₹{fm(p.amount)}</span>
                             <button onClick={() => setPayments(prev => prev.filter((_, idx) => idx !== i))} className="text-red-500 hover:text-red-700"><X className="w-3 h-3" /></button>
                           </div>
                         </div>
                       ))}
+                      {urdEntries.map((e, i) => (
+                        <div key={'u' + i} className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded px-3 py-1.5 text-xs">
+                          <span className="font-medium text-amber-800">
+                            URD / old gold<span className="font-normal"> · {e.netWeight} g {e.purity} @ ₹{fm(e.rate)}/g</span>
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-amber-900">₹{fm(e.finalValue)}</span>
+                            <button onClick={() => setUrdEntries(prev => prev.filter((_, idx) => idx !== i))} className="text-red-500 hover:text-red-700"><X className="w-3 h-3" /></button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
 
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {['CASH', 'UPI', 'DEBIT_CARD', 'CREDIT_CARD', 'BANK_TRANSFER', 'CHEQUE'].map(mode => (
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {PAYMENT_MODES.map(mode => (
                       <button key={mode} onClick={() => {
                         const remaining = netAmount - totalPaid;
                         if (remaining <= 0) { toast.error('Already fully paid'); return; }
@@ -710,10 +765,56 @@ export default function BillingPage() {
                         setPaymentReference('');
                         setPaymentAccount('');
                       }} className="text-xs py-1.5 px-1 rounded border border-gray-200 text-gray-600 hover:border-gray-300">
-                        {mode.replace('_', ' ')}
+                        {PAYMENT_MODE_LABELS[mode] || mode.replace(/_/g, ' ')}
                       </button>
                     ))}
+                    <button onClick={() => setShowUrdPanel(true)} className="text-xs py-1.5 px-1 rounded border border-amber-300 bg-amber-50 text-amber-800 hover:border-amber-400">
+                      URD / Old Gold
+                    </button>
                   </div>
+
+                  {showUrdPanel && (
+                    <div className="border border-amber-200 bg-amber-50/60 rounded-lg p-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-amber-800">URD / Old gold received</p>
+                        <button onClick={() => setShowUrdPanel(false)} className="text-amber-700 hover:text-amber-900"><X className="w-3 h-3" /></button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <select className="input-field text-xs py-1" value={urdForm.metalType} onChange={e => setUrdForm({ ...urdForm, metalType: e.target.value })}>
+                          {(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace(/_/g, ' ')}</option>)}
+                        </select>
+                        <select className="input-field text-xs py-1" value={urdForm.purity} onChange={e => {
+                          const purity = e.target.value;
+                          const rateRow: any = ((rateMaster as any) || []).find((r: any) => (r.purity || '').toUpperCase() === purity.toUpperCase());
+                          setUrdForm({ ...urdForm, purity, rate: rateRow ? Number(rateRow.rate) || 0 : urdForm.rate });
+                        }}>
+                          {(settings?.allPurities || ['24K', '22K', '18K']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
+                        </select>
+                        <div><label className="text-[10px] text-gray-500">Gross (g)</label>
+                          <input type="number" step="0.001" className="input-field text-xs py-1" value={urdForm.grossWeight || ''}
+                            onChange={e => { const grossWeight = Number(e.target.value); setUrdForm({ ...urdForm, grossWeight, netWeight: calcNet(grossWeight, urdForm.stoneWeight) }); }} /></div>
+                        <div><label className="text-[10px] text-gray-500">Stone (g)</label>
+                          <input type="number" step="0.001" className="input-field text-xs py-1" value={urdForm.stoneWeight || ''}
+                            onChange={e => { const stoneWeight = Number(e.target.value); setUrdForm({ ...urdForm, stoneWeight, netWeight: calcNet(urdForm.grossWeight, stoneWeight) }); }} /></div>
+                        <div><label className="text-[10px] text-gray-500">Net (g) auto</label>
+                          <input type="number" step="0.001" className="input-field text-xs py-1 bg-gray-50" value={urdForm.netWeight || ''}
+                            onChange={e => setUrdForm({ ...urdForm, netWeight: Number(e.target.value) })} /></div>
+                        <div><label className="text-[10px] text-gray-500">Rate ₹/g</label>
+                          <input type="number" className="input-field text-xs py-1" value={urdForm.rate || ''} onChange={e => setUrdForm({ ...urdForm, rate: Number(e.target.value) })} /></div>
+                        <div><label className="text-[10px] text-gray-500">Deduction ₹</label>
+                          <input type="number" className="input-field text-xs py-1" value={urdForm.deduction || ''} onChange={e => setUrdForm({ ...urdForm, deduction: Number(e.target.value) })} /></div>
+                        <div><label className="text-[10px] text-gray-500">Melting loss %</label>
+                          <input type="number" className="input-field text-xs py-1" value={urdForm.meltingLoss || ''} onChange={e => setUrdForm({ ...urdForm, meltingLoss: Number(e.target.value) })} /></div>
+                      </div>
+                      <div className="text-[11px] space-y-0.5 text-gray-600">
+                        <div className="flex justify-between"><span>Value ({urdForm.netWeight} g × ₹{fm(urdForm.rate)})</span><span>₹{fm(urdValue)}</span></div>
+                        <div className="flex justify-between"><span>Less deduction</span><span>− ₹{fm(urdForm.deduction || 0)}</span></div>
+                        <div className="flex justify-between"><span>Less melting loss ({urdForm.meltingLoss || 0}%)</span><span>− ₹{fm(Math.round((urdValue - urdNetValue + (urdNetValue - urdFinal)) * 100) / 100)}</span></div>
+                        <div className="flex justify-between font-semibold text-amber-800 border-t border-amber-200 pt-0.5"><span>URD credit</span><span>₹{fm(urdFinal)}</span></div>
+                      </div>
+                      <button onClick={addUrdEntry} className="btn-secondary w-full text-xs py-1.5">Add URD ₹{fm(urdFinal)}</button>
+                    </div>
+                  )}
 
                   {totalPaid > 0 && totalPaid < netAmount && (
                     <p className="text-[11px] text-orange-600 bg-orange-50 rounded px-2 py-1">⚠ Part payment — ₹{fm(balanceAmount)} will become outstanding</p>
@@ -723,14 +824,14 @@ export default function BillingPage() {
 
               {/* Bottom action row */}
               <div className="space-y-2 pt-3 border-t">
-                {billKind !== 'ESTIMATE' && !showPaymentPanel && (
+                {!showPaymentPanel && (
                   <button onClick={() => setShowPaymentPanel(true)} className="btn-secondary w-full py-2 text-sm" title="Payment (F6)">
                     <CreditCard className="w-4 h-4" /> Add Payment
                   </button>
                 )}
                 {billKind === 'ESTIMATE' && (
                   <p className="text-xs text-center text-amber-700 bg-amber-50 border border-amber-200 rounded-lg py-2">
-                    Estimated bill — payments are taken when it is confirmed into a bill
+                    Estimated bill — payments and URD are recorded as <strong>proposed</strong> and are collected when it is confirmed into a bill
                   </p>
                 )}
                 {showPaymentPanel && (
@@ -800,6 +901,23 @@ export default function BillingPage() {
                 </div>
                 {totalPaid > 0 && <div className="flex justify-between text-green-700 font-medium"><span>Paid</span><span>₹{fm(totalPaid)}</span></div>}
                 {balanceAmount > 0 && <div className="flex justify-between text-red-600 font-medium"><span>Balance</span><span>₹{fm(balanceAmount)}</span></div>}
+                {(payments.length > 0 || urdEntries.length > 0) && (
+                  <div className="pt-2 border-t border-gray-200 space-y-1">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{billKind === 'ESTIMATE' ? 'Proposed settlement' : 'Settlement'}</p>
+                    {payments.map((p, i) => (
+                      <div key={'c' + i} className="flex justify-between text-gray-700">
+                        <span>{PAYMENT_MODE_LABELS[p.mode] || p.mode.replace(/_/g, ' ')}{p.reference ? ` · ${p.reference}` : ''}</span>
+                        <span className="font-medium">₹{fm(p.amount)}</span>
+                      </div>
+                    ))}
+                    {urdEntries.map((e, i) => (
+                      <div key={'cu' + i} className="flex justify-between text-amber-700">
+                        <span>URD / old gold · {e.netWeight} g {e.purity}</span>
+                        <span className="font-medium">₹{fm(e.finalValue)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
