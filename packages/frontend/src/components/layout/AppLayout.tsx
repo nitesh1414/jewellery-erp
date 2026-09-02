@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { TopNav } from './TopNav';
 import { QuickActionFAB } from '../QuickActionFAB';
 import { KeyboardShortcutsHelp } from '../KeyboardShortcutsHelp';
+import { ConfirmHost } from '../ConfirmDialog';
 import { useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../services/api';
@@ -50,6 +51,7 @@ export function AppLayout() {
       </main>
       <QuickActionFAB />
       <KeyboardShortcutsHelp />
+      <ConfirmHost />
     </div>
   );
 }

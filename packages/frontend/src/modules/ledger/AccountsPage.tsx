@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -131,7 +132,7 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Ledger Accounts</h1>
           <p className="text-gray-500 text-sm mt-1">Cash, bank, wallet — and metal/material ledgers stocked in grams</p>
@@ -141,7 +142,7 @@ export default function AccountsPage() {
         </button>
       </div>
 
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit max-w-full overflow-x-auto">
         {([['ALL', 'All'], ['CASH_BANK', 'Cash & Bank'], ['METAL', 'Metal / Material']] as const).map(([key, label]) => (
           <button key={key} onClick={() => setFilter(key as any)}
             className={'px-3 py-1.5 text-sm font-medium rounded-md transition-all ' + (filter === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
@@ -200,7 +201,7 @@ export default function AccountsPage() {
                 <div className="flex items-center gap-1">
                   {a.isPrimary && <span className="badge bg-yellow-100 text-yellow-800 text-[10px]">PRIMARY</span>}
                   <button className="btn-ghost p-1 text-primary-600" onClick={() => openEdit(a)}><Edit2 className="w-3.5 h-3.5" /></button>
-                  <button className="btn-ghost p-1 text-red-500" onClick={() => confirm('Delete account "' + a.name + '"?') && deleteMut.mutate(a.id)}><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button className="btn-ghost p-1 text-red-500" onClick={async () => { if (await confirmAction({ title: 'Delete account “' + a.name + '”?', message: 'Only accounts with no entries can be deleted.', danger: true, confirmLabel: 'Delete' })) deleteMut.mutate(a.id); }}><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
 
@@ -239,7 +240,7 @@ export default function AccountsPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-3">{editing ? 'Edit' : 'New'} Ledger Account</h3>
             <p className="text-xs text-gray-500 mb-4">
               {isMetal

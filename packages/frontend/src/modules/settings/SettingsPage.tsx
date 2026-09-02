@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -268,7 +269,7 @@ export default function SettingsPage() {
             defaultPurities={settings.allPurities || []}
             onAdd={(body: any) => addHallmarkMutation.mutate(body)}
             onUpdate={(id: string, body: any) => updateHallmarkMutation.mutate({ id, body })}
-            onDelete={(id: string) => confirm('Delete this hallmark entry?') && deleteHallmarkMutation.mutate(id)}
+            onDelete={async (id: string) => { if (await confirmAction({ title: 'Delete this hallmark entry?', danger: true, confirmLabel: 'Delete' })) deleteHallmarkMutation.mutate(id); }}
             onSaveDefaultCharge={(charge: number) => updateMutation.mutate({ hallmarkCharge: charge })}
           />
         )}
@@ -409,7 +410,7 @@ function MetalsTab({ metals, defaultMetals, newMetal, setNewMetal, onAdd, onRemo
           <div key={m} className={'flex items-center gap-1.5 px-3 py-1.5 rounded-md border ' + (defaultMetals?.includes(m) ? 'bg-yellow-50 border-yellow-200 text-yellow-800' : 'bg-white border-blue-200 text-blue-700')}>
             <span className="text-sm font-medium">{m}</span>
             {!defaultMetals?.includes(m) && (
-              <button onClick={() => confirm('Remove metal "' + m + '"?') && onRemove(m)} className="text-red-500 hover:text-red-700">
+              <button onClick={async () => { if (await confirmAction({ title: 'Remove metal “' + m + '”?', danger: true, confirmLabel: 'Remove' })) onRemove(m); }} className="text-red-500 hover:text-red-700">
                 <X className="w-3 h-3" />
               </button>
             )}
@@ -449,7 +450,7 @@ function PuritiesTab({ purities, defaultPurities, newPurity, setNewPurity, onAdd
           <div key={p} className={'flex items-center gap-1.5 px-3 py-1.5 rounded-md border ' + (defaultPurities?.includes(p) ? 'bg-yellow-50 border-yellow-200 text-yellow-800' : 'bg-white border-blue-200 text-blue-700')}>
             <span className="text-sm font-medium">{p}</span>
             {!defaultPurities?.includes(p) && (
-              <button onClick={() => confirm('Remove purity "' + p + '"?') && onRemove(p)} className="text-red-500 hover:text-red-700">
+              <button onClick={async () => { if (await confirmAction({ title: 'Remove purity “' + p + '”?', danger: true, confirmLabel: 'Remove' })) onRemove(p); }} className="text-red-500 hover:text-red-700">
                 <X className="w-3 h-3" />
               </button>
             )}
@@ -676,7 +677,7 @@ function HallmarksTab({ hallmarks, hallmarkCharge, defaultPurities, onAdd, onUpd
                 </td>
                 <td className="table-cell text-right">
                   <button
-                    onClick={() => { if (confirm(`Delete hallmark entry "${h.label}"?`)) onDelete(h.id); }}
+                    onClick={async () => { if (await confirmAction({ title: `Delete hallmark entry “${h.label}”?`, danger: true, confirmLabel: 'Delete' })) onDelete(h.id); }}
                     className="text-red-500 hover:text-red-700 text-xs">Delete</button>
                 </td>
               </tr>

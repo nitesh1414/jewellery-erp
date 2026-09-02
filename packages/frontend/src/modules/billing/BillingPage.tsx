@@ -490,7 +490,7 @@ export default function BillingPage() {
       <div className="flex items-center justify-between mb-3 shrink-0 flex-wrap gap-2">
         <div>
           <h1 className="page-title">Billing / POS</h1>
-          <p className="text-gray-500 text-xs mt-0.5">
+          <p className="text-gray-500 text-xs mt-0.5 hidden lg:block">
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F2</kbd> New Bill ·
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F3</kbd> Customer ·
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F4</kbd> Scan ·
@@ -585,7 +585,7 @@ export default function BillingPage() {
 
           {/* Customer bar */}
           {customer && (
-            <div className="shrink-0 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 flex items-center gap-4 text-sm">
+            <div className="shrink-0 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 flex items-center gap-x-4 gap-y-1 flex-wrap text-sm">
               <span className="font-medium text-blue-800">{customer.name}</span>
               <span className="text-blue-400">|</span>
               <span className="text-blue-700">{customer.mobile}</span>
@@ -725,7 +725,7 @@ export default function BillingPage() {
                   </div>
                   <input type="text" className="input-field text-xs py-1.5 w-full" placeholder="Reference (UPI ID / cheque no)" value={paymentReference} onChange={e => setPaymentReference(e.target.value)} />
                   <select className="input-field text-xs py-1.5 w-full" value={paymentAccount} onChange={e => setPaymentAccount(e.target.value)}>
-                    <option value="">Receive into — no ledger —</option>
+                    <option value="">Money goes into… (no ledger entry)</option>
                     {activeAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
                   </select>
 
@@ -754,7 +754,7 @@ export default function BillingPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 btn-grid">
                     {PAYMENT_MODES.map(mode => (
                       <button key={mode} onClick={() => {
                         const remaining = netAmount - totalPaid;
@@ -942,7 +942,7 @@ export default function BillingPage() {
       {/* Manual Item Modal */}
       {showManualItem && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowManualItem(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Add Manual Item <span className="text-xs text-gray-400 font-normal">(F5)</span></h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2"><label className="label">Particular</label><input className="input-field" value={manualItem.particular} onChange={e => setManualItem({ ...manualItem, particular: e.target.value })} placeholder="Gold Ring" autoFocus /></div>
@@ -1063,7 +1063,7 @@ export default function BillingPage() {
       {/* New Customer Modal */}
       {showNewCustomer && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowNewCustomer(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">New Customer</h3>
             <div className="space-y-3">
               <div><label className="label">Name *</label><input className="input-field" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} placeholder="Customer name" autoFocus /></div>

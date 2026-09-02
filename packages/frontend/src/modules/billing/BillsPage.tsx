@@ -1,3 +1,4 @@
+import { humanize } from '../../utils/format';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -17,6 +18,7 @@ export default function BillsPage() {
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
   const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
   const [viewBill, setViewBill] = useState<any>(null);
+  const [thermalFor, setThermalFor] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [tab, setTab] = useState<'ALL' | 'BILLS' | 'ESTIMATES'>('ALL');
@@ -87,7 +89,7 @@ export default function BillsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Bills</h1>
           <p className="text-gray-500 text-sm mt-1">View, print, and settle sales bills</p>
@@ -98,7 +100,7 @@ export default function BillsPage() {
       </div>
 
       {/* Bills / Estimated Bills tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit max-w-full overflow-x-auto">
         {([['ALL', 'All Bills'], ['BILLS', 'Bills'], ['ESTIMATES', 'Estimated Bills']] as const).map(([key, label]) => (
           <button key={key} onClick={() => { setTab(key); setStatus(''); setPage(1); }}
             className={'px-4 py-2 text-sm font-medium rounded-md transition-all ' + (tab === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
@@ -109,11 +111,11 @@ export default function BillsPage() {
 
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-xs min-w-[220px]">
+        <div className="relative flex-1 max-w-xs min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input type="text" placeholder="Search bill / estimate no, customer, mobile…" className="input-field pl-10" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         </div>
-        <select className="input-field w-40" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+        <select className="input-field flex-1 min-w-[150px] sm:flex-none sm:w-40" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
           <option value="">All Status</option>
           <option value="ESTIMATE">Estimate (pending)</option>
           <option value="DRAFT">Draft</option>
@@ -124,7 +126,7 @@ export default function BillsPage() {
         </select>
         <input
           type="date"
-          className="input-field w-36"
+          className="input-field flex-1 min-w-[140px] sm:flex-none sm:w-36"
           value={startDate}
           onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
           title="From date"
@@ -132,7 +134,7 @@ export default function BillsPage() {
         <span className="text-gray-400 text-sm">to</span>
         <input
           type="date"
-          className="input-field w-36"
+          className="input-field flex-1 min-w-[140px] sm:flex-none sm:w-36"
           value={endDate}
           onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
           title="To date"
@@ -197,46 +199,58 @@ export default function BillsPage() {
                       )}
                     </td>
                     <td className="table-cell">
-                      {isPartPaid ? <span className="badge-warning">PART PAID</span> : <span className={getStatusBadge(bill.status)}>{bill.status}</span>}
+                      {isPartPaid ? <span className="badge-warning">PART PAID</span> : <span className={getStatusBadge(bill.status)}>{humanize(bill.status)}</span>}
                     </td>
                     <td className="table-cell text-right">
                       <div className="flex items-center justify-end gap-1">
                         {bill.billType === 'ESTIMATE' && bill.status === 'ESTIMATE' && (
                           <>
-                            <button onClick={() => navigate('/billing?estimate=' + bill.id)} className="btn-ghost p-1.5 text-amber-600" title="Edit estimated bill">
+                            <button onClick={() => navigate('/billing?estimate=' + bill.id)} className="btn-ghost p-2 text-amber-600" title="Edit estimated bill">
                               <Pencil className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => { setConfirmingEstimate(bill); setConfirmForm({ billType: 'GST', amount: bill.netAmount, paymentMode: 'CASH' }); }}
-                              className="btn-ghost p-1.5 text-green-600" title="Confirm → generate bill">
+                              className="btn-ghost p-2 text-green-600" title="Confirm → generate bill">
                               <ArrowRightCircle className="w-4 h-4" />
                             </button>
                           </>
                         )}
                         {bill.billType !== 'ESTIMATE' && bill.balanceAmount > 0 && (
-                          <button onClick={() => { setPayBill(bill); setPayForm({ amount: bill.balanceAmount, paymentMode: 'CASH', reference: '', accountId: '' }); }} className="btn-ghost p-1.5 text-green-600" title="Receive payment">
+                          <button onClick={() => { setPayBill(bill); setPayForm({ amount: bill.balanceAmount, paymentMode: 'CASH', reference: '', accountId: '' }); }} className="btn-ghost p-2 text-green-600" title="Receive payment">
                             <HandCoins className="w-4 h-4" />
                           </button>
                         )}
-                        <button onClick={() => handlePrint(bill)} className="btn-ghost p-1.5 text-primary-600" title="Print A4 Invoice">
+                        <button onClick={() => handlePrint(bill)} className="btn-ghost p-2 text-primary-600" title="Print A4 Invoice">
                           <Printer className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => {
-                            const size = prompt('Thermal roll width:\n\n80 — standard POS\n76 — 3-inch roll\n58 — mini printer\n\nEnter 80, 76 or 58:', '80');
-                            if (size === null) return;
-                            const f = size.trim() === '58' ? 'THERMAL_58' : size.trim() === '76' ? 'THERMAL_76' : 'THERMAL';
-                            navigate('/print/sale/' + bill.id + '?format=' + f + '&auto=1');
-                          }}
-                          className="btn-ghost p-1.5 text-purple-600" title="Thermal receipt (choose 80/76/58 mm)">
-                          <FileText className="w-4 h-4" />
-                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setThermalFor(thermalFor === bill.id ? null : bill.id)}
+                            className="btn-ghost p-2 text-purple-600" title="Thermal receipt">
+                            <FileText className="w-4 h-4" />
+                          </button>
+                          {thermalFor === bill.id && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setThermalFor(null)} />
+                              <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
+                                <p className="px-3 py-1 text-[10px] uppercase tracking-wide text-gray-400">Thermal roll</p>
+                                {[['80 mm — standard POS', 'THERMAL'], ['76 mm — 3-inch roll', 'THERMAL_76'], ['58 mm — mini printer', 'THERMAL_58']].map(([label, fmt]) => (
+                                  <button key={fmt}
+                                    onClick={() => { setThermalFor(null); navigate('/print/sale/' + bill.id + '?format=' + fmt + '&auto=1'); }}
+                                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
                         {bill.customerMobile && (
-                          <button onClick={() => handleWhatsApp(bill)} className="btn-ghost p-1.5 text-green-600" title="WhatsApp">
+                          <button onClick={() => handleWhatsApp(bill)} className="btn-ghost p-2 text-green-600" title="WhatsApp">
                             <MessageCircle className="w-4 h-4" />
                           </button>
                         )}
-                        <button onClick={() => setViewBill(bill)} className="btn-ghost p-1.5 text-primary-600" title="View details">
+                        <button onClick={() => setViewBill(bill)} className="btn-ghost p-2 text-primary-600" title="View details">
                           <Eye className="w-4 h-4" />
                         </button>
                       </div>
@@ -390,7 +404,7 @@ export default function BillsPage() {
       {/* Receive Payment Modal */}
       {payBill && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setPayBill(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">Receive Payment</h3>
             <p className="text-sm text-gray-500 mb-4">
               {payBill.billNumber} · {payBill.customerName}<br/>
@@ -434,7 +448,7 @@ export default function BillsPage() {
       {/* Confirm Estimate → Bill modal */}
       {confirmingEstimate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setConfirmingEstimate(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">Confirm Estimated Bill</h3>
             <p className="text-sm text-gray-500 mb-4">
               {confirmingEstimate.billNumber} · {confirmingEstimate.customerName} · ₹{confirmingEstimate.netAmount?.toLocaleString('en-IN')}

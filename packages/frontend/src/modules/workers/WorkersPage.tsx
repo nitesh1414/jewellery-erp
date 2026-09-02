@@ -1,3 +1,5 @@
+import { confirmAction } from '../../components/ConfirmDialog';
+import { humanize } from '../../utils/format';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -75,14 +77,14 @@ export default function WorkersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Workers</h1><p className="text-gray-500 text-sm mt-1">Worker master — karigars, goldsmiths & staff with salary / payment tracking</p></div>
         <button onClick={() => { setEditing(null); setForm({ name: '', mobile: '', role: 'GOLDSMITH', designation: '', salary: 0, employeeCode: '' }); setShowAdd(true); }} className="btn-primary">
           <Plus className="w-4 h-4" /> Add Worker
         </button>
       </div>
 
-      <div className="relative max-w-xs">
+      <div className="relative w-full sm:max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input className="input-field pl-10" placeholder="Search name, code, mobile…" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
@@ -110,13 +112,13 @@ export default function WorkersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="table-cell text-xs">{w.role?.replace('_', ' ')}{!w.isActive && <span className="badge badge-gray ml-1">inactive</span>}</td>
+                    <td className="table-cell text-xs">{humanize(w.role)}{!w.isActive && <span className="badge badge-gray ml-1">inactive</span>}</td>
                     <td className="table-cell text-right">{w.salary ? fm(w.salary) : '—'}</td>
                     <td className="table-cell text-right text-xs text-gray-500">{w._count?.payments ? w._count.payments + ' payments' : '—'}</td>
                     <td className="table-cell">
                       <div className="flex gap-1 justify-end">
                         <button onClick={(e) => { e.stopPropagation(); openEdit(w); }} className="p-1 text-gray-400 hover:text-primary-600"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete worker "${w.name}"?`)) deleteMutation.mutate(w.id); }} className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={async (e) => { e.stopPropagation(); if (await confirmAction({ title: `Delete worker “${w.name}”?`, message: 'A worker with job work or payments is deactivated instead, so the history stays.', danger: true, confirmLabel: 'Delete' })) deleteMutation.mutate(w.id); }} className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -139,7 +141,7 @@ export default function WorkersPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-semibold">{workerDetail?.name || selected.name}</h3>
-                    <p className="text-xs text-gray-400">{workerDetail?.employeeCode} · {workerDetail?.role} {workerDetail?.designation ? '· ' + workerDetail.designation : ''}</p>
+                    <p className="text-xs text-gray-400">{workerDetail?.employeeCode} · {humanize(workerDetail?.role)} {workerDetail?.designation ? '· ' + workerDetail.designation : ''}</p>
                   </div>
                   <button onClick={() => setShowPay(true)} className="btn-primary text-xs"><IndianRupee className="w-3.5 h-3.5" /> Record Payment</button>
                 </div>
@@ -181,7 +183,7 @@ export default function WorkersPage() {
       {/* Add/Edit worker modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => { setShowAdd(false); setEditing(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Worker' : 'Add Worker'}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2"><label className="label">Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus /></div>
@@ -209,7 +211,7 @@ export default function WorkersPage() {
       {/* Payment modal */}
       {showPay && selected && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowPay(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Payment — {selected.name}</h3>
               <button onClick={() => setShowPay(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>

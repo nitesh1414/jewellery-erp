@@ -65,15 +65,15 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Reports Center</h1><p className="text-gray-500 text-sm mt-1">Sales, GST segregation, ledgers, custom reports & more</p></div>
       </div>
 
       {/* Date filter */}
-      <div className="flex items-center gap-3">
-        <input type="date" className="input-field w-40" value={startDate} onChange={e => setStartDate(e.target.value)} />
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <input type="date" className="input-field flex-1 min-w-[140px] sm:flex-none sm:w-40" value={startDate} onChange={e => setStartDate(e.target.value)} />
         <span className="text-gray-400">to</span>
-        <input type="date" className="input-field w-40" value={endDate} onChange={e => setEndDate(e.target.value)} />
+        <input type="date" className="input-field flex-1 min-w-[140px] sm:flex-none sm:w-40" value={endDate} onChange={e => setEndDate(e.target.value)} />
       </div>
 
       {/* Tabs */}
@@ -90,7 +90,7 @@ export default function ReportsPage() {
       {tab === 'sales' && (
         <div className="space-y-4">
           {salesReport?.summary && (
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               <div className="stat-card"><p className="stat-label">Total Bills</p><p className="stat-value">{salesReport.summary.totalSales}</p></div>
               <div className="stat-card"><p className="stat-label">Total Sales</p><p className="stat-value">{fm(salesReport.summary.totalAmount)}</p></div>
               <div className="stat-card"><p className="stat-label">Tax</p><p className="stat-value">{fm(salesReport.summary.totalTax)}</p></div>
@@ -231,7 +231,7 @@ export default function ReportsPage() {
                 <button onClick={() => window.print()} className="btn-secondary text-sm"><FileText className="w-4 h-4" /> Print</button>
               </div>
             </div>
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               <div className="p-4 bg-blue-50 rounded-xl">
                 <p className="text-xs text-blue-700">Taxable Value</p>
                 <p className="text-xl font-bold text-blue-800 mt-1">{fm(salesReport?.summary?.totalAmount)}</p>
@@ -256,7 +256,7 @@ export default function ReportsPage() {
           </div>
 
           {/* B2B / B2C split */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid stat-grid grid-cols-3 gap-4">
             <div className="stat-card">
               <p className="stat-label">B2B Invoices (with GSTIN)</p>
               <p className="stat-value text-blue-700">{(salesReport?.sales || []).filter((s: any) => s.customerGstin).length}</p>
@@ -386,9 +386,9 @@ export default function ReportsPage() {
               <div>
                 <label className="label">Date Range</label>
                 <div className="flex items-center gap-2">
-                  <input type="date" className="input-field w-36" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                  <input type="date" className="input-field flex-1 min-w-[130px] sm:flex-none sm:w-36" value={startDate} onChange={e => setStartDate(e.target.value)} />
                   <span>to</span>
-                  <input type="date" className="input-field w-36" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                  <input type="date" className="input-field flex-1 min-w-[130px] sm:flex-none sm:w-36" value={endDate} onChange={e => setEndDate(e.target.value)} />
                 </div>
               </div>
               <div className="self-end">
@@ -478,7 +478,7 @@ export default function ReportsPage() {
       {/* ============ LEDGERS ============ */}
       {tab === 'ledger' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid stat-grid grid-cols-3 gap-4">
             <div className="stat-card"><p className="stat-label">Customers</p><p className="stat-value">{customers?.total || 0}</p></div>
             <div className="stat-card"><p className="stat-label">Total Outstanding (Sales)</p><p className="stat-value text-red-600">{fm(salesReport?.summary?.totalOutstanding)}</p></div>
             <div className="stat-card"><p className="stat-label">Total Collection</p><p className="stat-value text-green-600">{fm(salesReport?.summary?.totalCollection)}</p></div>
@@ -523,7 +523,7 @@ export default function ReportsPage() {
       {/* ============ COLLECTION ============ */}
       {tab === 'collection' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <div className="stat-card"><p className="stat-label">Cash</p><p className="stat-value">{fm((payments?.items || []).filter((p: any) => p.paymentMode === 'CASH').reduce((s: number, p: any) => s + p.amount, 0))}</p></div>
             <div className="stat-card"><p className="stat-label">UPI</p><p className="stat-value">{fm((payments?.items || []).filter((p: any) => p.paymentMode === 'UPI').reduce((s: number, p: any) => s + p.amount, 0))}</p></div>
             <div className="stat-card"><p className="stat-label">Cards</p><p className="stat-value">{fm((payments?.items || []).filter((p: any) => ['DEBIT_CARD', 'CREDIT_CARD'].includes(p.paymentMode)).reduce((s: number, p: any) => s + p.amount, 0))}</p></div>
@@ -559,7 +559,7 @@ export default function ReportsPage() {
       {tab === 'inventory' && (
         <div className="space-y-4">
           {inventoryReport && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid stat-grid grid-cols-3 gap-4">
               <div className="stat-card"><p className="stat-label">Total Items</p><p className="stat-value">{inventoryReport.totalItems}</p></div>
               <div className="stat-card"><p className="stat-label">Total Weight</p><p className="stat-value">{(inventoryReport.totalWeight || 0).toFixed(3)}g</p></div>
               <div className="stat-card"><p className="stat-label">Stock Value</p><p className="stat-value">{fm(inventoryReport.totalValue)}</p></div>

@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -42,7 +43,7 @@ export default function EntriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Credit / Debit Entries</h1>
           <p className="text-gray-500 text-sm mt-1">Record cash movements between ledger accounts</p>
@@ -102,7 +103,7 @@ export default function EntriesPage() {
                 <td className="table-cell text-xs text-gray-500">{e.reference || '—'}</td>
                 <td className="table-cell text-right">
                   {e.linkedTo === 'ADJUSTMENT' && (
-                    <button className="btn-ghost p-1 text-red-500" onClick={() => confirm('Delete this entry?') && deleteMut.mutate(e.id)}><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button className="btn-ghost p-1 text-red-500" onClick={async () => { if (await confirmAction({ title: 'Delete this entry?', message: 'The account balance will be corrected automatically.', danger: true, confirmLabel: 'Delete' })) deleteMut.mutate(e.id); }}><Trash2 className="w-3.5 h-3.5" /></button>
                   )}
                 </td>
               </tr>
@@ -114,7 +115,7 @@ export default function EntriesPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">New Credit / Debit Entry</h3>
             <p className="text-xs text-gray-500 mb-4">Add to any account. Balance updates automatically.</p>
             <div className="space-y-3">

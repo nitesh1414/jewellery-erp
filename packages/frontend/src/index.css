@@ -42,10 +42,38 @@
   }
 }
 
+/* Icon/quick-action tiles stay dense on a phone instead of one long column */
+.dense-grid { display: grid; }
 @media (max-width: 639px) {
-  .grid-cols-2, .grid-cols-3, .grid-cols-4, .grid-cols-5, .grid-cols-6 {
+  .dense-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 0.375rem !important; }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .dense-grid { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+}
+
+/* Job work material / ornament lines: 2 fields per row on a phone, 4 on a
+   tablet, the full 12-column row on a wide screen. */
+.job-line { display: grid; }
+.job-line > * { grid-column: span 1 / span 1 !important; }
+@media (max-width: 767px) {
+  .job-line { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (min-width: 768px) and (max-width: 1279px) {
+  .job-line { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+
+/* Button grids stay 2-up on a phone (single column wastes too much height) */
+.btn-grid { display: grid; }
+@media (max-width: 639px) {
+  .btn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+
+@media (max-width: 639px) {
+  /* Forms and detail panes stack; stat strips (tagged .stat-grid) stay 2-up */
+  .grid-cols-3, .grid-cols-4, .grid-cols-5, .grid-cols-6 {
     grid-template-columns: minmax(0, 1fr) !important;
   }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   /* Modal panels: fill the small screen and scroll instead of clipping */
   .max-w-lg, .max-w-xl, .max-w-2xl, .max-w-3xl, .max-w-4xl, .max-w-5xl, .max-w-6xl {
     max-width: calc(100vw - 1rem) !important;

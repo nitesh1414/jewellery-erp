@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -71,7 +72,7 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">User Management</h1><p className="text-gray-500 text-sm mt-1">Create operators — assign a role & one or more branch access</p></div>
         <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add User</button>
       </div>
@@ -117,7 +118,7 @@ export default function UsersPage() {
                 <td className="table-cell text-right">
                   <div className="flex items-center justify-end gap-1">
                     <button onClick={() => openEdit(u)} className="btn-ghost p-1 text-primary-600" title="Edit user"><Edit2 className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => confirm((u.isActive ? 'Deactivate ' : 'Reactivate ') + u.name + '?') && deactivateMut.mutate(u.id)} className={'btn-ghost p-1 ' + (u.isActive ? 'text-red-500' : 'text-green-600')}><Power className="w-3.5 h-3.5" /></button>
+                    <button onClick={async () => { if (await confirmAction({ title: (u.isActive ? 'Deactivate ' : 'Reactivate ') + u.name + '?', danger: u.isActive, confirmLabel: u.isActive ? 'Deactivate' : 'Reactivate' })) deactivateMut.mutate(u.id); }} className={'btn-ghost p-1 ' + (u.isActive ? 'text-red-500' : 'text-green-600')}><Power className="w-3.5 h-3.5" /></button>
                   </div>
                 </td>
               </tr>
@@ -129,7 +130,7 @@ export default function UsersPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{editing ? 'Edit User' : 'New User'}</h3>
               <button onClick={() => { setShowForm(false); resetForm(); }} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>

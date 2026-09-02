@@ -1,3 +1,4 @@
+import { humanize } from '../../utils/format';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -64,13 +65,13 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Inventory</h1><p className="text-gray-500 text-sm mt-1">Stock ledger, balances, and movement tracking</p></div>
         <button onClick={() => setShowAdjust(true)} className="btn-primary"><RotateCcw className="w-4 h-4" /> Adjust Stock</button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <div className="stat-card"><p className="stat-label">Total Pieces</p><p className="stat-value">{summary?.totalPieces || 0}</p></div>
         <div className="stat-card"><p className="stat-label">Gold Stock</p><p className="stat-value">{(summary?.totalGoldWeight || 0).toFixed(2)}g</p></div>
         <div className="stat-card"><p className="stat-label">Silver Stock</p><p className="stat-value">{(summary?.totalSilverWeight || 0).toFixed(2)}g</p></div>
@@ -79,7 +80,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit max-w-full overflow-x-auto">
         {(['balance', 'transactions', 'valuation', 'alerts'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={'px-4 py-2 text-sm font-medium rounded-md transition-all ' + (tab === t ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
@@ -209,7 +210,7 @@ export default function InventoryPage() {
                     <td className="table-cell text-sm">{new Date(tx.createdAt).toLocaleString('en-IN')}</td>
                     <td className="table-cell">
                       <span className={'badge ' + (tx.transactionType === 'PURCHASE' ? 'badge-success' : tx.transactionType === 'SALE' ? 'badge-danger' : tx.transactionType === 'TRANSFER' ? 'badge-info' : 'badge-gray')}>
-                        {tx.transactionType}
+                        {humanize(tx.transactionType)}
                       </span>
                     </td>
                     <td className="table-cell">{tx.metalType}</td>
@@ -309,7 +310,7 @@ export default function InventoryPage() {
       {/* Adjust Stock Modal */}
       {showAdjust && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdjust(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Adjust Stock</h3>
             <div className="space-y-4">
               <div><label className="label">Jewellery Item Barcode or ID</label>

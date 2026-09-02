@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -39,7 +40,7 @@ export default function BranchesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Branches</h1><p className="text-gray-500 text-sm mt-1">Run multiple shops from one software</p></div>
         <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add Branch</button>
       </div>
@@ -62,7 +63,7 @@ export default function BranchesPage() {
               <div className="flex items-center gap-1">
                 <span className={'badge ' + (b.isActive ? 'badge-success' : 'badge-gray')}>{b.isActive ? 'Active' : 'Inactive'}</span>
                 <button onClick={() => openEdit(b)} className="btn-ghost p-1 text-primary-600"><Edit2 className="w-3.5 h-3.5" /></button>
-                {!b.isPrimary && <button onClick={() => confirm('Deactivate ' + b.name + '?') && deleteMut.mutate(b.id)} className="btn-ghost p-1 text-red-500"><MapPin className="w-3.5 h-3.5" /></button>}
+                {!b.isPrimary && <button onClick={async () => { if (await confirmAction({ title: 'Deactivate ' + b.name + '?', message: 'The branch stays in your history but cannot be used for new entries.', danger: true })) deleteMut.mutate(b.id); }} className="btn-ghost p-1 text-red-500"><MapPin className="w-3.5 h-3.5" /></button>}
               </div>
             </div>
             <div className="mt-3 pt-3 border-t text-sm space-y-1 text-gray-600">
@@ -75,7 +76,7 @@ export default function BranchesPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Branch' : 'New Branch'}</h3>
             <div className="space-y-3">
               <div><label className="label">Branch Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Main Branch" /></div>

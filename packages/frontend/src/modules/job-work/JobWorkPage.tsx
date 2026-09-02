@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -345,7 +346,7 @@ export default function JobWorkPage() {
 
       {/* ----------------------------------------------------------- filters */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="relative">
+        <div className="relative w-full sm:max-w-xs">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             className="input-field !pl-9 w-72"
@@ -431,10 +432,10 @@ export default function JobWorkPage() {
                         <>
                           <IconBtn title="Edit" onClick={() => openEdit(j)}><Pencil className="w-4 h-4" /></IconBtn>
                           <IconBtn title="Receive finished ornaments (IN)" onClick={() => setReceiving(j)} className="text-green-600 hover:text-green-700"><PackageCheck className="w-4 h-4" /></IconBtn>
-                          <IconBtn title="Cancel & return metal" onClick={() => { if (confirm(`Cancel ${j.jobNumber}? The issued metal goes back to the metal ledger.`)) statusMut.mutate({ id: j.id, status: 'CANCELLED' }); }} className="hover:text-red-600"><Ban className="w-4 h-4" /></IconBtn>
+                          <IconBtn title="Cancel & return metal" onClick={async () => { if (await confirmAction({ title: `Cancel ${j.jobNumber}?`, message: 'The issued metal goes back to the metal ledger.', danger: true, confirmLabel: 'Cancel job work' })) statusMut.mutate({ id: j.id, status: 'CANCELLED' }); }} className="hover:text-red-600"><Ban className="w-4 h-4" /></IconBtn>
                         </>
                       )}
-                      <IconBtn title="Delete" onClick={() => { if (confirm(`Delete ${j.jobNumber}?`)) deleteMut.mutate(j.id); }} className="hover:text-red-600"><Trash2 className="w-4 h-4" /></IconBtn>
+                      <IconBtn title="Delete" onClick={async () => { if (await confirmAction({ title: `Delete ${j.jobNumber}?`, message: 'This removes the job work record for good.', danger: true, confirmLabel: 'Delete' })) deleteMut.mutate(j.id); }} className="hover:text-red-600"><Trash2 className="w-4 h-4" /></IconBtn>
                     </div>
                   </td>
                 </tr>
@@ -510,7 +511,7 @@ export default function JobWorkPage() {
             {materials.map((m, idx) => {
               const acc = m.metalLedgerAccountId ? accounts.find((a: any) => a.id === m.metalLedgerAccountId) : accountFor(m.metalType, m.purity);
               return (
-                <div key={m.key} className="grid grid-cols-12 gap-2 items-end border border-gray-100 rounded-lg p-2">
+                <div key={m.key} className="grid grid-cols-12 gap-2 items-end border border-gray-100 rounded-lg p-2 job-line">
                   <div className="col-span-2">
                     <label className="label">Type</label>
                     <select className="input-field" value={m.kind} onChange={(e) => setMaterial(m.key, { kind: e.target.value as any })}>
@@ -624,7 +625,7 @@ export default function JobWorkPage() {
           />
           <div className="space-y-2">
             {ornaments.map((o) => (
-              <div key={o.key} className="grid grid-cols-12 gap-2 items-end border border-gray-100 rounded-lg p-2">
+              <div key={o.key} className="grid grid-cols-12 gap-2 items-end border border-gray-100 rounded-lg p-2 job-line">
                 <div className="col-span-3">
                   <label className="label">Ornament</label>
                   <input className="input-field" list="jw-ornaments" value={o.ornament} onChange={(e) => setOrnament(o.key, { ornament: e.target.value })} placeholder="Ring, Chain…" />
@@ -689,7 +690,7 @@ export default function JobWorkPage() {
           job={receiving}
           rateFor={rateFor}
           onClose={() => setReceiving(null)}
-          onDone={(created: any[]) => {
+          onDone={async (created: any[]) => {
             setReceiving(null);
             invalidate();
             if (created?.length) {
@@ -697,7 +698,7 @@ export default function JobWorkPage() {
                 `${created.length} ornament(s) added to stock — barcodes ${created.map((c) => c.barcode).join(', ')}`,
                 { duration: 6000 },
               );
-              if (confirm('Print the barcode tags for the received ornaments?')) {
+              if (await confirmAction({ title: 'Print barcode tags?', message: 'Print the tags for the ornaments that just came back.', confirmLabel: 'Print tags' })) {
                 navigate(`/print/barcodes?codes=${created.map((c) => c.barcode).join(',')}&size=220x120`);
               }
             }
@@ -719,7 +720,7 @@ export default function JobWorkPage() {
             <span className={'badge ' + (STATUS_BADGE[viewing.status] || 'badge-gray')}>{STATUS_LABEL[viewing.status] || viewing.status}</span>
           </div>
 
-          <div className="grid grid-cols-4 gap-3 mb-4 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-4 text-sm">
             <Kpi label="Metal issued" value={`${g3(viewing.totalIssuedWeight)} g`} hint={fm0(viewing.totalIssuedValue)} />
             <Kpi label="Received (net)" value={`${g3(viewing.totalReceivedWeight)} g`} />
             <Kpi label="Scrap returned" value={`${g3(viewing.returnWeight)} g`} />
@@ -1034,7 +1035,7 @@ function ReceiveModal({
       </div>
 
       {/* metal balance */}
-      <div className="grid grid-cols-4 gap-3 mt-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-5">
         <Kpi label="Metal issued" value={`${g3(issuedGrams)} g`} />
         <Kpi label="Received (net)" value={`${g3(receivedGrams)} g`} />
         <div className="bg-gray-50 rounded-lg p-3">
@@ -1057,7 +1058,7 @@ function ReceiveModal({
       </div>
 
       {/* wages */}
-      <div className="grid grid-cols-5 gap-3 mt-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-3">
         <div>
           <label className="label">Labour / wages ₹</label>
           <input type="number" className="input-field" value={wages || ''} onChange={(e) => setWages(Number(e.target.value))} />

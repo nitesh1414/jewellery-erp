@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -200,7 +201,7 @@ export default function JewelleryPage() {
     const account = metalAccountById(item.metalLedgerAccountId);
     const message = `Delete ${item.designCode || item.barcode}?`
       + (account ? `\n\nIts net weight (${fmtG(item.netWeight)} g) will be given back to ${account.name}.` : '');
-    if (!window.confirm(message)) return;
+    if (!(await confirmAction({ title: 'Delete this item?', message, danger: true, confirmLabel: 'Delete' }))) return;
     try {
       await api.delete('/jewellery/' + item.id);
       toast.success(account ? 'Item deleted — metal returned to ' + account.name : 'Item deleted');
@@ -220,7 +221,7 @@ export default function JewelleryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Jewellery Items</h1><p className="text-gray-500 text-sm mt-1">Material entry and inventory management</p></div>
         <div className="flex gap-2">
           <button onClick={() => setShowBulk(true)} className="btn-secondary"><Package className="w-4 h-4" /> Bulk Import</button>
@@ -228,7 +229,7 @@ export default function JewelleryPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="stat-card"><p className="stat-label">Total</p><p className="stat-value">{stats?.totalItems || 0}</p></div>
         <div className="stat-card"><p className="stat-label">In Stock</p><p className="stat-value text-green-600">{stats?.inStock || 0}</p></div>
         <div className="stat-card"><p className="stat-label">Sold</p><p className="stat-value">{stats?.sold || 0}</p></div>
@@ -339,7 +340,7 @@ export default function JewelleryPage() {
       {/* Add Item Modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Jewellery Item' : 'Add Jewellery Item (Material Entry)'}</h3>
             <div className="grid grid-cols-3 gap-4">
               <div><label className="label">Design Code</label><input className="input-field" value={form.designCode} onChange={e => setForm({...form, designCode: e.target.value})} placeholder="RING-001" /></div>
@@ -436,7 +437,7 @@ export default function JewelleryPage() {
       {/* Bulk Import Modal */}
       {showBulk && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowBulk(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Bulk Material Import</h3>
             <p className="text-sm text-gray-500 mb-3">Paste JSON array of items. Each needs: designCode, metalType, purity, netWeight, currentRate</p>
             <textarea className="input-field font-mono text-xs h-48" value={bulkItems} onChange={e => setBulkItems(e.target.value)}

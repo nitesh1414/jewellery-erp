@@ -99,12 +99,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Dashboard</h1>
           <p className="text-gray-500 mt-1">Your jewellery business at a glance — click any card to drill in</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-gray-500 shrink-0">
           <Clock className="w-4 h-4" />
           <span>{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
@@ -113,7 +113,7 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div>
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 dense-grid">
           {quickActions.map((action, i) => (
             <button
               key={i}

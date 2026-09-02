@@ -1,3 +1,4 @@
+import { humanize } from '../../utils/format';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -30,12 +31,12 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Payments</h1><p className="text-gray-500 text-sm mt-1">Record and track all payments</p></div>
         <button onClick={() => setShowForm(true)} className="btn-primary"><Plus className="w-4 h-4" /> New Payment</button>
       </div>
 
-      <div className="relative max-w-xs">
+      <div className="relative w-full sm:max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input type="text" placeholder="Search payment ref..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
       </div>
@@ -59,7 +60,7 @@ export default function PaymentsPage() {
                 </td>
                 <td className="table-cell">{p.customerId ? 'Customer' : p.supplierId ? 'Supplier' : '—'}</td>
                 <td className="table-cell text-right font-medium">{fm(p.amount)}</td>
-                <td className="table-cell"><span className="badge-info">{p.paymentMode}</span></td>
+                <td className="table-cell"><span className="badge-info">{humanize(p.paymentMode)}</span></td>
                 <td className="table-cell text-sm">{new Date(p.date).toLocaleDateString('en-IN')}</td>
                 <td className="table-cell text-xs text-gray-400">{p.reference || '—'}</td>
               </tr>
@@ -72,7 +73,7 @@ export default function PaymentsPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Record Payment</h3>
             <div className="space-y-4">
               <div><label className="label">Customer</label>

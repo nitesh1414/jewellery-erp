@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -112,7 +113,7 @@ export default function OrnamentMasterPage() {
                         onClick={() => { setEditing(o); setForm({ name: o.name, gender: o.gender, category: o.category || '', notes: o.notes || '', metalLedgerAccountId: o.metalLedgerAccountId || '' }); setShowAdd(true); }}
                         className="p-1 text-gray-400 hover:text-primary-600"><Pencil className="w-3.5 h-3.5" /></button>
                       <button
-                        onClick={() => { if (confirm(`Delete "${o.name}"?`)) deleteMutation.mutate(o.id); }}
+                        onClick={async () => { if (await confirmAction({ title: `Delete “${o.name}”?`, danger: true, confirmLabel: 'Delete' })) deleteMutation.mutate(o.id); }}
                         className="p-1 text-gray-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
@@ -125,7 +126,7 @@ export default function OrnamentMasterPage() {
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => { setShowAdd(false); setEditing(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Ornament' : 'Add Ornament'}</h3>
             <div className="space-y-4">
               <div><label className="label">Ornament Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ladies Ring" autoFocus /></div>

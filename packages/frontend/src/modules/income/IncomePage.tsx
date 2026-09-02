@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -39,7 +40,7 @@ export default function IncomePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Income (Non-Sale)</h1>
           <p className="text-gray-500 text-sm mt-1">Track income other than sales (rent, interest, scrap, etc.)</p>
@@ -71,7 +72,7 @@ export default function IncomePage() {
                 <td className="table-cell text-sm text-gray-500">{i.receivedInMode || 'CASH'}</td>
                 <td className="table-cell text-right font-semibold text-green-700">+ {fmtMoney(i.amount)}</td>
                 <td className="table-cell text-right">
-                  <button className="btn-ghost p-1 text-red-500" onClick={() => confirm('Delete this income entry?') && deleteMut.mutate(i.id)}><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button className="btn-ghost p-1 text-red-500" onClick={async () => { if (await confirmAction({ title: 'Delete this income entry?', danger: true, confirmLabel: 'Delete' })) deleteMut.mutate(i.id); }}><Trash2 className="w-3.5 h-3.5" /></button>
                 </td>
               </tr>
             ))}
@@ -82,7 +83,7 @@ export default function IncomePage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">New Income (Non-Sale)</h3>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">

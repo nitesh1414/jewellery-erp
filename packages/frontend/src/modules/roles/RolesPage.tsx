@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -63,7 +64,7 @@ export default function RolesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Roles & Access</h1><p className="text-gray-500 text-sm mt-1">Define which tabs/modules each role can view (read) or edit (write). Create custom roles too.</p></div>
         <button className="btn-primary" onClick={openNew}><Plus className="w-4 h-4" /> New Custom Role</button>
       </div>
@@ -88,7 +89,7 @@ export default function RolesPage() {
                   <div className="flex items-center justify-end gap-1">
                     <button onClick={() => openEdit(r)} className="btn-ghost p-1 text-amber-600" title="Edit access"><Pencil className="w-3.5 h-3.5" /></button>
                     {!r.isSystem && (
-                      <button onClick={() => confirm('Delete role ' + r.name + '?') && deleteMut.mutate(r.id)} className="btn-ghost p-1 text-red-500" title="Delete role"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={async () => { if (await confirmAction({ title: 'Delete role ' + r.name + '?', danger: true, confirmLabel: 'Delete' })) deleteMut.mutate(r.id); }} className="btn-ghost p-1 text-red-500" title="Delete role"><Trash2 className="w-3.5 h-3.5" /></button>
                     )}
                   </div>
                 </td>
@@ -102,7 +103,7 @@ export default function RolesPage() {
       {/* Role form modal — permission matrix */}
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{editing ? 'Edit Role Access' : 'New Custom Role'}</h3>
               <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>

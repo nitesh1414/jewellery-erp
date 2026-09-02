@@ -98,7 +98,7 @@ export default function BarcodesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Barcode Management</h1>
           <p className="text-gray-500 text-sm mt-1">Generate, assign, and print barcodes</p>
@@ -117,7 +117,7 @@ export default function BarcodesPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <div className="stat-card">
           <p className="stat-label">Total Barcodes</p>
           <p className="stat-value">{stats?.total || 0}</p>
@@ -286,7 +286,7 @@ export default function BarcodesPage() {
       {/* Generate Modal */}
       {showGenerate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowGenerate(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Generate Barcodes</h3>
             <div className="space-y-4">
               <div>
@@ -335,7 +335,7 @@ export default function BarcodesPage() {
       {/* Assign Modal */}
       {showAssign && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAssign(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Assign Barcode: {assignBarcode}</h3>
             <div>
               <label className="label">Jewellery Item Barcode</label>

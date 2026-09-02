@@ -264,12 +264,12 @@ export default function PurchasesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Purchases</h1><p className="text-gray-500 text-sm mt-1">Metal (bullion) purchases add weight to a metal ledger — ornament purchases add items to inventory and deduct their net weight (gross − stone − other) from it</p></div>
         <button onClick={() => { resetForm(); setShowCreate(true); }} className="btn-primary"><Plus className="w-4 h-4" /> New Purchase</button>
       </div>
 
-      <div className="relative max-w-xs">
+      <div className="relative w-full sm:max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input type="text" placeholder="Search by invoice number..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
       </div>
@@ -327,7 +327,7 @@ export default function PurchasesPage() {
       {/* View Purchase Modal */}
       {viewing && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setViewing(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold">Purchase {viewing.invoiceNumber}</h3>
