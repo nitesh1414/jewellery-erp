@@ -58,7 +58,10 @@ export default function PaymentsPage() {
                     {p.customerId ? 'Receipt' : 'Payment'}
                   </span>
                 </td>
-                <td className="table-cell">{p.customerId ? 'Customer' : p.supplierId ? 'Supplier' : '—'}</td>
+                <td className="table-cell">
+                  {p.customer?.name || p.supplier?.name || (p.customerId || p.supplierId ? '—' : 'Walk-in')}
+                  {p.account?.name && <span className="block text-[10px] text-gray-400">→ {p.account.name}</span>}
+                </td>
                 <td className="table-cell text-right font-medium">{fm(p.amount)}</td>
                 <td className="table-cell"><span className="badge-info">{humanize(p.paymentMode)}</span></td>
                 <td className="table-cell text-sm">{new Date(p.date).toLocaleDateString('en-IN')}</td>
