@@ -23,7 +23,8 @@
     "db:generate": "node scripts/ensure-env.mjs && npm run db:generate -w packages/backend",
     "db:push": "node scripts/ensure-env.mjs && npm run db:push -w packages/backend",
     "db:studio": "node scripts/ensure-env.mjs && npm run db:studio -w packages/backend",
-    "db:seed": "node scripts/ensure-env.mjs && npm run db:seed -w packages/backend"
+    "db:seed": "node scripts/ensure-env.mjs && npm run db:seed -w packages/backend",
+    "db:check": "node scripts/check-prisma-schema.mjs && node scripts/prisma-validate.mjs"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
