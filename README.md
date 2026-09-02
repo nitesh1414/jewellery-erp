@@ -103,13 +103,14 @@ npm run build          # compile every package
 - **Print sizes**: on any print screen choose A4 GST / A4 plain / A5 /
   thermal 80 / 76 / 58 mm / estimate.
 - **Barcodes**: Barcodes → print stickers on every common label size; item
-  rows in *Jewellery Items* have a 🖨 print-barcode button too. What appears on
-  the sticker (jeweller name, item, weight, purity …) is configured in
-  Settings → Barcode. The **22 × 12 cm tag** is a large card: the **left half**
-  carries the jewellery shop name with the **barcode printed under the name**,
-  the **right half** lists ornament, item, purity, metal, gross weight, stone
-  weight, net weight, **HUID**, rate, making, amount, SKU, HSN and date — one
-  tag per page (`@page size 220mm 120mm`).
+  rows in *Jewellery Items* have a 🖨 print-barcode button too. **Every size
+  prints the same tag design**: the **left half** carries the jewellery shop
+  name with the **barcode printed under the name**, the **right half** lists
+  **Item · Purity · Gross · Net · HUID**. Type sizes, padding and the barcode
+  scale with the sticker, so a 22 × 12 cm tag and a 38 × 25 mm sticker look
+  identical. The **22 × 12 cm tag** is a large card printed one tag per page
+  (`@page size 220mm 120mm`); smaller sizes print as a grid on A4 (or as a roll
+  for the 58/80 mm thermal layouts).
 - **Multi-branch**: if the user has access to more than one branch, a branch
   selector appears in the top bar. All actions (sale, purchase, expense,
   income, URD, payment…) are recorded against the selected branch; the default

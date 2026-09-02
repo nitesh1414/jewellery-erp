@@ -5,16 +5,17 @@ import JsBarcode from 'jsbarcode';
 import { api } from '../../services/api';
 import { Printer, ArrowLeft, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { parseBarcodeLabel, barcodeFieldValue } from '../../utils/barcodeLabel';
 
 /**
  * Sticker printing — choose a label size that matches the sticker paper in
  * your printer. Every common small jewellery label size is included; the
  * page layout is in real millimetres so what you see is what prints.
  *
- * WHAT is printed on a sticker (jeweller name, item name, weight, purity, …)
- * comes from Settings → Barcode, so the same print screen matches whatever the
- * shop wants on its tags.
+ * EVERY size prints the same tag design:
+ *   left half  — jewellery shop name with the barcode under it
+ *   right half — Item, Purity, Gross, Net, HUID
+ * The type and the barcode scale with the sticker, so a 22 × 12 cm tag and a
+ * 38 × 25 mm sticker look identical.
  */
 
 interface StickerSize {
@@ -61,14 +62,10 @@ export default function BarcodePrintPage() {
     ? `@page { size: ${size.w}mm ${size.h}mm; margin: 0; } @media print { body { margin: 0; } }`
     : '@page { size: A4; margin: 8mm; }';
 
-  // Shop name + which fields to print (Settings → Barcode)
+  // Shop name (Settings) — the tag design itself is fixed
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings() });
   const shopName = settings?.shopName || 'Jewellery Shop';
   const precision = Number(settings?.weightPrecision) || 3;
-  const fields = useMemo(
-    () => parseBarcodeLabel(settings?.barcodeLabel || settings?.barcodeFields?.join('|')),
-    [settings?.barcodeLabel, settings?.barcodeFields],
-  );
 
   const { data, isLoading } = useQuery({
     queryKey: ['barcode-print', ids, codes, scope],
@@ -126,8 +123,8 @@ export default function BarcodePrintPage() {
           <select className="input-field w-28 !py-1.5 text-sm" value={copies} onChange={(e) => setCopies(Number(e.target.value))}>
             {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}× copy</option>)}
           </select>
-          <button onClick={() => window.open('/settings', '_blank')} className="btn-secondary text-sm" title="Choose what prints on the sticker">
-            <Settings className="w-4 h-4" /> Sticker fields
+          <button onClick={() => window.open('/settings', '_blank')} className="btn-secondary text-sm" title="Shop name and other settings">
+            <Settings className="w-4 h-4" /> Shop name
           </button>
           <button onClick={() => window.print()} className="btn-primary text-sm"><Printer className="w-4 h-4" /> Print</button>
         </div>
@@ -141,8 +138,10 @@ export default function BarcodePrintPage() {
               : <>In the print dialog choose your sticker paper size (or the label preset matching {size.label}). For roll printers pick the 58/80&nbsp;mm roll layouts.</>}
           </p>
           <p>
-            Printing: <strong className="text-gray-600">{fields.join(' · ')}</strong> — change this in{' '}
-            <button onClick={() => window.open('/settings', '_blank')} className="underline text-primary-600">Settings → Barcode</button>.
+            Every tag prints the same design: <strong className="text-gray-600">shop name + barcode</strong> on the
+            left, <strong className="text-gray-600">Item · Purity · Gross · Net · HUID</strong> on the right. The shop
+            name comes from <button onClick={() => window.open('/settings', '_blank')} className="underline text-primary-600">Settings</button>.
+            {size.h < 25 && <> The {size.label} sticker is small for six pieces of information — use a bigger size if the text prints too fine.</>}
           </p>
         </div>
         {isLoading ? (
@@ -151,9 +150,16 @@ export default function BarcodePrintPage() {
           <div className={'print-area ' + (size.layout === 'roll' ? 'flex flex-col items-center gap-1' : 'grid')}
                style={size.layout === 'sheet' ? { gridTemplateColumns: `repeat(${size.cols}, ${size.w}mm)`, gap: '2mm' } : undefined}>
             {stickers.map((b: any, i: number) => (
-              size.variant === 'split'
-                ? <SplitTag key={i} barcode={b.barcode} item={b.jewelleryItem} shopName={shopName} shop={settings} precision={precision} isLast={i === stickers.length - 1} />
-                : <Sticker key={i} barcode={b.barcode} item={b.jewelleryItem} size={size} fields={fields} shopName={shopName} precision={precision} />
+              <SplitTag
+                key={i}
+                barcode={b.barcode}
+                item={b.jewelleryItem}
+                size={size}
+                shopName={shopName}
+                shop={settings}
+                precision={precision}
+                isLast={i === stickers.length - 1}
+              />
             ))}
           </div>
         )}
@@ -161,72 +167,6 @@ export default function BarcodePrintPage() {
     </div>
   );
 }
-
-function Sticker({
-  barcode,
-  item,
-  size,
-  fields,
-  shopName,
-  precision,
-}: {
-  barcode: string;
-  item: any;
-  size: StickerSize;
-  fields: string[];
-  shopName: string;
-  precision: number;
-}) {
-  const ref = useRef<SVGSVGElement>(null);
-
-  useEffect(() => {
-    if (!ref.current) return;
-    try {
-      JsBarcode(ref.current, barcode, {
-        format: 'CODE128',
-        width: size.w >= 38 ? 1.4 : 1,
-        height: size.h >= 25 ? 14 : size.h >= 19 ? 10 : 8,
-        fontSize: size.h >= 25 ? 10 : 8,
-        margin: 0,
-      });
-    } catch {
-      /* invalid code */
-    }
-  }, [barcode, size.key]);
-
-  const lines = (fields || [])
-    .map((k) => ({ key: k, value: barcodeFieldValue(k, item, shopName, precision) }))
-    .filter((l) => l.value);
-
-  // How much text fits: bigger stickers get one line per field, small ones
-  // share a single row joined with " · ".
-  const maxLines = size.h >= 38 ? 4 : size.h >= 25 ? 3 : size.h >= 19 ? 2 : 1;
-  const header = lines[0];
-  const rest = lines.slice(1, maxLines);
-  const titleSize = size.w >= 45 ? '6pt' : '5.5pt';
-  const lineSize = size.w >= 45 ? '5.5pt' : '5pt';
-  const showHeader = size.h >= 12;
-
-  return (
-    <div
-      className="bg-white border border-dashed border-gray-300 overflow-hidden flex flex-col items-center justify-center print:border-0"
-      style={{ width: `${size.w}mm`, height: `${size.h}mm`, padding: '0.5mm 1mm' }}
-    >
-      {showHeader && header && (
-        <div style={{ fontSize: titleSize, lineHeight: 1.1 }} className="w-full text-center truncate font-semibold">
-          {header.value}
-        </div>
-      )}
-      <svg ref={ref} />
-      {rest.map((l) => (
-        <div key={l.key} style={{ fontSize: lineSize, lineHeight: 1.1 }} className="w-full text-center truncate">
-          {l.value}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 
 /**
  * 22 cm × 12 cm tag (one tag per page).
@@ -236,6 +176,7 @@ function Sticker({
 function SplitTag({
   barcode,
   item,
+  size,
   shopName,
   shop,
   precision,
@@ -243,28 +184,41 @@ function SplitTag({
 }: {
   barcode: string;
   item: any;
+  size: StickerSize;
   shopName: string;
   shop?: any;
   precision: number;
   isLast?: boolean;
 }) {
   const ref = useRef<SVGSVGElement>(null);
+  const { w, h } = size;
+
+  // Everything is proportional to the sticker height (1.0 = the 22 × 12 cm tag)
+  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+  const mm = (v: number) => `${Math.round(v * 100) / 100}mm`;
+  const nameFont = clamp(h * 0.25, 4.5, 30);
+  const subFont = clamp(h * 0.09, 3.5, 11);
+  const valueFont = clamp(h * 0.14, 3.5, 17);
+  const labelFont = valueFont * 0.82;
+  const padX = clamp(h * 0.067, 1, 8);
+  const rowPad = clamp(h * 0.03, 0.15, 5);
+  const showContact = h >= 40;
 
   useEffect(() => {
     if (!ref.current) return;
     try {
       JsBarcode(ref.current, barcode, {
         format: 'CODE128',
-        width: 3.4,
-        height: 46,
-        fontSize: 20,
-        margin: 4,
-        textMargin: 3,
+        width: clamp(h * 0.028, 1, 3.4),
+        height: clamp(h * 0.38, 6, 46),
+        fontSize: clamp(h * 0.16, 5, 20),
+        margin: 0,
+        textMargin: clamp(h * 0.025, 1, 3),
       });
     } catch {
       /* invalid code */
     }
-  }, [barcode]);
+  }, [barcode, size.key]);
 
   const g = (n: any) => (Number(n) ? `${Number(n).toFixed(precision)} g` : '—');
   const money = (n: any) => (Number(n) ? `\u20b9${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : '—');
@@ -282,49 +236,57 @@ function SplitTag({
     <div
       className="bg-white print:border-0"
       style={{
-        width: '220mm',
-        height: '120mm',
+        width: `${w}mm`,
+        height: `${h}mm`,
         display: 'flex',
-        border: '1px solid #999',
+        border: '1px dashed #999',
         boxSizing: 'border-box',
         overflow: 'hidden',
-        // one tag per page — without a trailing blank sheet
-        pageBreakAfter: isLast ? 'auto' : 'always',
+        // the 22 × 12 cm tag is its own page — without a trailing blank sheet
+        pageBreakAfter: size.variant === 'split' ? (isLast ? 'auto' : 'always') : 'auto',
       }}
     >
       {/* Left half — shop name, barcode under the name */}
       <div
         style={{
           width: '50%',
-          padding: '8mm',
+          padding: mm(padX),
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '5mm',
+          gap: mm(clamp(h * 0.042, 0.8, 5)),
           borderRight: '1px dashed #999',
           textAlign: 'center',
         }}
       >
-        <div style={{ fontSize: '30pt', fontWeight: 700, lineHeight: 1.1 }}>{shopName}</div>
-        {(shop?.shopCity || shop?.shopPhone) && (
-          <div style={{ fontSize: '11pt', color: '#555' }}>
+        <div style={{ fontSize: `${Math.round(nameFont * 10) / 10}pt`, fontWeight: 700, lineHeight: 1.1 }}>{shopName}</div>
+        {showContact && (shop?.shopCity || shop?.shopPhone) && (
+          <div style={{ fontSize: `${Math.round(subFont * 10) / 10}pt`, color: '#555' }}>
             {[shop?.shopCity, shop?.shopPhone].filter(Boolean).join(' \u00b7 ')}
           </div>
         )}
-        <div style={{ marginTop: '6mm', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ marginTop: mm(clamp(h * 0.05, 0.5, 6)), display: 'flex', justifyContent: 'center' }}>
           <svg ref={ref} />
         </div>
       </div>
 
-      {/* Right half — ornament, purity, weights, HUID … */}
-      <div style={{ width: '50%', padding: '10mm 9mm', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '17pt' }}>
+      {/* Right half — Item, Purity, Gross, Net, HUID */}
+      <div
+        style={{
+          width: '50%',
+          padding: `${mm(padX)} ${mm(clamp(h * 0.075, 1, 9))}`,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+        }}
+      >
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: `${Math.round(valueFont * 10) / 10}pt` }}>
           <tbody>
             {rows.map(([label, value]) => (
               <tr key={label}>
-                <td style={{ padding: '5mm 0', color: '#555', width: '42%', verticalAlign: 'middle', fontSize: '14pt' }}>{label}</td>
-                <td style={{ padding: '5mm 0', fontWeight: 700, verticalAlign: 'middle' }}>{value}</td>
+                <td style={{ padding: `${mm(rowPad)} 0`, color: '#555', width: '42%', verticalAlign: 'middle', fontSize: `${Math.round(labelFont * 10) / 10}pt` }}>{label}</td>
+                <td style={{ padding: `${mm(rowPad)} 0`, fontWeight: 700, verticalAlign: 'middle' }}>{value}</td>
               </tr>
             ))}
           </tbody>
