@@ -41,7 +41,7 @@ const STICKER_SIZES: StickerSize[] = [
   { key: 'roll80', label: 'Roll 80 mm (thermal)', w: 80, h: 25, cols: 1, layout: 'roll', desc: '80mm thermal printer roll' },
   {
     key: '220x120', label: '22 × 12 cm tag', w: 220, h: 120, cols: 1, layout: 'sheet', variant: 'split',
-    desc: 'Big tag — shop name + barcode on the left, ornament / purity / weights / HUID on the right',
+    desc: 'Big tag — shop name + barcode on the left, item / purity / gross / net / HUID on the right',
   },
 ];
 
@@ -229,9 +229,9 @@ function Sticker({
 
 
 /**
- * 22 cm × 12 cm tag.
+ * 22 cm × 12 cm tag (one tag per page).
  * Left half:  jewellery shop name with the barcode printed under the name.
- * Right half: ornament name, purity, gross weight, net weight, HUID …
+ * Right half: Item, Purity, Gross, Net, HUID.
  */
 function SplitTag({
   barcode,
@@ -255,11 +255,11 @@ function SplitTag({
     try {
       JsBarcode(ref.current, barcode, {
         format: 'CODE128',
-        width: 2.6,
-        height: 30,
-        fontSize: 15,
+        width: 3.4,
+        height: 46,
+        fontSize: 20,
         margin: 4,
-        textMargin: 2,
+        textMargin: 3,
       });
     } catch {
       /* invalid code */
@@ -269,25 +269,13 @@ function SplitTag({
   const g = (n: any) => (Number(n) ? `${Number(n).toFixed(precision)} g` : '—');
   const money = (n: any) => (Number(n) ? `\u20b9${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : '—');
 
+  // Right half shows exactly: Item, Purity, Gross, Net, HUID
   const rows: [string, string][] = [
-    ['Ornament', item?.ornament || item?.category || item?.designCode || '\u2014'],
-    ['Item', item?.designCode || item?.sku || '\u2014'],
-    ['Purity', item?.purity || '\u2014'],
-    ['Metal', item?.metalType || '\u2014'],
-    ['Gross Weight', typeof item?.gross === 'string' ? item.gross : g(item?.grossWeight)],
-    ['Stone Weight', typeof item?.stone === 'string' ? item.stone : g(item?.stoneWeight)],
-    ['Net Weight', typeof item?.net === 'string' ? item.net : g(item?.netWeight)],
-    ['HUID / Hallmark', item?.hallmarkNumber || item?.certificateNumber || item?.hallmark || '\u2014'],
-    ['Rate / g', Number(item?.currentRate) ? `\u20b9${Number(item.currentRate).toLocaleString('en-IN')}/g` : '\u2014'],
-    ['Making', item?.making || (item?.makingChargeType
-      ? (item.makingChargeType === 'PERCENTAGE' ? `${item.makingChargeValue}%`
-        : item.makingChargeType === 'PER_GRAM' ? `\u20b9${item.makingChargeValue}/g` : money(item.makingChargeValue))
-      : '\u2014')],
-    ['Amount', typeof item?.amount === 'string' ? item.amount
-      : money(Math.round((Number(item?.netWeight) || 0) * (Number(item?.currentRate) || 0) * 100) / 100)],
-    ['SKU', item?.sku || barcode],
-    ['HSN', item?.hsnCode || '\u2014'],
-    ['Date', new Date().toLocaleDateString('en-IN')],
+    ['Item', item?.ornament || item?.designCode || item?.category || '\u2014'],
+    ['Purity', [item?.purity, item?.metalType && String(item.metalType).toUpperCase() !== 'GOLD' ? item.metalType : null].filter(Boolean).join(' ') || '\u2014'],
+    ['Gross', typeof item?.gross === 'string' ? item.gross : g(item?.grossWeight)],
+    ['Net', typeof item?.net === 'string' ? item.net : g(item?.netWeight)],
+    ['HUID', item?.hallmarkNumber || item?.certificateNumber || item?.hallmark || item?.huid || '\u2014'],
   ];
 
   return (
@@ -308,7 +296,7 @@ function SplitTag({
       <div
         style={{
           width: '50%',
-          padding: '6mm',
+          padding: '8mm',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -318,23 +306,25 @@ function SplitTag({
           textAlign: 'center',
         }}
       >
-        <div style={{ fontSize: '24pt', fontWeight: 700, lineHeight: 1.15 }}>{shopName}</div>
+        <div style={{ fontSize: '30pt', fontWeight: 700, lineHeight: 1.1 }}>{shopName}</div>
         {(shop?.shopCity || shop?.shopPhone) && (
-          <div style={{ fontSize: '9pt', color: '#555' }}>
+          <div style={{ fontSize: '11pt', color: '#555' }}>
             {[shop?.shopCity, shop?.shopPhone].filter(Boolean).join(' \u00b7 ')}
           </div>
         )}
-        <svg ref={ref} />
+        <div style={{ marginTop: '6mm', display: 'flex', justifyContent: 'center' }}>
+          <svg ref={ref} />
+        </div>
       </div>
 
       {/* Right half — ornament, purity, weights, HUID … */}
-      <div style={{ width: '50%', padding: '5mm 7mm' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5pt' }}>
+      <div style={{ width: '50%', padding: '10mm 9mm', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '17pt' }}>
           <tbody>
             {rows.map(([label, value]) => (
               <tr key={label}>
-                <td style={{ padding: '1.4mm 0', color: '#555', width: '46%', verticalAlign: 'top' }}>{label}</td>
-                <td style={{ padding: '1.4mm 0', fontWeight: 600, verticalAlign: 'top' }}>{value}</td>
+                <td style={{ padding: '5mm 0', color: '#555', width: '42%', verticalAlign: 'middle', fontSize: '14pt' }}>{label}</td>
+                <td style={{ padding: '5mm 0', fontWeight: 700, verticalAlign: 'middle' }}>{value}</td>
               </tr>
             ))}
           </tbody>
