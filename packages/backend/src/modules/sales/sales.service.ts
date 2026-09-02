@@ -50,6 +50,8 @@ export class SalesService {
     branchId?: string;
     startDate?: string;
     endDate?: string;
+    customerId?: string;
+    unpaid?: boolean;
     page?: number;
     limit?: number;
   }) {
@@ -62,6 +64,8 @@ export class SalesService {
     if (branchId) where.branchId = branchId;
     if (status) where.status = status;
     if (billType) where.billType = billType;
+    if (query.customerId) where.customerId = query.customerId;
+    if (query.unpaid) where.balanceAmount = { gt: 0 };
     
     if (startDate) {
       where.billDate = { ...where.billDate, gte: new Date(startDate) };
@@ -121,6 +125,107 @@ export class SalesService {
       where: { billNumber, organizationId },
       include: { items: true, payments: true, urdTransactions: true },
     });
+  }
+
+
+  /**
+   * Find (or create) a ledger account by name — used for the automatic
+   * Sales / GST accounts so a bill is reflected in the books without any
+   * setup.
+   */
+  private async resolveAccount(
+    tx: any,
+    params: { organizationId: string; branchId?: string | null; name: string; type: string; notes?: string },
+  ) {
+    let account = await tx.ledgerAccount.findFirst({
+      where: { organizationId: params.organizationId, name: params.name },
+    });
+    if (!account) {
+      account = await tx.ledgerAccount.create({
+        data: {
+          organizationId: params.organizationId,
+          branchId: params.branchId ?? null,
+          name: params.name,
+          type: params.type,
+          isPrimary: false,
+          isActive: true,
+          notes: params.notes || `Auto-created ${params.name} account`,
+        },
+      });
+    }
+    return account;
+  }
+
+  /**
+   * Post the tax of a GST bill to the tax ledger: half CGST + half SGST for an
+   * intra-state sale, the whole amount as IGST for an inter-state one. The
+   * accounts are created on first use and the entries are linked to the bill
+   * so they can be reversed (sale return / delete).
+   */
+  private async postGstLedger(
+    tx: any,
+    params: {
+      organizationId: string;
+      branchId?: string | null;
+      saleId: string;
+      billNumber: string;
+      customerName?: string | null;
+      isGst: boolean;
+      cgst: number;
+      sgst: number;
+      igst: number;
+      date?: Date | string;
+      userId?: string;
+    },
+  ) {
+    const { organizationId, branchId } = params;
+    const taxes: { name: string; amount: number }[] = [];
+    const total = (Number(params.cgst) || 0) + (Number(params.sgst) || 0) + (Number(params.igst) || 0);
+    if (!params.isGst || total <= 0) return;
+
+    if (Number(params.igst) > 0) {
+      taxes.push({ name: 'IGST', amount: Number(params.igst) || 0 });
+    } else {
+      const cgst = Number(params.cgst) || 0;
+      const sgst = Number(params.sgst) || 0;
+      if (cgst > 0) taxes.push({ name: 'CGST', amount: cgst });
+      if (sgst > 0) taxes.push({ name: 'SGST', amount: sgst });
+      if (!cgst && !sgst) {
+        // tax was entered as a single figure — split it like a local sale
+        taxes.push({ name: 'CGST', amount: Math.round((total / 2) * 100) / 100 });
+        taxes.push({ name: 'SGST', amount: Math.round((total - total / 2) * 100) / 100 });
+      }
+    }
+
+    for (const tax of taxes) {
+      if (!(tax.amount > 0)) continue;
+      const account = await this.resolveAccount(tx, {
+        organizationId,
+        branchId,
+        name: `${tax.name} Payable`,
+        type: 'DUTIES_AND_TAXES',
+        notes: `Auto-created ${tax.name} payable account (GST collected on sales)`,
+      });
+      await tx.ledgerEntry.create({
+        data: {
+          organizationId,
+          branchId: branchId ?? null,
+          accountId: account.id,
+          type: 'CREDIT',
+          amount: tax.amount,
+          date: params.date ? new Date(params.date) : new Date(),
+          description: `${tax.name} on ${params.billNumber} - ${params.customerName || 'customer'}`,
+          reference: params.billNumber,
+          linkedTo: 'SALE_TAX',
+          linkedId: params.saleId,
+          employeeId: params.userId,
+        },
+      });
+      await tx.ledgerAccount.update({
+        where: { id: account.id },
+        data: { currentBalance: { increment: tax.amount } },
+      });
+    }
   }
 
   async create(data: any, userId: string, organizationId: string, branchId: string) {
@@ -446,6 +551,25 @@ export class SalesService {
           where: { id: salesAccount.id },
           data: { currentBalance: { increment: calculated.netAmount } },
         });
+
+        // GST / tax ledger — CGST + SGST (local sale) or IGST (inter-state)
+        try {
+          await this.postGstLedger(tx, {
+            organizationId,
+            branchId,
+            saleId: saleRecord.id,
+            billNumber,
+            customerName: data.customerName,
+            isGst: data.isGst !== false,
+            cgst: calculated.totalCgst,
+            sgst: calculated.totalSgst,
+            igst: calculated.totalIgst,
+            date: data.billDate,
+            userId,
+          });
+        } catch (e) {
+          console.warn('GST ledger posting failed for', billNumber, e?.message);
+        }
       }
 
       // Update bill number sequence
@@ -766,6 +890,30 @@ export class SalesService {
           data: { currentBalance: { decrement: salesLedgerEntry.amount } },
         });
         await tx.ledgerEntry.delete({ where: { id: salesLedgerEntry.id } });
+      }
+
+      // Reverse the GST / tax entries (CGST + SGST or IGST) booked on the bill.
+      const taxEntries = await tx.ledgerEntry.findMany({
+        where: { linkedTo: 'SALE_TAX', linkedId: id },
+      });
+      for (const entry of taxEntries) {
+        await tx.ledgerAccount.update({
+          where: { id: entry.accountId },
+          data: { currentBalance: { decrement: entry.amount } },
+        });
+        await tx.ledgerEntry.delete({ where: { id: entry.id } });
+      }
+
+      // Money taken back out of the cash/bank account when the bill is cancelled
+      const paymentEntries = await tx.ledgerEntry.findMany({
+        where: { linkedTo: 'SALE_PAYMENT', linkedId: id },
+      });
+      for (const entry of paymentEntries) {
+        await tx.ledgerAccount.update({
+          where: { id: entry.accountId },
+          data: { currentBalance: { decrement: entry.amount } },
+        });
+        await tx.ledgerEntry.delete({ where: { id: entry.id } });
       }
 
       // Reverse the customer ledger (offset the sale debit).

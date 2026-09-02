@@ -233,47 +233,11 @@ class ApiService {
     return data;
   }
 
-  // Job Orders
-  async getJobOrders(params?: any) {
-    const { data } = await this.client.get('/job-orders', { params });
-    return data;
-  }
-
-  async addJobAdvance(id: string, body: { amount: number; paymentMode?: string; reference?: string }) {
-    const { data } = await this.client.post(`/job-orders/${id}/advance`, body);
-    return data;
-  }
-
-  async generateJobFinalBill(id: string, body: any) {
-    const { data } = await this.client.post(`/job-orders/${id}/final-bill`, body);
-    return data;
-  }
-
   async addSalePayment(id: string, body: { amount: number; paymentMode: string; reference?: string }) {
     const { data } = await this.client.post(`/sales/${id}/payment`, body);
     return data;
   }
 
-
-  async getJobOrderStats() {
-    const { data } = await this.client.get('/job-orders/stats/overview');
-    return data;
-  }
-
-  async getJobOrder(id: string) {
-    const { data } = await this.client.get(`/job-orders/${id}`);
-    return data;
-  }
-
-  async createJobOrder(body: any) {
-    const { data } = await this.client.post('/job-orders', body);
-    return data;
-  }
-
-  async getMyJobs() {
-    const { data } = await this.client.get('/job-orders/my-jobs');
-    return data;
-  }
 
   // Suppliers
   async getSuppliers(params?: any) {
@@ -287,6 +251,11 @@ class ApiService {
   }
 
   // URD
+  async getUrdStats(params?: any) {
+    const { data } = await this.client.get('/urd/stats/overview', { params });
+    return data;
+  }
+
   async getUrdTransactions(params?: any) {
     const { data } = await this.client.get('/urd', { params });
     return data;
@@ -304,6 +273,24 @@ class ApiService {
 
   async updateUrd(id: string, body: any) {
     const { data } = await this.client.put('/urd/' + id, body);
+    return data;
+  }
+
+  /** Pay the customer for the old gold (payment adjustment). */
+  async settleUrd(id: string, body: { amount?: number; paymentMode?: string; reference?: string; accountId?: string; notes?: string }) {
+    const { data } = await this.client.post(`/urd/${id}/settle`, body);
+    return data;
+  }
+
+  /** Adjust the old gold against one of the customer's unpaid bills. */
+  async adjustUrd(id: string, body: { saleId: string; amount?: number }) {
+    const { data } = await this.client.post(`/urd/${id}/adjust`, body);
+    return data;
+  }
+
+  /** Sell / melt the old gold out (metal leaves the material ledger, money in). */
+  async sellUrd(id: string, body: { amount?: number; paymentMode?: string; reference?: string; accountId?: string; notes?: string }) {
+    const { data } = await this.client.post(`/urd/${id}/sell`, body);
     return data;
   }
 

@@ -90,6 +90,79 @@ export class PurchasesService {
     return purchase;
   }
 
+
+  /**
+   * Money paid to the supplier at purchase time:
+   *   • a PurchasePayment row (payment history of the bill)
+   *   • a DEBIT entry on the cash / bank account it was paid from
+   * The supplier ledger is already updated by the caller.
+   */
+  private async postPurchasePayment(
+    tx: any,
+    params: {
+      organizationId: string;
+      branchId: string;
+      purchaseId: string;
+      amount: number;
+      paymentMode?: string;
+      reference?: string;
+      accountId?: string | null;
+      invoiceNumber?: string;
+      supplierName?: string;
+      date?: Date | string;
+      userId?: string;
+    },
+  ) {
+    const amount = Number(params.amount) || 0;
+    if (amount <= 0) return null;
+
+    await tx.purchasePayment.create({
+      data: {
+        purchaseId: params.purchaseId,
+        amount,
+        paymentMode: params.paymentMode || 'CASH',
+        reference: params.reference || null,
+        date: params.date ? new Date(params.date) : new Date(),
+        notes: `Paid against ${params.invoiceNumber || 'purchase'}${params.supplierName ? ' - ' + params.supplierName : ''}`,
+      },
+    });
+
+    // Which account paid? Use the one picked on the form, else the default
+    // cash account of the organisation.
+    let account: any = null;
+    if (params.accountId) {
+      account = await tx.ledgerAccount.findFirst({ where: { id: params.accountId, organizationId: params.organizationId } });
+    }
+    if (!account) {
+      account = await tx.ledgerAccount.findFirst({
+        where: { organizationId: params.organizationId, type: 'CASH', isActive: true },
+        orderBy: { isPrimary: 'desc' },
+      });
+    }
+    if (!account) return null;
+
+    await tx.ledgerEntry.create({
+      data: {
+        organizationId: params.organizationId,
+        branchId: params.branchId,
+        accountId: account.id,
+        type: 'DEBIT',
+        amount,
+        date: params.date ? new Date(params.date) : new Date(),
+        description: `Purchase payment ${params.invoiceNumber || ''} - ${params.supplierName || 'supplier'}`.trim(),
+        reference: params.invoiceNumber,
+        linkedTo: 'PURCHASE_PAYMENT',
+        linkedId: params.purchaseId,
+        employeeId: params.userId,
+      },
+    });
+    await tx.ledgerAccount.update({
+      where: { id: account.id },
+      data: { currentBalance: { decrement: amount } },
+    });
+    return account;
+  }
+
   // Aggregate totak helpers for single-line vs multi-item purchases
   private aggregateLineTotals(data: any) {
     const itemsRaw = (data.items || []).filter((i: any) => i && this.lineWeight(i) > 0);
@@ -346,6 +419,25 @@ export class PurchasesService {
           description: `Metal purchase ${data.invoiceNumber || record.invoiceNumber}`,
         },
       });
+
+      // Money paid now leaves the cash / bank account
+      try {
+        await this.postPurchasePayment(tx, {
+          organizationId,
+          branchId,
+          purchaseId: record.id,
+          amount: paidAmount,
+          paymentMode: data.paymentMode,
+          reference: data.reference,
+          accountId: data.accountId,
+          invoiceNumber: data.invoiceNumber || record.invoiceNumber,
+          supplierName: data.supplierName,
+          date: data.invoiceDate,
+          userId,
+        });
+      } catch (e) {
+        console.warn('Purchase payment posting failed', e?.message);
+      }
 
       await tx.auditLog.create({
         data: {
@@ -622,6 +714,25 @@ export class PurchasesService {
           description: `Purchase ${data.invoiceNumber || record.invoiceNumber}`,
         },
       });
+
+      // Money paid now leaves the cash / bank account
+      try {
+        await this.postPurchasePayment(tx, {
+          organizationId,
+          branchId,
+          purchaseId: record.id,
+          amount: paidAmount,
+          paymentMode: data.paymentMode,
+          reference: data.reference,
+          accountId: data.accountId,
+          invoiceNumber: data.invoiceNumber || record.invoiceNumber,
+          supplierName: data.supplierName,
+          date: data.invoiceDate,
+          userId,
+        });
+      } catch (e) {
+        console.warn('Purchase payment posting failed', e?.message);
+      }
 
       // Audit log
       await tx.auditLog.create({

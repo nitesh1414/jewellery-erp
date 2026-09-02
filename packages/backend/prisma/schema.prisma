@@ -659,6 +659,10 @@ model PurchasePayment {
 // URD TRANSACTIONS
 // ============================
 
+/// URD EXCHANGE — old gold / silver taken from a customer.
+///   incoming : the metal is credited to the material (metal) ledger
+///   customer : the value is credited to the customer ledger
+///   outgoing : sold / melted out (URD_OUT) or settled by paying the customer
 model UrdTransaction {
   id             String   @id @default(uuid())
   organizationId String
@@ -679,7 +683,13 @@ model UrdTransaction {
   paymentMode    String?
   referenceBillId String?
   notes          String?
-  status         String   @default("ACTIVE") // ACTIVE | PROPOSED (estimate) | ADJUSTED (used in a bill)
+  /// PROPOSED (on an estimate) | ACTIVE (metal in, value owed to the customer)
+  /// ADJUSTED (value used against a bill) | SETTLED (paid out) | SOLD (metal out)
+  status         String   @default("ACTIVE")
+  /// how much of finalValue has already been paid to the customer
+  settledAmount  Float    @default(0)
+  settledAt      DateTime?
+  soldAt         DateTime?
   createdAt      DateTime @default(now())
 
   organization  Organization @relation(fields: [organizationId], references: [id])

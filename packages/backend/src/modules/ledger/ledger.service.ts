@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 
-const AUTO_LOCKED = new Set(['SALE', 'SALE_PAYMENT', 'PURCHASE', 'EXPENSE', 'INCOME', 'OPENING']);
+// Entries created automatically by a bill / purchase / URD exchange — they can
+// only be changed from the document that produced them, never by hand.
+const AUTO_LOCKED = new Set([
+  'SALE', 'SALE_PAYMENT', 'SALE_TAX', 'PURCHASE', 'PURCHASE_PAYMENT',
+  'URD', 'URD_OUT', 'URD_PAYMENT', 'URD_SALE',
+  'EXPENSE', 'INCOME', 'OPENING',
+]);
 
 /** Gram balances are stored with 3 decimals (matching ShopSettings.weightPrecision). */
 function round3(n: number): number {

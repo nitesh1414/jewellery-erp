@@ -91,6 +91,15 @@ npm run build          # compile every package
   pays the bill**. A URD entry is recorded (URD register, linked to the bill)
   and, on a real bill, the old gold is **credited to the metal ledger** of that
   metal + purity, so it shows up as available metal stock.
+- **URD Exchange** (`/urd`): the full old-gold cycle in one screen.
+  *Receive Old Gold* records the metal into the **material (metal) ledger** and
+  credits the **customer ledger** with its value. From there each exchange can
+  be **adjusted against one of that customer's pending bills** (bill gets paid,
+  customer credit cleared, no cash moves), **paid out** to the customer from a
+  cash/bank account, or **sold / melted out** (metal leaves the material ledger,
+  money comes in). Status tells you where it stands — `ACTIVE` (metal in, value
+  owed), `ADJUSTED` (used in a bill), `SETTLED` (paid out) or `SOLD`. The view
+  dialog lists every ledger movement of that exchange.
 - **Multiple payment modes on one bill**: a single bill can be settled with any
   mix of **URD, Cash, Online, UPI, Debit Card, Credit Card, Bank Transfer and
   Cheque** — add each mode with its own amount and reference. Every line (mode,
@@ -116,6 +125,19 @@ npm run build          # compile every package
   income, URD, payment…) are recorded against the selected branch; the default
   is the user's primary branch. Estimated bills never affect sales,
   outstanding, today's totals or GST until confirmed into a real bill.
+- **How the ledgers are wired** — every screen feeds the same books:
+  - **Purchase** → supplier ledger + stock/metal ledger + **cash/bank** (the
+    amount paid at purchase time is stored as a purchase payment and debited
+    from the account it was paid from).
+  - **Sale** → customer ledger + stock reduction (items go `SOLD`) + sales
+    ledger + cash/bank ledger for the money received + the **GST/tax ledger**
+    (CGST + SGST on a local bill, IGST on an inter-state one; the accounts are
+    created automatically and reversed if the bill is cancelled).
+  - **URD Exchange** → customer ledger + material (metal) ledger, then
+    adjusted against a bill, paid out or sold out (see above).
+- **GST accounts**: `CGST Payable`, `SGST Payable` and `IGST Payable` are
+  created on the first bill that needs them (Accounts → Ledger Accounts) and
+  every rupee of tax collected is credited there automatically.
 - **Job work OUT → IN** (`/job-work`): hand metal and other material to a
   worker (karigar) and track it until the finished ornaments come back.
   - **OUT (issue)**: worker, issue/due date, the metal (metal + purity, grams,
