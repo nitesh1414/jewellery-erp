@@ -52,7 +52,10 @@ npm run dev
 Open http://localhost:5173
 
 > Whenever you pull changes that touch `packages/backend/prisma/schema.prisma`,
-> run `npm run db:push` again to update your local database.
+> run `npm run db:push` again to update your local database. To check a schema
+> change without a database (and without downloading engines), run
+> `npm run db:check` — it verifies every relation and runs Prisma's own schema
+> validator.
 
 ### Handy extras
 
