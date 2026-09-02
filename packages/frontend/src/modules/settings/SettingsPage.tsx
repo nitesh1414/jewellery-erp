@@ -367,7 +367,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-500">
                   Printing order: <strong className="text-gray-700">{barcodeFields.join(' · ') || '—'}</strong>
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button className="btn-primary" disabled={barcodeMutation.isPending} onClick={() => barcodeMutation.mutate(barcodeFields)}>
                     <Save className="w-4 h-4" /> Save barcode fields
                   </button>

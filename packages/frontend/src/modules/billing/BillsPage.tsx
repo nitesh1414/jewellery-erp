@@ -286,7 +286,7 @@ export default function BillsPage() {
         {data && data.totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
             <span className="text-sm text-gray-500">Page {page} of {data.totalPages}</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-sm py-1">Previous</button>
               <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-sm py-1">Next</button>
             </div>

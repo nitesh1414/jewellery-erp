@@ -103,7 +103,7 @@ export default function BarcodesPage() {
           <h1 className="page-title">Barcode Management</h1>
           <p className="text-gray-500 text-sm mt-1">Generate, assign, and print barcodes</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => setShowGenerate(true)} className="btn-primary">
             <Plus className="w-4 h-4" /> Generate Barcodes
           </button>
@@ -275,7 +275,7 @@ export default function BarcodesPage() {
         {data && data.totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <span className="text-sm text-gray-500">Page {page} of {data.totalPages}</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-sm py-1">Prev</button>
               <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-sm py-1">Next</button>
             </div>

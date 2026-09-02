@@ -223,7 +223,7 @@ export default function JewelleryPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Jewellery Items</h1><p className="text-gray-500 text-sm mt-1">Material entry and inventory management</p></div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => setShowBulk(true)} className="btn-secondary"><Package className="w-4 h-4" /> Bulk Import</button>
           <button onClick={openAddItem} className="btn-primary"><Plus className="w-4 h-4" /> Add Item</button>
         </div>
@@ -329,7 +329,7 @@ export default function JewelleryPage() {
         {data && data.totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <span className="text-sm text-gray-500">Page {page} of {data.totalPages}</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-sm py-1">Prev</button>
               <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-sm py-1">Next</button>
             </div>

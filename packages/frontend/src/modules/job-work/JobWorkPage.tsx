@@ -449,7 +449,7 @@ export default function JobWorkPage() {
       {data?.totalPages > 1 && (
         <div className="flex items-center justify-between mt-4 text-sm">
           <span className="text-gray-500">{data.total} job work(s)</span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className="btn-secondary text-sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
             <button className="btn-secondary text-sm" disabled={page >= data.totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
           </div>

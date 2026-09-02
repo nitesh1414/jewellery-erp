@@ -571,7 +571,7 @@ export default function BillingPage() {
               <p className="text-[10px] text-gray-400 mt-1">Point a barcode scanner here — it adds the item automatically.</p>
             </div>
 
-            <div className="flex gap-2 shrink-0">
+            <div className="flex flex-wrap gap-2 shrink-0">
               <button onClick={() => setShowManualItem(true)} title="Manual Item (F5)"
                 className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:border-primary-300 hover:text-primary-700 transition-all whitespace-nowrap">
                 <Plus className="w-4 h-4 text-primary-500" /> Manual
@@ -839,7 +839,7 @@ export default function BillingPage() {
                 {showPaymentPanel && (
                   <button onClick={() => setShowPaymentPanel(false)} className="btn-ghost w-full text-xs py-1 text-gray-500">Hide</button>
                 )}
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button onClick={() => { if (items.length === 0) { toast.error('Add at least one item'); return; } setShowConfirmBill(true); }} disabled={items.length === 0 || createSaleMutation.isPending}
                     className={'flex-1 py-3 text-base inline-flex items-center justify-center gap-2 ' + (billKind === 'ESTIMATE' ? 'bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors' : 'btn-primary')}>
                     {createSaleMutation.isPending ? 'Saving...' : <><Save className="w-4 h-4" /> {billKind === 'ESTIMATE' ? 'Save Estimated Bill' : (balanceAmount <= 0 ? 'Finalize & Save' : 'Save Bill')}</>}
@@ -928,7 +928,7 @@ export default function BillingPage() {
             {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
               <span className="text-xs text-gray-400 max-w-sm">{billKind === 'ESTIMATE' ? 'Saved as an estimate — stock & GST are applied when you confirm it into a bill.' : 'A bill number is generated and stock/ledger are updated. The invoice opens for printing.'}</span>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex flex-wrap gap-2 shrink-0">
                 <button onClick={() => setShowConfirmBill(false)} className="btn-secondary text-sm">Back</button>
                 <button onClick={() => { setShowConfirmBill(false); handleFinalizeBill(); }} disabled={createSaleMutation.isPending} className="btn-primary text-sm inline-flex items-center gap-2">
                   <Save className="w-4 h-4" /> {createSaleMutation.isPending ? 'Saving...' : billKind === 'ESTIMATE' ? 'Save Estimate' : 'Generate & Print'}

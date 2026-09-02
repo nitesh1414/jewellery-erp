@@ -211,7 +211,7 @@ export default function ReportsPage() {
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="section-title">GST Summary — {new Date(startDate).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</h3>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button onClick={() => {
                   const rows = (salesReport?.sales || []).map((s: any) => ({
                     'Invoice No': s.billNumber,
