@@ -265,7 +265,7 @@ export default function PurchasesPage() {
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Purchases</h1><p className="text-gray-500 text-[13px] mt-1">Metal (bullion) purchases add weight to a metal ledger — ornament purchases add items to inventory and deduct their net weight (gross − stone − other) from it</p></div>
+        <h1 className="page-title">Purchases</h1>
         <button data-hotkey-add onClick={() => { resetForm(); setShowCreate(true); }} className="btn-primary"><Plus className="w-4 h-4" /> New Purchase</button>
       </div>
 

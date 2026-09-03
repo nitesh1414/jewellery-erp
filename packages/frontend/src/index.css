@@ -108,9 +108,27 @@ html { line-height: 1.45; }
     --color-danger: #c92a2a;
   }
 
+  /*
+   * ONE TYPE SCALE FOR THE WHOLE APP
+   * Every screen uses the same family and the same base size (13px — the size
+   * of inputs, tables, buttons and labels). Text that carries no size class of
+   * its own therefore matches everything around it instead of falling back to
+   * the browser's 16px default.
+   */
   body {
     @apply bg-[#faf9f7] text-[#1a1a1a] antialiased;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  /* Form controls do not inherit either property by default — make them. */
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font-family: inherit;
   }
 
   /*

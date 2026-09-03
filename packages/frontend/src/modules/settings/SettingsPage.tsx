@@ -158,7 +158,6 @@ export default function SettingsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="page-title">Settings</h1>
-          <p className="text-gray-500 text-[13px] mt-1">Shop, invoice, taxes, metals, purities, hallmarks & rates</p>
         </div>
         <button
           onClick={() => updateMutation.mutate({ ...shopForm, ...taxForm, ...invoiceForm })}

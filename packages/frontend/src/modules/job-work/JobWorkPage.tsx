@@ -322,12 +322,9 @@ export default function JobWorkPage() {
   return (
     <div>
       {/* ------------------------------------------------------------ header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
-          <h1 className="text-xl font-bold">Job Work</h1>
-          <p className="text-[13px] text-gray-500">
-            OUT — metal &amp; material issued to a worker · IN — finished ornaments received with barcodes
-          </p>
+          <h1 className="page-title">Job Work</h1>
         </div>
         <button
           data-hotkey-add

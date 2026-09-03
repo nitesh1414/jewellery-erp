@@ -112,7 +112,6 @@ export default function BillsPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Bills</h1>
-          <p className="text-gray-500 text-[13px] mt-1">View, print, and settle sales bills</p>
         </div>
         <button data-hotkey-add onClick={() => navigate('/billing')} className="btn-primary">
           <FileText className="w-4 h-4" /> New Bill

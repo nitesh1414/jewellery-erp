@@ -43,7 +43,6 @@ export default function ExpensesPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Expenses</h1>
-          <p className="text-gray-500 text-[13px] mt-1">Track business expenses — auto-posts DEBIT to ledger</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right text-[13px]">

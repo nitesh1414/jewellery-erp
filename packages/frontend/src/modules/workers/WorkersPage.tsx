@@ -78,7 +78,7 @@ export default function WorkersPage() {
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Workers</h1><p className="text-gray-500 text-[13px] mt-1">Worker master — karigars, goldsmiths & staff with salary / payment tracking</p></div>
+        <h1 className="page-title">Workers</h1>
         <button onClick={() => { setEditing(null); setForm({ name: '', mobile: '', role: 'GOLDSMITH', designation: '', salary: 0, employeeCode: '' }); setShowAdd(true); }} data-hotkey-add className="btn-primary">
           <Plus className="w-4 h-4" /> Add Worker
         </button>

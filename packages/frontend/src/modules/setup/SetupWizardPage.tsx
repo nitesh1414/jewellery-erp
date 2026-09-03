@@ -40,7 +40,6 @@ export default function SetupWizardPage() {
     <div className="max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="page-title">Welcome! Let's set up your business.</h1>
-        <p className="text-gray-500 mt-1">This wizard runs only on first install. You can change everything later from Settings.</p>
         <div className="mt-3 grid grid-cols-5 gap-2">
           {STEPS.map((s, idx) => (
             <button key={s.key} onClick={() => setStep(idx)} disabled={idx > step}

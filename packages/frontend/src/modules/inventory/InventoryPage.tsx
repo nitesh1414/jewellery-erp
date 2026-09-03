@@ -66,7 +66,7 @@ export default function InventoryPage() {
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Inventory</h1><p className="text-gray-500 text-[13px] mt-1">Stock ledger, balances, and movement tracking</p></div>
+        <h1 className="page-title">Inventory</h1>
         <button onClick={() => setShowAdjust(true)} className="btn-primary"><RotateCcw className="w-4 h-4" /> Adjust Stock</button>
       </div>
 

@@ -101,7 +101,6 @@ export default function BarcodesPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Barcode Management</h1>
-          <p className="text-gray-500 text-[13px] mt-1">Generate, assign, and print barcodes</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setShowGenerate(true)} className="btn-primary">

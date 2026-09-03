@@ -46,7 +46,6 @@ export default function EntriesPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Credit / Debit Entries</h1>
-          <p className="text-gray-500 text-[13px] mt-1">Record cash movements between ledger accounts</p>
         </div>
         <button data-hotkey-add className="btn-primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> New Entry</button>
       </div>

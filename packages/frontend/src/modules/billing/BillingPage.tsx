@@ -556,7 +556,6 @@ export default function BillingPage() {
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleBarcodeLookup(barcodeInput); } }} />
                 <button onClick={() => handleBarcodeLookup(barcodeInput)} className="text-xs text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap">Scan</button>
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">Point a barcode scanner here — it adds the item automatically.</p>
             </div>
 
             <div className="flex items-center gap-1.5 flex-wrap shrink-0">

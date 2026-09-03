@@ -66,7 +66,7 @@ export default function ReportsPage() {
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Reports Center</h1><p className="text-gray-500 text-[13px] mt-1">Sales, GST segregation, ledgers, custom reports & more</p></div>
+        <h1 className="page-title">Reports Center</h1>
       </div>
 
       {/* Date filter */}

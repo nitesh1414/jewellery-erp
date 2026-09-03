@@ -29,7 +29,7 @@ export default function CustomerDetailPage() {
               {customer.name?.charAt(0)}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{customer.name}</h1>
+              <h1 className="page-title">{customer.name}</h1>
               <p className="text-[13px] text-gray-500">{customer.customerId}</p>
               <div className="flex gap-3 mt-2 text-[13px] text-gray-600">
                 {customer.mobile && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{customer.mobile}</span>}

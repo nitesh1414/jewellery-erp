@@ -65,7 +65,7 @@ export default function RolesPage() {
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Roles & Access</h1><p className="text-gray-500 text-[13px] mt-1">Define which tabs/modules each role can view (read) or edit (write). Create custom roles too.</p></div>
+        <h1 className="page-title">Roles & Access</h1>
         <button data-hotkey-add className="btn-primary" onClick={openNew}><Plus className="w-4 h-4" /> New Custom Role</button>
       </div>
 

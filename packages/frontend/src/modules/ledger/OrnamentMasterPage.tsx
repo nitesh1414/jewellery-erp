@@ -58,7 +58,6 @@ export default function OrnamentMasterPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="page-title">Ledger Master — Ornaments</h1>
-          <p className="text-gray-500 text-[13px] mt-1">Master list of ornaments classified as male / female / unisex. Used in item entry, inventory and job work.</p>
         </div>
         <button onClick={() => { setEditing(null); setForm({ name: '', gender: 'FEMALE', category: '', notes: '', metalLedgerAccountId: '' }); setShowAdd(true); }} data-hotkey-add className="btn-primary">
           <Plus className="w-4 h-4" /> Add Ornament

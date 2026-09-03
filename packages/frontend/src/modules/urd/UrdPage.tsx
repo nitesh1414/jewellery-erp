@@ -162,9 +162,6 @@ export default function UrdPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">URD Exchange</h1>
-          <p className="text-gray-500 text-[13px] mt-1">
-            Old gold / silver taken from a customer → metal ledger + customer ledger, then adjusted in a bill, paid out or sold.
-          </p>
         </div>
         <button onClick={() => { setEditingId(null); setForm({ customerId: '', customerName: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, deduction: 0, meltingLoss: 0, notes: '' }); setShowForm(true); }} data-hotkey-add className="btn-primary self-start">
           <Plus className="w-4 h-4" /> Receive Old Gold

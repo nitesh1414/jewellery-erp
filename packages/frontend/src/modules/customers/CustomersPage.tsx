@@ -67,12 +67,6 @@ export default function CustomersPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Customers</h1>
-          <p className="text-gray-500 text-xs mt-0.5">
-            <UsersIcon className="w-3 h-3 inline mr-1" />
-            {total.toLocaleString('en-IN')} registered
-            {searchInput && <span className="text-orange-600 ml-2">· filtered to "{searchInput}"</span>}
-            {city && <span className="text-orange-600 ml-2">· {city}</span>}
-          </p>
         </div>
         <button data-hotkey-add onClick={() => { setEditingCustomer(null); resetForm(); setShowAdd(true); }} className="btn-primary">
           <Plus className="w-4 h-4" /> Add Customer

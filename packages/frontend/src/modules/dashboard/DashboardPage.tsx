@@ -102,7 +102,6 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="text-gray-500 mt-1">Your jewellery business at a glance — click any card to drill in</p>
         </div>
         <div className="flex items-center gap-2 text-[13px] text-gray-500 shrink-0">
           <Clock className="w-4 h-4" />
