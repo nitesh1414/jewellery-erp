@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { assertMoneyAccounts } from '../../common/payment-accounts';
 import { LedgerService } from '../ledger/ledger.service';
 import { v4 as uuid } from 'uuid';
 
@@ -241,6 +242,15 @@ export class SalesService {
     // Estimated bills keep their own EST-… id, never touch stock or ledger
     // (stock/ledger are applied only when the estimate is confirmed to a bill)
     const isEstimate = data.billType === 'ESTIMATE';
+
+    // Money may only be received into a cash / bank ledger — never into a
+    // metal (stock) account. Checked before the transaction so nothing is
+    // half-written.
+    await assertMoneyAccounts(
+      this.prisma,
+      organizationId,
+      (data.payments || []).map((p: any) => p.accountId),
+    );
 
     // Generate bill number
     const prefix = data.billType === 'GST' ? 'GST' : 
@@ -996,6 +1006,9 @@ export class SalesService {
       throw new BadRequestException(`Cannot add payment to ${sale.status} bill`);
     }
     if (data.amount <= 0) throw new BadRequestException('Amount must be positive');
+
+    // Only a cash / bank ledger can receive money — never a metal (stock) one.
+    await assertMoneyAccounts(this.prisma, organizationId, [data.accountId]);
 
     // Reject overpayment — amount cannot exceed remaining balance
     const remaining = Math.round((sale.netAmount - sale.paidAmount) * 100) / 100;

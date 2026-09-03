@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
+import { paymentAccounts } from '../../utils/accounts';
 import { Plus, Search, Truck, Trash2, Package, Eye, Pencil, X, Gem, Scale } from 'lucide-react';
 
 interface PurchaseItem {
@@ -89,7 +90,7 @@ export default function PurchasesPage() {
     const exact = rows.find((r: any) => (r.purity || '').toUpperCase() === (purity || '').toUpperCase());
     return exact ? Number(exact.rate) || 0 : 0;
   };
-  const activeAccounts = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
+  const activeAccounts = paymentAccounts(accounts);
   // Metal / material ledgers — metal purchases credit these, ornament purchases
   // deduct the net weight (gross − stone − other) from the one selected on the line.
   const metalAccounts: any[] = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.isActive !== false && a.type === 'METAL');

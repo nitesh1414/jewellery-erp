@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
+import { paymentAccounts } from '../../utils/accounts';
 import {
   Search, Scan, Plus, Trash2, Save, X, User,
   CreditCard, Diamond, Package, ShoppingCart, UserPlus, Pencil, Receipt,
@@ -189,7 +190,7 @@ export default function BillingPage() {
   });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
-  const activeAccounts = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
+  const activeAccounts = paymentAccounts(accounts);
   const { data: rateMaster } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
 
   // Load an estimated bill for editing (/billing?estimate=<id>)

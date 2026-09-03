@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { assertMoneyAccounts } from '../../common/payment-accounts';
 import { PrismaService } from '../../common/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
 
@@ -246,6 +247,10 @@ export class PurchasesService {
    *                         (deducted) from the metal ledger selected on the line.
    */
   async create(data: any, organizationId: string, branchId: string, userId: string, metalLedgerAccountId?: string) {
+    // Money can only be paid out of a cash / bank ledger — never out of a
+    // metal (stock) account. Checked before any transaction starts.
+    await assertMoneyAccounts(this.prisma, organizationId, [data.accountId]);
+
     const entryType = String(data.entryType || 'ORNAMENT').toUpperCase() === 'METAL' ? 'METAL' : 'ORNAMENT';
     return entryType === 'METAL'
       ? this.createMetalPurchase(data, organizationId, branchId, userId, metalLedgerAccountId)
@@ -795,6 +800,9 @@ export class PurchasesService {
       include: { items: true },
     });
     if (!existing) throw new NotFoundException('Purchase not found');
+
+    // Same rule as on create: payments move through cash / bank ledgers only.
+    await assertMoneyAccounts(this.prisma, organizationId, [data.accountId]);
 
     const entryType = String(data.entryType || existing.entryType || 'ORNAMENT').toUpperCase() === 'METAL' ? 'METAL' : 'ORNAMENT';
     const totals = this.aggregateLineTotals({ ...existing, ...data });
