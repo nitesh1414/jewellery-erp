@@ -54,7 +54,7 @@ export default function DashboardPage() {
   });
 
   const cashPosition = (() => {
-    const list: any[] = (accounts as any) || [];
+    const list: any[] = Array.isArray(accounts) ? (accounts as any[]) : [];
     let cash = 0, bank = 0, other = 0;
     for (const a of list) {
       const b = Number(a.currentBalance) || 0;

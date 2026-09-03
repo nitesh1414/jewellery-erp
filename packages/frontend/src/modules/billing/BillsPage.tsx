@@ -16,7 +16,7 @@ export default function BillsPage() {
   const [payForm, setPayForm] = useState({ amount: 0, paymentMode: 'CASH', reference: '', accountId: '' });
 
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
-  const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
+  const activeAccounts = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
   const [viewBill, setViewBill] = useState<any>(null);
   const [thermalFor, setThermalFor] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
@@ -114,7 +114,7 @@ export default function BillsPage() {
           <h1 className="page-title">Bills</h1>
           <p className="text-gray-500 text-[13px] mt-1">View, print, and settle sales bills</p>
         </div>
-        <button onClick={() => navigate('/billing')} className="btn-primary">
+        <button data-hotkey-add onClick={() => navigate('/billing')} className="btn-primary">
           <FileText className="w-4 h-4" /> New Bill
         </button>
       </div>
@@ -133,7 +133,7 @@ export default function BillsPage() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 max-w-xs min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search bill / estimate no, customer, mobile…" className="input-field pl-10" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+          <input data-search-input type="text" placeholder="Search bill / estimate no, customer, mobile…" className="input-field pl-10" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         </div>
         <select className="input-field flex-1 min-w-[150px] sm:flex-none sm:w-40" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
           <option value="">All Status</option>

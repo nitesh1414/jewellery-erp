@@ -115,12 +115,6 @@ export default function BillingPage() {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       const inInput = ['INPUT', 'SELECT', 'TEXTAREA'].includes(tag);
-      // Ctrl/Cmd+Enter saves/finalizes anywhere on the billing screen.
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        handleFinalizeBill();
-        return;
-      }
       // Function keys (F2–F9) & Escape must work even while an input is
       // focused (e.g. the barcode box), like in Tally/Busy billing software.
       if (inInput && e.key !== 'Escape' && !/^F[0-9]+$/.test(e.key)) return;
@@ -154,6 +148,12 @@ export default function BillingPage() {
   // Global shortcuts: Ctrl/Cmd+A = add manual item, Ctrl/Cmd+N = new bill
   useAppShortcut('app:add', () => setShowManualItem(true));
   useAppShortcut('app:new', () => handleNewBill());
+  // Ctrl+S / Ctrl+Enter = finalize the bill, unless a panel above it is open —
+  // then we answer "not handled" so the engine saves that panel instead.
+  useAppShortcut('app:save', () => {
+    if (showManualItem || showInventorySelect || showNewCustomer || showUrdPanel || showPaymentPanel) return false;
+    handleFinalizeBill();
+  });
 
   // Press Enter to confirm the bill (like standard billing software).
   useEffect(() => {
@@ -189,7 +189,7 @@ export default function BillingPage() {
   });
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
-  const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
+  const activeAccounts = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
   const { data: rateMaster } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
 
   // Load an estimated bill for editing (/billing?estimate=<id>)
@@ -465,7 +465,7 @@ export default function BillingPage() {
 
   // Admin-managed rate for a given purity (from DB rate master, never static).
   const getRateForPurity = (purity: string): number => {
-    const rows: any[] = (rateMaster as any) || [];
+    const rows: any[] = Array.isArray(rateMaster) ? (rateMaster as any[]) : [];
     const exact = rows.find((r: any) => (r.purity || '').toUpperCase() === (purity || '').toUpperCase());
     return exact ? Number(exact.rate) || 0 : 0;
   };
@@ -515,6 +515,7 @@ export default function BillingPage() {
               <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 shadow-sm">
                 <User className="w-4 h-4 text-gray-400" />
                 <input ref={customerInputRef} type="text" className="flex-1 text-[13px] outline-none bg-transparent"
+                  data-search-input
                   placeholder="Search customer (F3)..."
                   value={customerSearch}
                   onChange={e => { setCustomerSearch(e.target.value); setShowCustomerResults(true); if (!e.target.value) setCustomer(null); }}
@@ -551,6 +552,7 @@ export default function BillingPage() {
                 <input ref={barcodeInputRef} type="text" className="flex-1 text-[13px] outline-none bg-transparent font-mono"
                   placeholder="Scan barcode (F4)..." value={barcodeInput}
                   onChange={e => setBarcodeInput(e.target.value)}
+                  data-enter-action
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleBarcodeLookup(barcodeInput); } }} />
                 <button onClick={() => handleBarcodeLookup(barcodeInput)} className="text-xs text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap">Scan</button>
               </div>
@@ -791,7 +793,7 @@ export default function BillingPage() {
                         </select>
                         <select className="input-field text-xs py-1" value={urdForm.purity} onChange={e => {
                           const purity = e.target.value;
-                          const rateRow: any = ((rateMaster as any) || []).find((r: any) => (r.purity || '').toUpperCase() === purity.toUpperCase());
+                          const rateRow: any = (Array.isArray(rateMaster) ? (rateMaster as any[]) : []).find((r: any) => (r.purity || '').toUpperCase() === purity.toUpperCase());
                           setUrdForm({ ...urdForm, purity, rate: rateRow ? Number(rateRow.rate) || 0 : urdForm.rate });
                         }}>
                           {(settings?.allPurities || ['24K', '22K', '18K']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
@@ -861,7 +863,7 @@ export default function BillingPage() {
 
       {/* Generate Bill Confirmation Modal */}
       {showConfirmBill && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3" onClick={() => setShowConfirmBill(false)}>
+        <div data-enter-action data-focus-scope className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3" onClick={() => setShowConfirmBill(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 flex flex-col max-h-[88vh] modal-panel" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between px-3 py-3 border-b border-gray-100">
@@ -935,7 +937,7 @@ export default function BillingPage() {
               <span className="text-xs text-gray-400 max-w-sm">{billKind === 'ESTIMATE' ? 'Saved as an estimate — stock & GST are applied when you confirm it into a bill.' : 'A bill number is generated and stock/ledger are updated. The invoice opens for printing.'}</span>
               <div className="flex flex-wrap gap-2 shrink-0">
                 <button onClick={() => setShowConfirmBill(false)} className="btn-secondary text-[13px]">Back</button>
-                <button onClick={() => { setShowConfirmBill(false); handleFinalizeBill(); }} disabled={createSaleMutation.isPending} className="btn-primary text-[13px] inline-flex items-center gap-2">
+                <button data-hotkey-save onClick={() => { setShowConfirmBill(false); handleFinalizeBill(); }} disabled={createSaleMutation.isPending} className="btn-primary text-[13px] inline-flex items-center gap-2">
                   <Save className="w-4 h-4" /> {createSaleMutation.isPending ? 'Saving...' : billKind === 'ESTIMATE' ? 'Save Estimate' : 'Generate & Print'}
                 </button>
               </div>
@@ -1020,7 +1022,7 @@ export default function BillingPage() {
               <h3 className="text-base font-semibold">Select from Inventory <span className="text-xs text-gray-400 font-normal">(F9)</span></h3>
               <div className="relative mt-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input type="text" placeholder="Search by barcode, design, SKU..." className="input-field pl-10" value={inventorySearch} onChange={e => setInventorySearch(e.target.value)} autoFocus />
+                <input type="text" data-search-input data-enter-action placeholder="Search by barcode, design, SKU..." className="input-field pl-10" value={inventorySearch} onChange={e => setInventorySearch(e.target.value)} autoFocus />
               </div>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto px-6">

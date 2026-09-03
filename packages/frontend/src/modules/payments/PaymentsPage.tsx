@@ -19,7 +19,7 @@ export default function PaymentsPage() {
   const { data } = useQuery({ queryKey: ['payments', search, page], queryFn: () => api.getPayments({ search, page, limit: 20 }) });
   const { data: customers } = useQuery({ queryKey: ['customers-all'], queryFn: () => api.getCustomers({ limit: 100 }) });
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
-  const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
+  const activeAccounts = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
 
   const createMutation = useMutation({
     mutationFn: (b: any) => api.createPayment(b),
@@ -33,12 +33,12 @@ export default function PaymentsPage() {
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Payments</h1><p className="text-gray-500 text-[13px] mt-1">Record and track all payments</p></div>
-        <button onClick={() => setShowForm(true)} className="btn-primary"><Plus className="w-4 h-4" /> New Payment</button>
+        <button data-hotkey-add onClick={() => setShowForm(true)} className="btn-primary"><Plus className="w-4 h-4" /> New Payment</button>
       </div>
 
       <div className="relative w-full sm:max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input type="text" placeholder="Search payment ref..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+        <input data-search-input type="text" placeholder="Search payment ref..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -101,7 +101,7 @@ export default function PaymentsPage() {
             </div>
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
-              <button onClick={() => { if (!form.amount) { toast.error('Amount required'); return; } createMutation.mutate(form); }} disabled={createMutation.isPending} className="btn-primary"><CircleDollarSign className="w-4 h-4" /> Record Payment</button>
+              <button onClick={() => { if (!form.amount) { toast.error('Amount required'); return; } createMutation.mutate(form); }} data-hotkey-save disabled={createMutation.isPending} className="btn-primary"><CircleDollarSign className="w-4 h-4" /> Record Payment</button>
             </div>
           </div>
         </div>

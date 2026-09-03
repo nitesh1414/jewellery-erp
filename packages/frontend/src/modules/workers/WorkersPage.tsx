@@ -79,14 +79,14 @@ export default function WorkersPage() {
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Workers</h1><p className="text-gray-500 text-[13px] mt-1">Worker master — karigars, goldsmiths & staff with salary / payment tracking</p></div>
-        <button onClick={() => { setEditing(null); setForm({ name: '', mobile: '', role: 'GOLDSMITH', designation: '', salary: 0, employeeCode: '' }); setShowAdd(true); }} className="btn-primary">
+        <button onClick={() => { setEditing(null); setForm({ name: '', mobile: '', role: 'GOLDSMITH', designation: '', salary: 0, employeeCode: '' }); setShowAdd(true); }} data-hotkey-add className="btn-primary">
           <Plus className="w-4 h-4" /> Add Worker
         </button>
       </div>
 
       <div className="relative w-full sm:max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input className="input-field pl-10" placeholder="Search name, code, mobile…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input data-search-input className="input-field pl-10" placeholder="Search name, code, mobile…" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -200,7 +200,7 @@ export default function WorkersPage() {
             </div>
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => { setShowAdd(false); setEditing(null); }} className="btn-secondary">Cancel</button>
-              <button onClick={() => { if (!form.name.trim()) { toast.error('Name required'); return; } saveMutation.mutate(form); }} className="btn-primary" disabled={saveMutation.isPending}>
+              <button onClick={() => { if (!form.name.trim()) { toast.error('Name required'); return; } saveMutation.mutate(form); }} data-hotkey-save className="btn-primary" disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? 'Saving…' : editing ? 'Update Worker' : 'Add Worker'}
               </button>
             </div>

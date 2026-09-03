@@ -35,12 +35,12 @@ export default function SuppliersPage() {
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Suppliers</h1><p className="text-gray-500 text-[13px] mt-1">{data?.total || 0} suppliers</p></div>
-        <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus className="w-4 h-4" /> Add Supplier</button>
+        <button data-hotkey-add onClick={() => setShowAdd(true)} className="btn-primary"><Plus className="w-4 h-4" /> Add Supplier</button>
       </div>
 
       <div className="relative w-full sm:max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input type="text" placeholder="Search suppliers..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); setSelectedSupplier(null); }} />
+        <input data-search-input type="text" placeholder="Search suppliers..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); setSelectedSupplier(null); }} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -131,7 +131,7 @@ export default function SuppliersPage() {
             </div>
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowAdd(false)} className="btn-secondary">Cancel</button>
-              <button onClick={() => { if (!form.name) { toast.error('Name required'); return; } createMutation.mutate(form); }} disabled={createMutation.isPending} className="btn-primary">Save</button>
+              <button onClick={() => { if (!form.name) { toast.error('Name required'); return; } createMutation.mutate(form); }} data-hotkey-save disabled={createMutation.isPending} className="btn-primary">Save</button>
             </div>
           </div>
         </div>

@@ -74,7 +74,7 @@ export default function CustomersPage() {
             {city && <span className="text-orange-600 ml-2">· {city}</span>}
           </p>
         </div>
-        <button onClick={() => { setEditingCustomer(null); resetForm(); setShowAdd(true); }} className="btn-primary">
+        <button data-hotkey-add onClick={() => { setEditingCustomer(null); resetForm(); setShowAdd(true); }} className="btn-primary">
           <Plus className="w-4 h-4" /> Add Customer
         </button>
       </div>
@@ -85,6 +85,7 @@ export default function CustomersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
+            data-search-input
             placeholder="Search by name, mobile, ID, GSTIN..."
             className="input-field pl-10"
             value={searchInput}
@@ -207,6 +208,7 @@ export default function CustomersPage() {
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => { setShowAdd(false); setEditingCustomer(null); }} className="btn-secondary">Cancel</button>
               <button
+                data-hotkey-save
                 onClick={() => {
                   if (!form.name) { toast.error('Name required'); return; }
                   if (editingCustomer) {

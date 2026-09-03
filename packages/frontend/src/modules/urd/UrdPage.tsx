@@ -166,7 +166,7 @@ export default function UrdPage() {
             Old gold / silver taken from a customer → metal ledger + customer ledger, then adjusted in a bill, paid out or sold.
           </p>
         </div>
-        <button onClick={() => { setEditingId(null); setForm({ customerId: '', customerName: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, deduction: 0, meltingLoss: 0, notes: '' }); setShowForm(true); }} className="btn-primary self-start">
+        <button onClick={() => { setEditingId(null); setForm({ customerId: '', customerName: '', metalType: 'GOLD', purity: '22K', grossWeight: 0, stoneWeight: 0, netWeight: 0, rate: 0, deduction: 0, meltingLoss: 0, notes: '' }); setShowForm(true); }} data-hotkey-add className="btn-primary self-start">
           <Plus className="w-4 h-4" /> Receive Old Gold
         </button>
       </div>
@@ -209,7 +209,7 @@ export default function UrdPage() {
         </div>
         <div className="relative sm:max-w-xs sm:w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search URD number or customer..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+          <input data-search-input type="text" placeholder="Search URD number or customer..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
       </div>
 
@@ -331,7 +331,7 @@ export default function UrdPage() {
                 if (!form.customerName || !form.netWeight || !form.rate) { toast.error('Fill required fields'); return; }
                 if (editingId) updateMutation.mutate({ id: editingId, body: form });
                 else createMutation.mutate(form);
-              }} disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary"><Gem className="w-4 h-4" /> {editingId ? 'Update URD' : 'Receive Old Gold'}</button>
+              }} data-hotkey-save disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary"><Gem className="w-4 h-4" /> {editingId ? 'Update URD' : 'Receive Old Gold'}</button>
             </div>
           </div>
         </div>

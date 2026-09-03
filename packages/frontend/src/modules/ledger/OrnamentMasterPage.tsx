@@ -25,7 +25,7 @@ export default function OrnamentMasterPage() {
 
   // Metal (material) ledgers an ornament can be linked to
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
-  const metalAccounts: any[] = ((accounts as any) || []).filter((a: any) => a.type === 'METAL' && a.isActive !== false);
+  const metalAccounts: any[] = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.type === 'METAL' && a.isActive !== false);
   const metalName = (id: string) => metalAccounts.find((a: any) => a.id === id)?.name || '';
 
   const { data, isLoading } = useQuery({
@@ -60,7 +60,7 @@ export default function OrnamentMasterPage() {
           <h1 className="page-title">Ledger Master — Ornaments</h1>
           <p className="text-gray-500 text-[13px] mt-1">Master list of ornaments classified as male / female / unisex. Used in item entry, inventory and job work.</p>
         </div>
-        <button onClick={() => { setEditing(null); setForm({ name: '', gender: 'FEMALE', category: '', notes: '', metalLedgerAccountId: '' }); setShowAdd(true); }} className="btn-primary">
+        <button onClick={() => { setEditing(null); setForm({ name: '', gender: 'FEMALE', category: '', notes: '', metalLedgerAccountId: '' }); setShowAdd(true); }} data-hotkey-add className="btn-primary">
           <Plus className="w-4 h-4" /> Add Ornament
         </button>
       </div>
@@ -68,7 +68,7 @@ export default function OrnamentMasterPage() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input className="input-field pl-10" placeholder="Search ornament or category…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input data-search-input className="input-field pl-10" placeholder="Search ornament or category…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select className="input-field w-40" value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)}>
           <option value="">All (male + female + unisex)</option>
@@ -158,7 +158,7 @@ export default function OrnamentMasterPage() {
             </div>
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => { setShowAdd(false); setEditing(null); }} className="btn-secondary">Cancel</button>
-              <button onClick={() => { if (!form.name.trim()) { toast.error('Name required'); return; } saveMutation.mutate(form); }} className="btn-primary" disabled={saveMutation.isPending}>
+              <button onClick={() => { if (!form.name.trim()) { toast.error('Name required'); return; } saveMutation.mutate(form); }} data-hotkey-save className="btn-primary" disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? 'Saving…' : editing ? 'Update' : 'Add'}
               </button>
             </div>

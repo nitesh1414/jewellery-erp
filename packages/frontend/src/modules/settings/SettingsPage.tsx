@@ -394,6 +394,7 @@ function MetalsTab({ metals, defaultMetals, newMetal, setNewMetal, onAdd, onRemo
           placeholder="e.g. WHITE_GOLD or ROSE_GOLD"
           value={newMetal}
           onChange={e => setNewMetal(e.target.value.toUpperCase().replace(/\s+/g, '_'))}
+          data-enter-action
           onKeyDown={e => { if (e.key === 'Enter' && newMetal.trim()) onAdd(newMetal.trim()); }}
         />
         <button
@@ -434,6 +435,7 @@ function PuritiesTab({ purities, defaultPurities, newPurity, setNewPurity, onAdd
           placeholder="e.g. 21K or 925_AG or 14K_HV"
           value={newPurity}
           onChange={e => setNewPurity(e.target.value.toUpperCase().replace(/\s+/g, '_'))}
+          data-enter-action
           onKeyDown={e => { if (e.key === 'Enter' && newPurity.trim()) onAdd(newPurity.trim()); }}
         />
         <button

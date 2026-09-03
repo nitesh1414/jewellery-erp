@@ -85,16 +85,16 @@ export default function PurchasesPage() {
   const hallmarkMaster: any[] = settings?.allHallmarks || [];
   // Rate for a purity from the DB rate schedule (used to auto-fill the item rate).
   const getRateForPurity = (purity: string): number => {
-    const rows: any[] = (rateMaster as any) || [];
+    const rows: any[] = Array.isArray(rateMaster) ? (rateMaster as any[]) : [];
     const exact = rows.find((r: any) => (r.purity || '').toUpperCase() === (purity || '').toUpperCase());
     return exact ? Number(exact.rate) || 0 : 0;
   };
-  const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
+  const activeAccounts = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
   // Metal / material ledgers — metal purchases credit these, ornament purchases
   // deduct the net weight (gross − stone − other) from the one selected on the line.
-  const metalAccounts: any[] = ((accounts as any) || []).filter((a: any) => a.isActive !== false && a.type === 'METAL');
+  const metalAccounts: any[] = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.isActive !== false && a.type === 'METAL');
   const ornaments = (ornamentsData?.items || []).map((o: any) => o);
-  const ornamentList: any[] = (ornamentOptions as any) || [];
+  const ornamentList: any[] = Array.isArray(ornamentOptions) ? (ornamentOptions as any[]) : [];
   const ornamentStockLabel = (o: any) => {
     const pieces = Number(o.stockPieces ?? o.totalPieces) || 0;
     const weight = Number(o.stockWeight ?? o.totalWeight) || 0;
@@ -266,12 +266,12 @@ export default function PurchasesPage() {
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Purchases</h1><p className="text-gray-500 text-[13px] mt-1">Metal (bullion) purchases add weight to a metal ledger — ornament purchases add items to inventory and deduct their net weight (gross − stone − other) from it</p></div>
-        <button onClick={() => { resetForm(); setShowCreate(true); }} className="btn-primary"><Plus className="w-4 h-4" /> New Purchase</button>
+        <button data-hotkey-add onClick={() => { resetForm(); setShowCreate(true); }} className="btn-primary"><Plus className="w-4 h-4" /> New Purchase</button>
       </div>
 
       <div className="relative w-full sm:max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input type="text" placeholder="Search by invoice number..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+        <input data-search-input type="text" placeholder="Search by invoice number..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
       </div>
 
       {/* Purchase List */}
@@ -661,7 +661,7 @@ export default function PurchasesPage() {
 
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowCreate(false)} className="btn-secondary">Cancel</button>
-              <button onClick={save} disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary">
+              <button data-hotkey-save onClick={save} disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary">
                 {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : editingId ? 'Update Purchase' : isMetalEntry ? 'Save Metal Purchase' : 'Create Purchase & Add to Inventory'}
               </button>
             </div>

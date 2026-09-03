@@ -29,7 +29,7 @@ export default function IncomePage() {
   });
 
   const list: any[] = ((incData as any)?.items) || [];
-  const accList: any[] = (accounts as any) || [];
+  const accList: any[] = Array.isArray(accounts) ? (accounts as any[]) : [];
   const total = list.reduce((s, i) => s + i.amount, 0);
   const fmtMoney = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
@@ -50,7 +50,7 @@ export default function IncomePage() {
             <p className="text-gray-500">Total</p>
             <p className="font-bold text-green-700">+ {fmtMoney(total)}</p>
           </div>
-          <button className="btn-primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Add Income</button>
+          <button data-hotkey-add className="btn-primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Add Income</button>
         </div>
       </div>
 
@@ -108,7 +108,7 @@ export default function IncomePage() {
             </div>
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="btn-primary" onClick={submit} disabled={!form.amount || !form.description}>Save Income</button>
+              <button data-hotkey-save className="btn-primary" onClick={submit} disabled={!form.amount || !form.description}>Save Income</button>
             </div>
           </div>
         </div>

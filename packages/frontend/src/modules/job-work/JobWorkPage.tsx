@@ -127,11 +127,13 @@ export default function JobWorkPage() {
   const { data: rates } = useQuery({ queryKey: ['rates'], queryFn: () => api.getRates(), staleTime: 300000 });
   const { data: ornamentMaster } = useQuery({ queryKey: ['ornaments-jw'], queryFn: () => api.getOrnaments({ isActive: 'true' }), staleTime: 60000 });
 
-  const workerList: any[] = useMemo(() => (workers as any) || [], [workers]);
-  const accounts: any[] = useMemo(() => (metalAccounts as any) || [], [metalAccounts]);
-  const rateRows: any[] = useMemo(() => (rates as any) || [], [rates]);
+  const workerList: any[] = useMemo(() => (Array.isArray(workers) ? (workers as any[]) : []), [workers]);
+  const accounts: any[] = useMemo(() => (Array.isArray(metalAccounts) ? (metalAccounts as any[]) : []), [metalAccounts]);
+  const rateRows: any[] = useMemo(() => (Array.isArray(rates) ? (rates as any[]) : []), [rates]);
   const ornamentNames: string[] = useMemo(() => {
-    const rows: any[] = (ornamentMaster as any)?.items || (ornamentMaster as any) || [];
+    const rows: any[] = Array.isArray((ornamentMaster as any)?.items)
+    ? (ornamentMaster as any).items
+    : (Array.isArray(ornamentMaster) ? (ornamentMaster as any[]) : []);
     return Array.from(new Set(rows.map((o: any) => o?.name).filter(Boolean)));
   }, [ornamentMaster]);
 
@@ -328,6 +330,7 @@ export default function JobWorkPage() {
           </p>
         </div>
         <button
+          data-hotkey-add
           className="btn-primary"
           onClick={() => { setEditing(null); resetForm(); setShowCreate(true); }}
         >
@@ -350,6 +353,7 @@ export default function JobWorkPage() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             className="input-field !pl-9 w-72"
+            data-search-input
             placeholder="Search job no, worker…"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -674,6 +678,7 @@ export default function JobWorkPage() {
           <div className="flex justify-end gap-2 mt-5">
             <button className="btn-secondary" onClick={() => { setShowCreate(false); setEditing(null); }}>Cancel</button>
             <button
+              data-hotkey-save
               className="btn-primary"
               disabled={createMut.isPending || updateMut.isPending}
               onClick={submitCreate}
@@ -1088,7 +1093,7 @@ function ReceiveModal({
 
       <div className="flex justify-end gap-2 mt-5">
         <button className="btn-secondary" onClick={onClose}>Cancel</button>
-        <button className="btn-primary" disabled={mut.isPending || pending.length === 0} onClick={submit}>
+        <button data-hotkey-save className="btn-primary" disabled={mut.isPending || pending.length === 0} onClick={submit}>
           <PackageCheck className="w-4 h-4" /> {mut.isPending ? 'Receiving…' : 'Receive & create barcodes'}
         </button>
       </div>

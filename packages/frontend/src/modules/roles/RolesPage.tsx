@@ -14,7 +14,7 @@ export default function RolesPage() {
 
   const { data: roles, isLoading } = useQuery({ queryKey: ['roles'], queryFn: () => api.getRoles() });
   const { data: catalog } = useQuery({ queryKey: ['roles-catalog'], queryFn: () => api.getPermissionCatalog() });
-  const modules = (catalog as any) || [];
+  const modules = Array.isArray(catalog) ? (catalog as any[]) : [];
 
   const createMut = useMutation({
     mutationFn: (b: any) => api.createRole(b),
@@ -60,13 +60,13 @@ export default function RolesPage() {
     else createMut.mutate(form);
   }
 
-  const roleList: any[] = (roles as any) || [];
+  const roleList: any[] = Array.isArray(roles) ? (roles as any[]) : [];
 
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Roles & Access</h1><p className="text-gray-500 text-[13px] mt-1">Define which tabs/modules each role can view (read) or edit (write). Create custom roles too.</p></div>
-        <button className="btn-primary" onClick={openNew}><Plus className="w-4 h-4" /> New Custom Role</button>
+        <button data-hotkey-add className="btn-primary" onClick={openNew}><Plus className="w-4 h-4" /> New Custom Role</button>
       </div>
 
       {/* Roles list */}
@@ -143,7 +143,7 @@ export default function RolesPage() {
 
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="btn-primary" onClick={save} disabled={createMut.isPending || updateMut.isPending}>
+              <button data-hotkey-save className="btn-primary" onClick={save} disabled={createMut.isPending || updateMut.isPending}>
                 <Save className="w-4 h-4" /> {editing ? 'Save Access' : 'Create Role'}
               </button>
             </div>

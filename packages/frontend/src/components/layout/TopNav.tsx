@@ -5,88 +5,28 @@ import { useAuthStore } from '../../stores/authStore';
 import { useBranchStore } from '../../stores/branchStore';
 import { api } from '../../services/api';
 import { BranchSelector } from './BranchSelector';
-import {
-  LayoutDashboard, ShoppingCart, Receipt, Users, Diamond, Package, Barcode, ShoppingBag, Truck, Briefcase, Gem, FileBarChart, Settings, LogOut, Bell, ChevronDown, HandCoins, Clock, Wallet, CreditCard, Building, Users as UsersIcon, ArrowLeftRight, Menu, X, ArrowRight,
-} from 'lucide-react';
-
-interface MenuItem {
-  to?: string;
-  label: string;
-  icon?: any;
-  submenu?: { to: string; label: string; icon: any }[];
-}
+import { Diamond, LogOut, Bell, ChevronDown, Clock, Menu, X, ArrowRight, Keyboard } from 'lucide-react';
+import { APP_MENU, MenuGroup, mnemonicIndex } from '../../hotkeys/menu';
+import { openShortcutHelp } from '../KeyboardShortcutsHelp';
 
 /**
- * The menu follows the way a jewellery shop actually works, so a new user can
- * find things without being taught:
- *
- *   Purchase  → supplier ledger + stock + material ledger + accounts
- *   Sales     → billing, bills, customer ledger, payments
- *   Inventory → jewellery items, stock, barcodes, ornament master
- *   Job Work  → job work in/out, URD / old gold exchange, workers
- *   Accounts  → ledger accounts, credit/debit entries, expenses, income
+ * Renders a menu label with its Alt shortcut letter underlined, the way
+ * desktop accounting software marks its mnemonics — you can see the key
+ * without opening the help screen.
  */
-const menuItems: MenuItem[] = [
-  { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
-  {
-    label: 'Sales',
-    icon: ShoppingCart,
-    submenu: [
-      { to: '/billing', label: 'Billing / POS', icon: ShoppingCart },
-      { to: '/bills', label: 'Bills', icon: Receipt },
-      { to: '/payments', label: 'Payments', icon: HandCoins },
-      { to: '/customers', label: 'Customers', icon: Users },
-    ],
-  },
-  {
-    label: 'Purchase',
-    icon: ShoppingBag,
-    submenu: [
-      { to: '/purchases', label: 'Purchases', icon: ShoppingBag },
-      { to: '/suppliers', label: 'Suppliers', icon: Truck },
-      { to: '/inventory', label: 'Stock & Material Ledger', icon: Package },
-    ],
-  },
-  {
-    label: 'Inventory',
-    icon: Diamond,
-    submenu: [
-      { to: '/jewellery', label: 'Jewellery Items', icon: Diamond },
-      { to: '/barcodes', label: 'Barcodes', icon: Barcode },
-      { to: '/ledger/master', label: 'Ornament Master', icon: Gem },
-    ],
-  },
-  {
-    label: 'Job Work',
-    icon: Briefcase,
-    submenu: [
-      { to: '/job-work', label: 'Job Work In / Out', icon: ArrowLeftRight },
-      { to: '/urd', label: 'URD / Old Gold Exchange', icon: Gem },
-      { to: '/workers', label: 'Workers', icon: Users },
-    ],
-  },
-  {
-    label: 'Accounts',
-    icon: Wallet,
-    submenu: [
-      { to: '/ledger/accounts', label: 'Ledger Accounts', icon: Wallet },
-      { to: '/ledger/entries', label: 'Credit / Debit Entries', icon: CreditCard },
-      { to: '/expenses', label: 'Expenses', icon: ShoppingBag },
-      { to: '/income', label: 'Income (Non-Sale)', icon: CreditCard },
-    ],
-  },
-  {
-    label: 'Admin',
-    icon: Building,
-    submenu: [
-      { to: '/reports', label: 'Reports', icon: FileBarChart },
-      { to: '/branches', label: 'Branches', icon: Building },
-      { to: '/users', label: 'Users', icon: UsersIcon },
-      { to: '/roles', label: 'Roles & Access', icon: UsersIcon },
-      { to: '/settings', label: 'Settings', icon: Settings },
-    ],
-  },
-];
+function MenuLabel({ label, mnemonic }: { label: string; mnemonic: string }) {
+  const i = mnemonicIndex(label, mnemonic);
+  if (i < 0) return <>{label}</>;
+  return (
+    <>
+      {label.slice(0, i)}
+      <span className="underline decoration-primary-500 decoration-1 underline-offset-2">
+        {label[i]}
+      </span>
+      {label.slice(i + 1)}
+    </>
+  );
+}
 
 
 export function TopNav() {
@@ -95,6 +35,9 @@ export function TopNav() {
   const { user, logout } = useAuthStore();
   const clearBranch = useBranchStore((s) => s.clearBranch);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  // True when the dropdown was opened with Alt+letter (so we focus it).
+  const [openedByKey, setOpenedByKey] = useState(false);
+  const submenuRef = useRef<HTMLDivElement>(null);
   const [showUser, setShowUser] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   // Below lg the horizontal menu is hidden, so a drawer carries the same menu
@@ -165,9 +108,69 @@ export function TopNav() {
     navigate('/login');
   };
 
-  const isMenuActive = (item: MenuItem) => {
+  // Alt + letter opens a menu — the mnemonic is underlined in the label.
+  // While a menu is open: 1…9 jumps to a screen, ↑/↓ moves, Enter opens.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.key === 'Alt') return;
+      const group = APP_MENU.find((m) => m.mnemonic.toLowerCase() === e.key.toLowerCase());
+      if (!group) return;
+      e.preventDefault();
+      if (group.to) {
+        setOpenMenu(null);
+        setOpenedByKey(false);
+        navigate(group.to);
+        return;
+      }
+      setOpenMenu((cur) => (cur === group.key ? null : group.key));
+      setOpenedByKey(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
+
+  // Move real focus into the dropdown when it was opened with the keyboard, so
+  // ↑/↓ and Enter work without a mouse.
+  useEffect(() => {
+    if (!openMenu || !openedByKey) return;
+    const t = window.setTimeout(() => {
+      const links = submenuRef.current?.querySelectorAll<HTMLElement>('a[href]');
+      links?.[0]?.focus();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [openMenu, openedByKey]);
+
+  const onSubmenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, group: MenuGroup) => {
+    const links = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('a[href]'));
+    if (!links.length) return;
+
+    if (/^[1-9]$/.test(e.key)) {
+      const sub = group.items?.[Number(e.key) - 1];
+      if (sub) {
+        e.preventDefault();
+        setOpenMenu(null);
+        setOpenedByKey(false);
+        navigate(sub.to);
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const i = links.indexOf(document.activeElement as HTMLElement);
+      const next = links[(i + (e.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length];
+      next?.focus();
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setOpenMenu(null);
+      setOpenedByKey(false);
+    }
+  };
+
+  const isMenuActive = (item: MenuGroup) => {
     if (item.to) return location.pathname === item.to || location.pathname === item.to + '/';
-    if (item.submenu) return item.submenu.some(s => location.pathname.startsWith(s.to));
+    if (item.items) return item.items.some(s => location.pathname.startsWith(s.to));
     return false;
   };
 
@@ -205,42 +208,46 @@ export function TopNav() {
 
           {/* Main menu items */}
           <nav className="hidden lg:flex items-center gap-1 flex-1">
-            {menuItems.map((item, idx) => {
+            {APP_MENU.map((item, idx) => {
               const isActive = isMenuActive(item);
               if (item.to) {
                 return (
                   <NavLink
                     key={idx}
                     to={item.to}
+                    title={item.label + ' (Alt+' + item.mnemonic.toUpperCase() + ')'}
                     className={'px-3 py-2 text-[13px] font-medium rounded-md transition-colors flex items-center gap-2 ' +
                       (isActive ? 'text-primary-700 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50')}
                   >
                     {item.icon && <item.icon className="w-4 h-4" />}
-                    {item.label}
+                    <MenuLabel label={item.label} mnemonic={item.mnemonic} />
                   </NavLink>
                 );
               }
               // Submenu dropdown
-              const menuKey = item.label;
+              const menuKey = item.key;
               const isOpen = openMenu === menuKey;
               return (
                 <div key={idx} className="relative">
                   <button
-                    onClick={() => setOpenMenu(isOpen ? null : menuKey)}
-                    onMouseEnter={() => setOpenMenu(menuKey)}
+                    onClick={() => { setOpenMenu(isOpen ? null : menuKey); setOpenedByKey(false); }}
+                    onMouseEnter={() => { setOpenMenu(menuKey); setOpenedByKey(false); }}
+                    title={item.label + ' (Alt+' + item.mnemonic.toUpperCase() + ')'}
                     className={'px-3 py-2 text-[13px] font-medium rounded-md transition-colors flex items-center gap-1 ' +
                       (isActive || isOpen ? 'text-primary-700 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50')}
                   >
                     {item.icon && <item.icon className="w-4 h-4" />}
-                    {item.label}
+                    <MenuLabel label={item.label} mnemonic={item.mnemonic} />
                     <ChevronDown className={'w-3 h-3 transition-transform ' + (isOpen ? 'rotate-180' : '')} />
                   </button>
                   {isOpen && (
                     <div
-                      className="absolute top-full left-0 mt-1 min-w-[220px] bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50"
-                      onMouseLeave={() => setOpenMenu(null)}
+                      ref={submenuRef}
+                      onKeyDown={(e) => onSubmenuKeyDown(e, item)}
+                      className="absolute top-full left-0 mt-1 min-w-[236px] bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50"
+                      onMouseLeave={() => { setOpenMenu(null); setOpenedByKey(false); }}
                     >
-                      {item.submenu?.map((sub, subIdx) => {
+                      {item.items?.map((sub, subIdx) => {
                         const SubIcon = sub.icon;
                         const subActive = location.pathname === sub.to;
                         return (
@@ -251,10 +258,18 @@ export function TopNav() {
                               (subActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50')}
                           >
                             <SubIcon className="w-4 h-4 text-gray-400" />
-                            {sub.label}
+                            <span className="flex-1 truncate">{sub.label}</span>
+                            {subIdx < 9 && (
+                              <kbd className="shrink-0 bg-gray-100 border border-gray-200 px-1 rounded text-[10px] font-mono text-gray-500">
+                                {subIdx + 1}
+                              </kbd>
+                            )}
                           </NavLink>
                         );
                       })}
+                      <div className="px-3 pt-1 mt-1 border-t border-gray-100 text-[10px] text-gray-400">
+                        {item.items && item.items.length > 1 ? 'Press 1–' + Math.min(9, item.items.length) + ' to open' : 'Press 1 to open'}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -278,6 +293,16 @@ export function TopNav() {
 
           {/* Branch selector (multi-branch) */}
           <BranchSelector />
+
+          {/* Keyboard shortcuts — always one click away */}
+          <button
+            onClick={() => openShortcutHelp()}
+            className="p-2 rounded-md hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+            title="Keyboard shortcuts (F1)"
+            aria-label="Keyboard shortcuts"
+          >
+            <Keyboard className="w-4 h-4" />
+          </button>
 
           {/* Notifications */}
           <div className="relative">
@@ -365,7 +390,7 @@ export function TopNav() {
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto py-2">
-              {menuItems.map((item, idx) => {
+              {APP_MENU.map((item, idx) => {
                 const active = isMenuActive(item);
                 if (item.to) {
                   return (
@@ -375,7 +400,7 @@ export function TopNav() {
                       className={'flex items-center gap-3 px-3 py-3 text-[13px] font-medium ' + (active ? 'text-primary-700 bg-primary-50' : 'text-gray-700 hover:bg-gray-50')}
                     >
                       {item.icon && <item.icon className="w-4 h-4 text-gray-400" />}
-                      {item.label}
+                      <MenuLabel label={item.label} mnemonic={item.mnemonic} />
                     </NavLink>
                   );
                 }
@@ -384,9 +409,10 @@ export function TopNav() {
                     <div className="flex items-center gap-3 px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
                       {item.icon && <item.icon className="w-3.5 h-3.5" />}
                       {item.label}
+                      <span className="ml-auto normal-case tracking-normal">Alt+{item.mnemonic.toUpperCase()}</span>
                     </div>
                     <div className="ml-2 border-l border-gray-100 pl-2">
-                      {item.submenu?.map((sub, subIdx) => {
+                      {item.items?.map((sub, subIdx) => {
                         const SubIcon = sub.icon;
                         return (
                           <NavLink

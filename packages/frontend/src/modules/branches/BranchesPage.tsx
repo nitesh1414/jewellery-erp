@@ -36,13 +36,13 @@ export default function BranchesPage() {
     else createMut.mutate(form);
   }
 
-  const list: any[] = (branches as any) || [];
+  const list: any[] = Array.isArray(branches) ? (branches as any[]) : [];
 
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Branches</h1><p className="text-gray-500 text-[13px] mt-1">Run multiple shops from one software</p></div>
-        <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add Branch</button>
+        <button data-hotkey-add className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add Branch</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -97,7 +97,7 @@ export default function BranchesPage() {
             </div>
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</button>
-              <button className="btn-primary" onClick={submit}>
+              <button data-hotkey-save className="btn-primary" onClick={submit}>
                 {editing ? 'Update Branch' : 'Create Branch'}
               </button>
             </div>

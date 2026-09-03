@@ -29,7 +29,7 @@ export default function ExpensesPage() {
   });
 
   const list: any[] = ((expData as any)?.items) || [];
-  const accList: any[] = (accounts as any) || [];
+  const accList: any[] = Array.isArray(accounts) ? (accounts as any[]) : [];
   const total = list.reduce((s, e) => s + e.amount, 0);
   const fmtMoney = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
@@ -50,7 +50,7 @@ export default function ExpensesPage() {
             <p className="text-gray-500">Total</p>
             <p className="font-bold text-red-600">− {fmtMoney(total)}</p>
           </div>
-          <button className="btn-primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Add Expense</button>
+          <button data-hotkey-add className="btn-primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Add Expense</button>
         </div>
       </div>
 
@@ -111,7 +111,7 @@ export default function ExpensesPage() {
             </div>
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="btn-primary" onClick={submit} disabled={!form.amount || !form.description}>Save Expense</button>
+              <button data-hotkey-save className="btn-primary" onClick={submit} disabled={!form.amount || !form.description}>Save Expense</button>
             </div>
           </div>
         </div>

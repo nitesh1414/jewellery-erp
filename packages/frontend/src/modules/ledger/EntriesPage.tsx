@@ -25,7 +25,7 @@ export default function EntriesPage() {
   });
 
   const list: any[] = ((entriesData as any)?.items) || [];
-  const accList: any[] = (accounts as any) || [];
+  const accList: any[] = Array.isArray(accounts) ? (accounts as any[]) : [];
   const selectedAccount = accList.find((a: any) => a.id === form.accountId);
   const isMetal = selectedAccount?.type === 'METAL';
 
@@ -48,7 +48,7 @@ export default function EntriesPage() {
           <h1 className="page-title">Credit / Debit Entries</h1>
           <p className="text-gray-500 text-[13px] mt-1">Record cash movements between ledger accounts</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> New Entry</button>
+        <button data-hotkey-add className="btn-primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> New Entry</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -175,7 +175,7 @@ export default function EntriesPage() {
             </div>
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="btn-primary" onClick={submit} disabled={!form.accountId || !form.description || (!form.amount && !(isMetal && form.grams))}>
+              <button data-hotkey-save className="btn-primary" onClick={submit} disabled={!form.accountId || !form.description || (!form.amount && !(isMetal && form.grams))}>
                 {form.type === 'CREDIT' ? 'Credit' : 'Debit'} ₹{form.amount || 0}{isMetal && form.grams ? ` · ${form.grams} g` : ''}
               </button>
             </div>

@@ -147,6 +147,7 @@ export default function BarcodesPage() {
               placeholder="Scan barcode here..."
               value={scanInput}
               onChange={(e) => setScanInput(e.target.value)}
+              data-enter-action
               onKeyDown={(e) => e.key === 'Enter' && handleScan(scanInput)}
               className="input-field pl-10 font-mono text-base"
               autoFocus
@@ -191,6 +192,7 @@ export default function BarcodesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
+            data-search-input
             placeholder="Search barcode..."
             className="input-field pl-10"
             value={search}
@@ -344,6 +346,7 @@ export default function BarcodesPage() {
                 placeholder="Scan or enter item barcode"
                 value={assignItemBarcode}
                 onChange={e => setAssignItemBarcode(e.target.value)}
+                data-enter-action
                 onKeyDown={async (e) => {
                   if (e.key === 'Enter' && assignItemBarcode.trim()) {
                     try {

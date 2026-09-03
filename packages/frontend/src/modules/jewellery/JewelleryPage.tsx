@@ -45,7 +45,7 @@ export default function JewelleryPage() {
 
   // Rate for a purity from the DB rate schedule (used to auto-fill the item rate).
   const getRateForPurity = (purity: string): number => {
-    const rows: any[] = (rateMaster as any) || [];
+    const rows: any[] = Array.isArray(rateMaster) ? (rateMaster as any[]) : [];
     const exact = rows.find((r: any) => (r.purity || '').toUpperCase() === (purity || '').toUpperCase());
     return exact ? Number(exact.rate) || 0 : 0;
   };
@@ -54,7 +54,7 @@ export default function JewelleryPage() {
 
   // Metal (material) ledgers — picking one filters the ornament master below and
   // shows the stock held in that metal + purity.
-  const metalAccounts: any[] = ((accounts as any) || []).filter((a: any) => a.type === 'METAL' && a.isActive !== false);
+  const metalAccounts: any[] = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.type === 'METAL' && a.isActive !== false);
   const metalAccountById = (id: string) => metalAccounts.find((a: any) => a.id === id);
   /** The metal ledger that holds a metal + purity (used to pre-pick the ledger). */
   const autoLedgerFor = (metal: string, pur: string) => metalAccounts.find((a: any) =>
@@ -65,7 +65,7 @@ export default function JewelleryPage() {
     queryFn: () => api.getOrnamentsWithStock({ isActive: 'true', metalLedgerAccountId: form.metalLedgerAccountId || undefined }),
     staleTime: 30000,
   });
-  const ornamentList: any[] = (ornamentOptions as any) || [];
+  const ornamentList: any[] = Array.isArray(ornamentOptions) ? (ornamentOptions as any[]) : [];
   const ornamentStockLabel = (o: any) => {
     const pieces = Number(o.stockPieces ?? o.totalPieces) || 0;
     const weight = Number(o.stockWeight ?? o.totalWeight) || 0;
@@ -225,7 +225,7 @@ export default function JewelleryPage() {
         <div><h1 className="page-title">Jewellery Items</h1><p className="text-gray-500 text-[13px] mt-1">Material entry and inventory management</p></div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setShowBulk(true)} className="btn-secondary"><Package className="w-4 h-4" /> Bulk Import</button>
-          <button onClick={openAddItem} className="btn-primary"><Plus className="w-4 h-4" /> Add Item</button>
+          <button data-hotkey-add onClick={openAddItem} className="btn-primary"><Plus className="w-4 h-4" /> Add Item</button>
         </div>
       </div>
 
@@ -239,7 +239,7 @@ export default function JewelleryPage() {
       </div>
 
       <div className="flex gap-2 flex-wrap items-center bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
-        <div className="relative flex-1 min-w-[200px] max-w-sm"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Barcode, SKU, design, hallmark no…" className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
+        <div className="relative flex-1 min-w-[200px] max-w-sm"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input data-search-input type="text" placeholder="Barcode, SKU, design, hallmark no…" className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
         <select className="input-field w-32" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}>
           <option value="">All Status</option>
           {['IN_STOCK', 'RESERVED', 'IN_MANUFACTURING', 'IN_REPAIR', 'SOLD', 'SCRAPPED'].map((st) => <option key={st} value={st}>{st.replace(/_/g, ' ')}</option>)}
@@ -426,7 +426,7 @@ export default function JewelleryPage() {
                 if (!form.designCode || !form.netWeight || !form.currentRate) { toast.error('Fill required fields'); return; }
                 if (editingId) updateMutation.mutate({ id: editingId, body: form });
                 else createMutation.mutate(form);
-              }} disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary">
+              }} data-hotkey-save disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary">
                 {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : editingId ? 'Update Item' : 'Add Item'}
               </button>
             </div>

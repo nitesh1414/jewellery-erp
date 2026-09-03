@@ -21,7 +21,7 @@ export default function UsersPage() {
   });
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: () => api.get<any>('/branches') });
   const { data: roles } = useQuery({ queryKey: ['roles'], queryFn: () => api.get<any>('/roles') });
-  const roleNames = [...new Set([...DEFAULT_ROLES, ...((roles as any) || []).map((r: any) => r.name)])];
+  const roleNames = [...new Set([...DEFAULT_ROLES, ...(Array.isArray(roles) ? (roles as any[]) : []).map((r: any) => r.name)])];
   const createMut = useMutation({
     mutationFn: (b: any) => api.post('/users', b),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); resetForm(); setShowForm(false); },
@@ -65,8 +65,8 @@ export default function UsersPage() {
     });
   }
 
-  const list: any[] = (users as any) || [];
-  const brList: any[] = (branches as any) || [];
+  const list: any[] = Array.isArray(users) ? (users as any[]) : [];
+  const brList: any[] = Array.isArray(branches) ? (branches as any[]) : [];
 
   const branchName = (id?: string) => brList.find((b) => b.id === id)?.name || '—';
 
@@ -74,11 +74,11 @@ export default function UsersPage() {
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">User Management</h1><p className="text-gray-500 text-[13px] mt-1">Create operators — assign a role & one or more branch access</p></div>
-        <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add User</button>
+        <button data-hotkey-add className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add User</button>
       </div>
 
       <div className="flex gap-2">
-        <input className="input-field max-w-xs" placeholder="Search by name / email" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input data-search-input className="input-field max-w-xs" placeholder="Search by name / email" value={search} onChange={(e) => setSearch(e.target.value)} />
         <select className="input-field w-48" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
           <option value="">All roles</option>
           {roleNames.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -171,7 +171,7 @@ export default function UsersPage() {
             <p className="text-xs text-gray-500 mt-3">Invite the user to login with their email and the password you set.</p>
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</button>
-              <button className="btn-primary" onClick={submit}>{editing ? 'Update User' : 'Create User'}</button>
+              <button data-hotkey-save className="btn-primary" onClick={submit}>{editing ? 'Update User' : 'Create User'}</button>
             </div>
           </div>
         </div>

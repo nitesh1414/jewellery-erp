@@ -53,7 +53,7 @@ export default function AccountsPage() {
   const isMetal = (form.type || '') === 'METAL';
 
   const getRateForPurity = (purity: string): number => {
-    const rows: any[] = (rateMaster as any) || [];
+    const rows: any[] = Array.isArray(rateMaster) ? (rateMaster as any[]) : [];
     const exact = rows.find((r: any) => (r.purity || '').toUpperCase() === (purity || '').toUpperCase());
     return exact ? Number(exact.rate) || 0 : 0;
   };
@@ -121,7 +121,7 @@ export default function AccountsPage() {
   const fmtMoney = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
   const fmtGrams = (n: number) => (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' g';
 
-  const all: any[] = (accounts as any) || [];
+  const all: any[] = Array.isArray(accounts) ? (accounts as any[]) : [];
   const list = all.filter((a) => {
     if (filter === 'METAL') return a.type === 'METAL';
     if (filter === 'CASH_BANK') return a.type !== 'METAL';
@@ -327,7 +327,7 @@ export default function AccountsPage() {
             </div>
             <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</button>
-              <button className="btn-primary" onClick={submit} disabled={!form.name}>{editing ? 'Update' : 'Save'}</button>
+              <button data-hotkey-save className="btn-primary" onClick={submit} disabled={!form.name}>{editing ? 'Update' : 'Save'}</button>
             </div>
           </div>
         </div>

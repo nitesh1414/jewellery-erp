@@ -75,11 +75,30 @@ npm run build          # compile every package
 
 ### Daily use cheatsheet
 
-- **Keyboard shortcuts** (web + desktop): `Ctrl+A` add/new (context-aware),
-  `Ctrl+N` new bill (POS), `Ctrl+Enter` save/finalize bill, `Esc` cancel/close
-  any modal, `Alt+N` quick-action menu, `F1` or `?` for the full list. Billing
-  uses F2 new bill, F3 customer, F4 scan, F5 manual, F6 payment, F7 save,
-  F8 discount, F9 inventory.
+- **Keyboard shortcuts** (web + desktop) — press `F1` or `?` (or the keyboard
+  button in the header) for the full list:
+
+  | Key | What it does |
+  | --- | --- |
+  | `Enter` | Next field — behaves like **Tab**. `Shift+Enter` goes back one field. |
+  | `Ctrl+Enter` / `Ctrl+S` | Save / submit the open form |
+  | `Ctrl+A` | Add / new on the current screen |
+  | `Ctrl+F` | Jump to the search box |
+  | `Ctrl+P` | Print the screen |
+  | `Ctrl+N` | New bill (POS) |
+  | `Esc` | Cancel / close the open dialog |
+  | `Alt+←` / `Alt+→` | Go back / forward |
+  | `Alt+N` | Quick-action menu |
+  | `Alt+H` `Alt+S` `Alt+P` `Alt+I` `Alt+W` `Alt+C` `Alt+M` | Open **Home / Sales / Purchase / Inventory / Job Work / Accounts / Admin**. With a menu open, press `1`–`9` (or `↑` `↓` then `Enter`) to jump straight to a screen — the keys are shown right in the menu. |
+
+  **Enter never submits a form on its own.** It walks field to field and skips
+  the buttons that would throw work away (Cancel, Back, Close) and the repeat
+  buttons inside a form (`+ Add line`, row actions…), then stops on the main
+  **Save** button — a form is saved only when that button is selected. Use
+  **Tab** when you do want to reach every button.
+
+  Billing / POS additionally uses `F2` new bill, `F3` customer, `F4` scan,
+  `F5` manual item, `F6` payment, `F7` save, `F8` discount, `F9` inventory.
 - **Billing** (`/billing`): scan barcodes (F4) or manual items (F5); switch the
   top-right tabs between **Bill** and **Estimated Bill**. Estimates get their
   own `EST-…` number, stay editable (Bills → Estimated Bills → ✏) and are
