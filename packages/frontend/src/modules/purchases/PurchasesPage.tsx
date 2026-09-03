@@ -263,7 +263,7 @@ export default function PurchasesPage() {
   const metalAccountName = (id: string) => metalAccounts.find((a: any) => a.id === id)?.name || '';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Purchases</h1><p className="text-gray-500 text-sm mt-1">Metal (bullion) purchases add weight to a metal ledger — ornament purchases add items to inventory and deduct their net weight (gross − stone − other) from it</p></div>
         <button onClick={() => { resetForm(); setShowCreate(true); }} className="btn-primary"><Plus className="w-4 h-4" /> New Purchase</button>
@@ -327,7 +327,7 @@ export default function PurchasesPage() {
       {/* View Purchase Modal */}
       {viewing && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setViewing(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold">Purchase {viewing.invoiceNumber}</h3>
@@ -384,7 +384,7 @@ export default function PurchasesPage() {
       {/* Create / Edit Purchase Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowCreate(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 p-4 sm:p-6 max-h-[92vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl mx-4 p-4 sm:p-6 max-h-[92vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Purchase' : 'New Purchase'} — Material Entry (multiple metals)</h3>
 
             {/* Purchase type: raw metal (bullion) or finished ornament */}
@@ -659,7 +659,7 @@ export default function PurchasesPage() {
                 <input className="input-field" value={fm(balanceAmount)} disabled /></div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setShowCreate(false)} className="btn-secondary">Cancel</button>
               <button onClick={save} disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary">
                 {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : editingId ? 'Update Purchase' : isMetalEntry ? 'Save Metal Purchase' : 'Create Purchase & Add to Inventory'}

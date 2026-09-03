@@ -188,7 +188,7 @@ export default function CustomersPage() {
       {/* Add / Edit modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editingCustomer ? 'Edit Customer' : 'Add Customer'}</h3>
             <div className="space-y-3">
               <div><label className="label">Name *</label><input className="input-field" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
@@ -204,7 +204,7 @@ export default function CustomersPage() {
               <div><label className="label">GSTIN</label><input className="input-field" value={form.gstin} onChange={e => setForm({ ...form, gstin: e.target.value })} /></div>
               <div><label className="label">Notes</label><textarea className="input-field" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => { setShowAdd(false); setEditingCustomer(null); }} className="btn-secondary">Cancel</button>
               <button
                 onClick={() => {

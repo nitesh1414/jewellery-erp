@@ -17,7 +17,7 @@ export default function CustomerDetailPage() {
   if (!customer) return <div className="text-center py-12 text-gray-500">Customer not found</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <button onClick={() => navigate('/customers')} className="btn-ghost">
         <ArrowLeft className="w-4 h-4" /> Back to Customers
       </button>
@@ -42,7 +42,7 @@ export default function CustomerDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Ledger */}
         <div className="card">
           <h2 className="section-title mb-4">Ledger</h2>

@@ -154,7 +154,7 @@ export default function SettingsPage() {
   const isDefault = (list: string[], item: string) => list?.includes(item);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="page-title">Settings</h1>
@@ -309,7 +309,7 @@ export default function SettingsPage() {
 
         {/* Barcode sticker content */}
         {tab === 'barcode' && (
-          <div className="card space-y-5">
+          <div className="card space-y-4">
             <div>
               <h3 className="section-title">Barcode Sticker</h3>
               <p className="text-sm text-gray-500">
@@ -344,7 +344,7 @@ export default function SettingsPage() {
               })}
             </div>
 
-            <div className="border-t pt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="border-t pt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="label">Sticker preview</label>
                 <div className="border border-dashed border-gray-300 rounded-lg p-3 w-[38mm] min-h-[25mm] flex flex-col items-center justify-center gap-0.5 bg-white">
@@ -505,7 +505,7 @@ function RatesTab({ rates, history, allMetals, allPurities, onSave }: any) {
   const fmtDate = (d: any) => (d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* ---------- Daily rate schedule ---------- */}
       <div className="card space-y-4">
         <div>
@@ -622,7 +622,7 @@ function HallmarksTab({ hallmarks, hallmarkCharge, defaultPurities, onAdd, onUpd
   const [defaultChargeInput, setDefaultChargeInput] = useState(hallmarkCharge);
 
   return (
-    <div className="card p-6 space-y-5">
+    <div className="card p-6 space-y-4">
       <div>
         <p className="text-sm text-gray-500">
           Hallmark master used while billing — each entry maps a purity to a default hallmark charge. The charge is

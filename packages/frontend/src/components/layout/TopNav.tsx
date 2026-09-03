@@ -180,7 +180,7 @@ export function TopNav() {
       {/* Main navigation bar */}
       <div className="h-14 px-4 flex items-center justify-between">
         {/* Left: Logo + Main menu */}
-        <div className="flex items-center gap-3 lg:gap-6 flex-1 min-w-0">
+        <div className="flex items-center gap-3 lg:gap-4 flex-1 min-w-0">
           {/* Mobile / tablet menu button */}
           <button
             onClick={() => setShowDrawer(true)}

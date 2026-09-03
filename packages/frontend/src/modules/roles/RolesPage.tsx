@@ -63,7 +63,7 @@ export default function RolesPage() {
   const roleList: any[] = (roles as any) || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Roles & Access</h1><p className="text-gray-500 text-sm mt-1">Define which tabs/modules each role can view (read) or edit (write). Create custom roles too.</p></div>
         <button className="btn-primary" onClick={openNew}><Plus className="w-4 h-4" /> New Custom Role</button>
@@ -103,13 +103,13 @@ export default function RolesPage() {
       {/* Role form modal — permission matrix */}
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{editing ? 'Edit Role Access' : 'New Custom Role'}</h3>
               <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-5">
+            <div className="grid grid-cols-2 gap-3 mb-5">
               <div><label className="label">Role Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={editing?.isSystem} placeholder="e.g. SHOWROOM_MANAGER" /></div>
               <div><label className="label">Description</label><input className="input-field" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
             </div>
@@ -141,7 +141,7 @@ export default function RolesPage() {
               ))}
             </div>
 
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
               <button className="btn-primary" onClick={save} disabled={createMut.isPending || updateMut.isPending}>
                 <Save className="w-4 h-4" /> {editing ? 'Save Access' : 'Create Role'}

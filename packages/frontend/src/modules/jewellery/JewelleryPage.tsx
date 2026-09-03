@@ -220,7 +220,7 @@ export default function JewelleryPage() {
   const fm = (n: number) => (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Jewellery Items</h1><p className="text-gray-500 text-sm mt-1">Material entry and inventory management</p></div>
         <div className="flex flex-wrap gap-2">
@@ -340,9 +340,9 @@ export default function JewelleryPage() {
       {/* Add Item Modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Jewellery Item' : 'Add Jewellery Item (Material Entry)'}</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-3">
               <div><label className="label">Design Code</label><input className="input-field" value={form.designCode} onChange={e => setForm({...form, designCode: e.target.value})} placeholder="RING-001" /></div>
               <div><label className="label">Metal Type</label><select className="input-field" value={form.metalType} onChange={e => { const metalType = e.target.value; setForm({...form, metalType, metalLedgerAccountId: autoLedgerFor(metalType, form.purity)?.id || ''}); }}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
               <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => { const purity = e.target.value; const autoRate = getRateForPurity(purity); setForm({...form, purity, currentRate: autoRate, metalLedgerAccountId: autoLedgerFor(form.metalType, purity)?.id || ''}); }}>{(settings?.allPurities || ['24K','22K','18K']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
@@ -420,7 +420,7 @@ export default function JewelleryPage() {
               <div><label className="label">Hallmark Number</label><input className="input-field" value={form.hallmarkNumber || ''} onChange={e => setForm({...form, hallmarkNumber: e.target.value})} placeholder="HM-916-xxxx" /></div>
             </div>
             <p className="text-xs text-gray-400 mt-2">* Required fields. Barcode auto-generated.</p>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => { setShowAdd(false); setEditingId(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (!form.designCode || !form.netWeight || !form.currentRate) { toast.error('Fill required fields'); return; }
@@ -437,7 +437,7 @@ export default function JewelleryPage() {
       {/* Bulk Import Modal */}
       {showBulk && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowBulk(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Bulk Material Import</h3>
             <p className="text-sm text-gray-500 mb-3">Paste JSON array of items. Each needs: designCode, metalType, purity, netWeight, currentRate</p>
             <textarea className="input-field font-mono text-xs h-48" value={bulkItems} onChange={e => setBulkItems(e.target.value)}
@@ -458,9 +458,9 @@ export default function JewelleryPage() {
       {/* Item detail drawer */}
       {detail && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDetail(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 modal-panel" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center">
                   <Diamond className="w-5 h-5" />
@@ -485,7 +485,7 @@ export default function JewelleryPage() {
                     <p className="text-[10px] uppercase tracking-wide text-gray-400">Metal / Purity</p>
                     <p className="font-semibold">{detail.metalType} · {detail.purity}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <div><p className="text-[10px] uppercase tracking-wide text-gray-400">Net</p><p className="font-semibold">{detail.netWeight} g</p></div>
                     <div><p className="text-[10px] uppercase tracking-wide text-gray-400">Gross</p><p className="font-semibold">{detail.grossWeight} g</p></div>
                   </div>
@@ -528,7 +528,7 @@ export default function JewelleryPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100">
+            <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-100">
               <button onClick={() => { openEditItem(detail); setDetail(null); }} className="btn-secondary text-sm">
                 <Pencil className="w-4 h-4" /> Edit Item
               </button>

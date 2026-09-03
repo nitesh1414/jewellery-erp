@@ -54,7 +54,7 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-5 sm:p-8 modal-panel">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign In</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label">Email Address</label>
               <input
@@ -105,7 +105,7 @@ export default function LoginPage() {
           </form>
 
           {/* Demo credentials */}
-          <details className="mt-6 pt-6 border-t border-gray-200">
+          <details className="mt-4 pt-6 border-t border-gray-200">
             <summary className="text-xs font-medium text-gray-500 uppercase tracking-wide cursor-pointer select-none">
               Demo credentials (for testing)
             </summary>

@@ -41,7 +41,7 @@ export default function SetupWizardPage() {
       <div className="mb-8">
         <h1 className="page-title">Welcome! Let's set up your business.</h1>
         <p className="text-gray-500 mt-1">This wizard runs only on first install. You can change everything later from Settings.</p>
-        <div className="mt-6 grid grid-cols-5 gap-2">
+        <div className="mt-4 grid grid-cols-5 gap-2">
           {STEPS.map((s, idx) => (
             <button key={s.key} onClick={() => setStep(idx)} disabled={idx > step}
               className={'flex flex-col items-center text-center p-3 rounded-lg transition-colors ' +
@@ -93,7 +93,7 @@ export default function SetupWizardPage() {
         {current.key === 'accounts' && (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">Default "Cash Counter" and "Bank Account" will be created. Set their opening balances below.</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="bg-gray-50 rounded-xl p-4">
                 <p className="font-semibold mb-2">Cash Counter (opening)</p>
                 <label className="label">Opening balance (₹)</label>

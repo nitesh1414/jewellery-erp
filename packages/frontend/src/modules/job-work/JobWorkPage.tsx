@@ -613,7 +613,7 @@ export default function JobWorkPage() {
               );
             })}
           </div>
-          <div className="flex justify-end gap-6 text-sm mt-2 text-gray-600">
+          <div className="flex justify-end gap-4 text-sm mt-2 text-gray-600">
             <span>Metal out: <b>{g3(metalGrams)} g</b></span>
             <span>Material value: <b>{fm0(materialValue)}</b></span>
           </div>
@@ -855,7 +855,7 @@ function Modal({ children, onClose, wide }: any) {
   return (
     <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 overflow-y-auto py-8" onClick={onClose}>
       <div
-        className={'bg-white rounded-2xl shadow-xl w-full mx-4 p-4 sm:p-6 modal-panel ' + (wide ? 'max-w-5xl' : 'max-w-lg')}
+        className={'bg-white rounded-2xl shadow-xl w-full mx-4 p-4 sm:p-5 modal-panel ' + (wide ? 'max-w-5xl' : 'max-w-lg')}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

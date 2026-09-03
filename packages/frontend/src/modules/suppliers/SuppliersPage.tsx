@@ -32,7 +32,7 @@ export default function SuppliersPage() {
   const fm = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Suppliers</h1><p className="text-gray-500 text-sm mt-1">{data?.total || 0} suppliers</p></div>
         <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus className="w-4 h-4" /> Add Supplier</button>
@@ -43,7 +43,7 @@ export default function SuppliersPage() {
         <input type="text" placeholder="Search suppliers..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); setSelectedSupplier(null); }} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             {data?.items?.map((s: any) => (
@@ -120,7 +120,7 @@ export default function SuppliersPage() {
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Add Supplier</h3>
             <div className="space-y-3">
               <div><label className="label">Name *</label><input className="input-field" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
@@ -129,7 +129,7 @@ export default function SuppliersPage() {
               <div><label className="label">GSTIN</label><input className="input-field" value={form.gstin} onChange={e => setForm({...form, gstin: e.target.value})} /></div>
               <div><label className="label">Contact Person</label><input className="input-field" value={form.contact} onChange={e => setForm({...form, contact: e.target.value})} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setShowAdd(false)} className="btn-secondary">Cancel</button>
               <button onClick={() => { if (!form.name) { toast.error('Name required'); return; } createMutation.mutate(form); }} disabled={createMutation.isPending} className="btn-primary">Save</button>
             </div>

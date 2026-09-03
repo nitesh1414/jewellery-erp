@@ -64,7 +64,7 @@ export default function InventoryPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Inventory</h1><p className="text-gray-500 text-sm mt-1">Stock ledger, balances, and movement tracking</p></div>
         <button onClick={() => setShowAdjust(true)} className="btn-primary"><RotateCcw className="w-4 h-4" /> Adjust Stock</button>
@@ -91,7 +91,7 @@ export default function InventoryPage() {
 
       {/* Stock Balance Tab */}
       {tab === 'balance' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Metal & purity stock at a glance (all metals, including empty ones) */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
@@ -245,7 +245,7 @@ export default function InventoryPage() {
 
       {/* Valuation Tab */}
       {tab === 'valuation' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="card col-span-2">
             <h3 className="section-title mb-4">Stock Valuation Summary</h3>
             <div className="space-y-4">
@@ -310,7 +310,7 @@ export default function InventoryPage() {
       {/* Adjust Stock Modal */}
       {showAdjust && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdjust(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Adjust Stock</h3>
             <div className="space-y-4">
               <div><label className="label">Jewellery Item Barcode or ID</label>
@@ -352,7 +352,7 @@ export default function InventoryPage() {
                 <input className="input-field" placeholder="Required..." value={adjustForm.reason}
                   onChange={e => setAdjustForm({...adjustForm, reason: e.target.value})} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setShowAdjust(false)} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (!adjustForm.reason) { toast.error('Reason is required'); return; }

@@ -42,7 +42,7 @@ export default function EntriesPage() {
   const totalDebit = list.filter((e) => e.type === 'DEBIT').reduce((s, e) => s + e.amount, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Credit / Debit Entries</h1>
@@ -115,7 +115,7 @@ export default function EntriesPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">New Credit / Debit Entry</h3>
             <p className="text-xs text-gray-500 mb-4">Add to any account. Balance updates automatically.</p>
             <div className="space-y-3">
@@ -173,7 +173,7 @@ export default function EntriesPage() {
                 <input className="input-field" value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} />
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
               <button className="btn-primary" onClick={submit} disabled={!form.accountId || !form.description || (!form.amount && !(isMetal && form.grams))}>
                 {form.type === 'CREDIT' ? 'Credit' : 'Debit'} ₹{form.amount || 0}{isMetal && form.grams ? ` · ${form.grams} g` : ''}

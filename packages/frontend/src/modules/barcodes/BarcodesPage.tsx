@@ -96,7 +96,7 @@ export default function BarcodesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
@@ -286,7 +286,7 @@ export default function BarcodesPage() {
       {/* Generate Modal */}
       {showGenerate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowGenerate(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Generate Barcodes</h3>
             <div className="space-y-4">
               <div>
@@ -318,7 +318,7 @@ export default function BarcodesPage() {
                 </p>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setShowGenerate(false)} className="btn-secondary">Cancel</button>
               <button
                 onClick={() => generateMutation.mutate({ count: generateCount, prefix: generatePrefix })}
@@ -335,7 +335,7 @@ export default function BarcodesPage() {
       {/* Assign Modal */}
       {showAssign && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAssign(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Assign Barcode: {assignBarcode}</h3>
             <div>
               <label className="label">Jewellery Item Barcode</label>
@@ -357,7 +357,7 @@ export default function BarcodesPage() {
                 autoFocus
               />
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setShowAssign(null)} className="btn-secondary">Cancel</button>
             </div>
           </div>

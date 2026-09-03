@@ -65,7 +65,7 @@ export function ConfirmHost() {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4" onClick={() => close(false)}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 sm:p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-4 sm:p-5" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-base sm:text-lg font-semibold text-gray-900">{state.title}</h3>
         {state.message && <p className="text-sm text-gray-500 mt-2">{state.message}</p>}
         <div className="flex justify-end gap-3 mt-6">

@@ -30,7 +30,7 @@ export default function PaymentsPage() {
   const fm = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Payments</h1><p className="text-gray-500 text-sm mt-1">Record and track all payments</p></div>
         <button onClick={() => setShowForm(true)} className="btn-primary"><Plus className="w-4 h-4" /> New Payment</button>
@@ -76,7 +76,7 @@ export default function PaymentsPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Record Payment</h3>
             <div className="space-y-4">
               <div><label className="label">Customer</label>
@@ -99,7 +99,7 @@ export default function PaymentsPage() {
               <div><label className="label">Reference</label><input className="input-field" value={form.reference} onChange={e => setForm({...form, reference: e.target.value})} placeholder="UPI ref / cheque no" /></div>
               <div><label className="label">Notes</label><input className="input-field" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
               <button onClick={() => { if (!form.amount) { toast.error('Amount required'); return; } createMutation.mutate(form); }} disabled={createMutation.isPending} className="btn-primary"><CircleDollarSign className="w-4 h-4" /> Record Payment</button>
             </div>

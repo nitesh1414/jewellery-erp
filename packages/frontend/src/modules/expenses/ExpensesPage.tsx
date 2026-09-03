@@ -39,7 +39,7 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Expenses</h1>
@@ -85,7 +85,7 @@ export default function ExpensesPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">New Expense</h3>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -109,7 +109,7 @@ export default function ExpensesPage() {
               <div><label className="label">Description *</label><input className="input-field" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Rent for Oct 2026" /></div>
               <div><label className="label">Reference (optional)</label><input className="input-field" value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="Bill # / Cheque #" /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
               <button className="btn-primary" onClick={submit} disabled={!form.amount || !form.description}>Save Expense</button>
             </div>

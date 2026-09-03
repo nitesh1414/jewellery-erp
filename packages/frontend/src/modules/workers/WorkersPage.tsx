@@ -76,7 +76,7 @@ export default function WorkersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Workers</h1><p className="text-gray-500 text-sm mt-1">Worker master — karigars, goldsmiths & staff with salary / payment tracking</p></div>
         <button onClick={() => { setEditing(null); setForm({ name: '', mobile: '', role: 'GOLDSMITH', designation: '', salary: 0, employeeCode: '' }); setShowAdd(true); }} className="btn-primary">
@@ -89,7 +89,7 @@ export default function WorkersPage() {
         <input className="input-field pl-10" placeholder="Search name, code, mobile…" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Workers list */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="table-wrap">
@@ -183,9 +183,9 @@ export default function WorkersPage() {
       {/* Add/Edit worker modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => { setShowAdd(false); setEditing(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-5 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Worker' : 'Add Worker'}</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><label className="label">Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus /></div>
               <div><label className="label">Mobile</label><input className="input-field" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} placeholder="98765 43210" /></div>
               <div>
@@ -198,7 +198,7 @@ export default function WorkersPage() {
               <div><label className="label">Monthly Salary (₹)</label><input type="number" className="input-field" value={form.salary || ''} onChange={(e) => setForm({ ...form, salary: Number(e.target.value) })} /></div>
               {editing && <div><label className="label">Employee Code</label><input className="input-field" value={form.employeeCode} onChange={(e) => setForm({ ...form, employeeCode: e.target.value })} /></div>}
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => { setShowAdd(false); setEditing(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => { if (!form.name.trim()) { toast.error('Name required'); return; } saveMutation.mutate(form); }} className="btn-primary" disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? 'Saving…' : editing ? 'Update Worker' : 'Add Worker'}
@@ -211,7 +211,7 @@ export default function WorkersPage() {
       {/* Payment modal */}
       {showPay && selected && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowPay(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Payment — {selected.name}</h3>
               <button onClick={() => setShowPay(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
@@ -228,7 +228,7 @@ export default function WorkersPage() {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div><label className="label">Amount (₹) *</label><input type="number" className="input-field" value={payForm.amount || ''} onChange={(e) => setPayForm({ ...payForm, amount: Number(e.target.value) })} autoFocus /></div>
                 {payForm.type === 'SALARY' && (
                   <div><label className="label">Salary Month</label><input type="month" className="input-field" value={payForm.periodMonth} onChange={(e) => setPayForm({ ...payForm, periodMonth: e.target.value })} /></div>
@@ -243,7 +243,7 @@ export default function WorkersPage() {
               </div>
               <div><label className="label">Notes</label><input className="input-field" value={payForm.notes} onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setShowPay(false)} className="btn-secondary">Cancel</button>
               <button onClick={() => { if (!payForm.amount) { toast.error('Enter amount'); return; } payMutation.mutate({ id: selected.id, body: payForm }); }} className="btn-primary" disabled={payMutation.isPending}>
                 {payMutation.isPending ? 'Saving…' : 'Record Payment'}

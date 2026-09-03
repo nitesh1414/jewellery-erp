@@ -39,7 +39,7 @@ export default function BranchesPage() {
   const list: any[] = (branches as any) || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Branches</h1><p className="text-gray-500 text-sm mt-1">Run multiple shops from one software</p></div>
         <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add Branch</button>
@@ -76,7 +76,7 @@ export default function BranchesPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Branch' : 'New Branch'}</h3>
             <div className="space-y-3">
               <div><label className="label">Branch Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Main Branch" /></div>
@@ -95,7 +95,7 @@ export default function BranchesPage() {
                 <span className="text-sm">Mark as primary branch</span>
               </label>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button className="btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</button>
               <button className="btn-primary" onClick={submit}>
                 {editing ? 'Update Branch' : 'Create Branch'}

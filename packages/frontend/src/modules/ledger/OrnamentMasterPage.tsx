@@ -54,7 +54,7 @@ export default function OrnamentMasterPage() {
   const byGender = (g: string) => items.filter((o: any) => o.gender === g);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="page-title">Ledger Master — Ornaments</h1>
@@ -81,7 +81,7 @@ export default function OrnamentMasterPage() {
       {isLoading ? (
         <div className="text-center py-12 text-gray-400">Loading…</div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {GENDERS.map((g) => (
             <div key={g.value} className={'rounded-xl border p-4 ' + g.tone}>
               <div className="flex items-center justify-between mb-3">
@@ -126,7 +126,7 @@ export default function OrnamentMasterPage() {
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => { setShowAdd(false); setEditing(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Ornament' : 'Add Ornament'}</h3>
             <div className="space-y-4">
               <div><label className="label">Ornament Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ladies Ring" autoFocus /></div>
@@ -156,7 +156,7 @@ export default function OrnamentMasterPage() {
               </div>
               <div><label className="label">Notes</label><input className="input-field" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => { setShowAdd(false); setEditing(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => { if (!form.name.trim()) { toast.error('Name required'); return; } saveMutation.mutate(form); }} className="btn-primary" disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? 'Saving…' : editing ? 'Update' : 'Add'}

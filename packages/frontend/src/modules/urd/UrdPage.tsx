@@ -158,7 +158,7 @@ export default function UrdPage() {
   const filters = ['ALL', 'ACTIVE', 'PROPOSED', 'ADJUSTED', 'SETTLED', 'SOLD'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">URD Exchange</h1>
@@ -272,7 +272,7 @@ export default function UrdPage() {
       {/* Receive / edit old gold */}
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold">{editingId ? 'Edit URD / Old Metal Transaction' : 'Receive Old Gold / Silver'}</h3>
@@ -280,7 +280,7 @@ export default function UrdPage() {
               </div>
               <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="label">Customer * <span className="text-gray-400 font-normal">(credited in their ledger)</span></label>
                 <input
@@ -325,7 +325,7 @@ export default function UrdPage() {
               </div>
             )}
 
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => { setShowForm(false); setEditingId(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (!form.customerName || !form.netWeight || !form.rate) { toast.error('Fill required fields'); return; }
@@ -340,7 +340,7 @@ export default function UrdPage() {
       {/* Pay the customer / sell the old gold out */}
       {acting && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setActing(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-1">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 {acting.mode === 'settle'
@@ -410,7 +410,7 @@ export default function UrdPage() {
                 <input className="input-field" value={actionForm.notes} onChange={e => setActionForm({ ...actionForm, notes: e.target.value })} />
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setActing(null)} className="btn-secondary">Cancel</button>
               <button
                 onClick={() => {
@@ -431,7 +431,7 @@ export default function UrdPage() {
       {/* View URD Modal */}
       {viewing && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setViewing(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold">URD {viewing.urdNumber}</h3>
@@ -439,7 +439,7 @@ export default function UrdPage() {
               </div>
               <button onClick={() => setViewing(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-2 gap-3 text-sm">
               <div><p className="text-xs text-gray-400">Customer</p><p className="font-medium">{viewing.customerName}</p></div>
               <div><p className="text-xs text-gray-400">Status</p><p className="font-medium"><span className={'badge ' + (STATUS_STYLE[viewing.status] || 'badge-gray')}>{viewing.status}</span></p></div>
               <div><p className="text-xs text-gray-400">Metal / Purity</p><p className="font-medium">{viewing.metalType} · {viewing.purity}</p></div>
@@ -478,7 +478,7 @@ export default function UrdPage() {
               )}
             </div>
 
-            <div className="flex flex-wrap justify-end gap-2 mt-6 pt-4 border-t">
+            <div className="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t">
               <button onClick={() => setViewing(null)} className="btn-secondary text-sm">Close</button>
               {viewing.status === 'ACTIVE' && (
                 <>

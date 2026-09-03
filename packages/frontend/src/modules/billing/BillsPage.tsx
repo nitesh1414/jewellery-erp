@@ -108,7 +108,7 @@ export default function BillsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Bills</h1>
@@ -298,7 +298,7 @@ export default function BillsPage() {
       {/* Bill Detail Modal */}
       {viewBill && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setViewBill(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 p-4 sm:p-6 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 p-4 sm:p-6 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h2 className="text-xl font-bold">{viewBill.billNumber}</h2>
@@ -408,7 +408,7 @@ export default function BillsPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
               <button onClick={() => handlePrint(viewBill)} className="btn-secondary text-sm"><Printer className="w-4 h-4" /> Print</button>
               {viewBill.balanceAmount > 0 && (
                 <button onClick={() => { setPayBill(viewBill); setPayForm({ amount: viewBill.balanceAmount, paymentMode: 'CASH', reference: '', accountId: '' }); setViewBill(null); }} className="btn-primary text-sm">
@@ -424,7 +424,7 @@ export default function BillsPage() {
       {/* Receive Payment Modal */}
       {payBill && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setPayBill(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">Receive Payment</h3>
             <p className="text-sm text-gray-500 mb-4">
               {payBill.billNumber} · {payBill.customerName}<br/>
@@ -451,7 +451,7 @@ export default function BillsPage() {
                 </select>
                 <p className="text-[10px] text-gray-400 mt-1">Amount is credited to this account in the ledger.</p></div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setPayBill(null)} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (payForm.amount <= 0) { toast.error('Enter amount'); return; }
@@ -468,7 +468,7 @@ export default function BillsPage() {
       {/* Confirm Estimate → Bill modal */}
       {confirmingEstimate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setConfirmingEstimate(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">Confirm Estimated Bill</h3>
             <p className="text-sm text-gray-500 mb-4">
               {confirmingEstimate.billNumber} · {confirmingEstimate.customerName} · ₹{confirmingEstimate.netAmount?.toLocaleString('en-IN')}
@@ -501,7 +501,7 @@ export default function BillsPage() {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label">Payment received now (₹)</label>
                   <input type="number" className="input-field" value={confirmForm.amount || ''} onChange={(e) => setConfirmForm({ ...confirmForm, amount: Number(e.target.value) })} />
@@ -515,7 +515,7 @@ export default function BillsPage() {
               </div>
               <p className="text-xs text-gray-400">Whatever the estimate proposed is carried over; add what you collect now on top. Leave it at 0 to generate the bill with the balance still due. Stock, metal ledger and the customer ledger are updated now — they were not touched by the estimate.</p>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setConfirmingEstimate(null)} className="btn-secondary">Cancel</button>
               <button
                 onClick={() =>

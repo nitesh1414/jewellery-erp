@@ -131,7 +131,7 @@ export default function AccountsPage() {
   const totalGrams = metalAccounts.reduce((s, a) => s + (Number(a.grams) || 0), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Ledger Accounts</h1>
@@ -240,7 +240,7 @@ export default function AccountsPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-3">{editing ? 'Edit' : 'New'} Ledger Account</h3>
             <p className="text-xs text-gray-500 mb-4">
               {isMetal
@@ -325,7 +325,7 @@ export default function AccountsPage() {
                 <input className="input-field" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button className="btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</button>
               <button className="btn-primary" onClick={submit} disabled={!form.name}>{editing ? 'Update' : 'Save'}</button>
             </div>

@@ -485,13 +485,16 @@ export default function BillingPage() {
   };
 
   return (
-    <div className="space-y-3 pb-6 lg:pb-4 print:hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 shrink-0 flex-wrap gap-2">
-        <div>
-          <h1 className="page-title">Billing / POS</h1>
-          <p className="text-gray-500 text-xs mt-0.5 hidden lg:block">
-            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F2</kbd> New Bill ·
+    <div className="space-y-3 pb-4 print:hidden">
+      {/* Header — the title only; every control lives in the toolbar below */}
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <h1 className="page-title">Billing / POS</h1>
+        <div className="flex items-center gap-2 min-w-0">
+          {editingEstimateId && billKind === 'ESTIMATE' && (
+            <span className="badge badge-warning whitespace-nowrap">✏ Editing estimate</span>
+          )}
+          <p className="text-gray-500 text-xs hidden 2xl:block whitespace-nowrap">
+            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F2</kbd> New ·
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F3</kbd> Customer ·
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F4</kbd> Scan ·
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F5</kbd> Manual ·
@@ -501,26 +504,9 @@ export default function BillingPage() {
             <kbd className="bg-gray-100 px-1 rounded text-[10px]">F9</kbd> Inventory
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {editingEstimateId && billKind === 'ESTIMATE' && (
-            <span className="badge badge-warning">✏ Editing estimate — save updates it</span>
-          )}
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
-            <button onClick={() => setBillKind('BILL')}
-              className={'px-4 py-1.5 text-sm font-medium rounded-md transition-all ' + (billKind === 'BILL' ? 'bg-white shadow text-gray-900' : 'text-gray-500')}>Bill</button>
-            <button onClick={() => { setBillKind('ESTIMATE'); setPayments([]); setShowPaymentPanel(false); }}
-              className={'px-4 py-1.5 text-sm font-medium rounded-md transition-all ' + (billKind === 'ESTIMATE' ? 'bg-white shadow text-amber-700' : 'text-gray-500')}>Estimated Bill</button>
-          </div>
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
-            <button onClick={() => setBillType('GST')}
-              className={'px-4 py-1.5 text-sm font-medium rounded-md transition-all ' + (billType === 'GST' ? 'bg-white shadow text-gray-900' : 'text-gray-500')}>GST</button>
-            <button onClick={() => setBillType('NON_GST')}
-              className={'px-4 py-1.5 text-sm font-medium rounded-md transition-all ' + (billType === 'NON_GST' ? 'bg-white shadow text-gray-900' : 'text-gray-500')}>Non-GST</button>
-          </div>
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-start">
+      <div className="space-y-3">
         {/* LEFT */}
         <div className="flex-1 flex flex-col gap-3 min-w-0">
           {/* Customer + Barcode row */}
@@ -571,14 +557,26 @@ export default function BillingPage() {
               <p className="text-[10px] text-gray-400 mt-1">Point a barcode scanner here — it adds the item automatically.</p>
             </div>
 
-            <div className="flex flex-wrap gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+              <div className="flex bg-gray-100 rounded-lg p-0.5">
+                <button onClick={() => setBillKind('BILL')} title="Tax invoice"
+                  className={'px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ' + (billKind === 'BILL' ? 'bg-white shadow text-gray-900' : 'text-gray-500')}>Bill</button>
+                <button onClick={() => { setBillKind('ESTIMATE'); setPayments([]); setShowPaymentPanel(false); }} title="Estimated bill (quotation) — nothing is collected until it is confirmed"
+                  className={'px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ' + (billKind === 'ESTIMATE' ? 'bg-white shadow text-amber-700' : 'text-gray-500')}>Estimated</button>
+              </div>
+              <div className="flex bg-gray-100 rounded-lg p-0.5">
+                <button onClick={() => setBillType('GST')}
+                  className={'px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ' + (billType === 'GST' ? 'bg-white shadow text-gray-900' : 'text-gray-500')}>GST</button>
+                <button onClick={() => setBillType('NON_GST')}
+                  className={'px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ' + (billType === 'NON_GST' ? 'bg-white shadow text-gray-900' : 'text-gray-500')}>Non-GST</button>
+              </div>
               <button onClick={() => setShowManualItem(true)} title="Manual Item (F5)"
-                className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:border-primary-300 hover:text-primary-700 transition-all whitespace-nowrap">
-                <Plus className="w-4 h-4 text-primary-500" /> Manual
+                className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-700 hover:border-primary-300 hover:text-primary-700 transition-all whitespace-nowrap">
+                <Plus className="w-3.5 h-3.5 text-primary-500" /> Manual
               </button>
               <button onClick={() => setShowInventorySelect(true)} title="From Inventory (F9)"
-                className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:border-primary-300 hover:text-primary-700 transition-all whitespace-nowrap">
-                <Package className="w-4 h-4 text-primary-500" /> Inventory
+                className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-700 hover:border-primary-300 hover:text-primary-700 transition-all whitespace-nowrap">
+                <Package className="w-3.5 h-3.5 text-primary-500" /> Inventory
               </button>
             </div>
           </div>
@@ -652,15 +650,16 @@ export default function BillingPage() {
           </div>
         </div>
 
-        {/* RIGHT: Single cohesive card (summary + payment + actions) — sticky on desktop */}
-        <div className="w-full lg:sticky lg:top-20 space-y-3">
+        {/* Bill Summary & Payment — the full width, under the items */}
+        <div className="w-full">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-4 pt-3 pb-2.5 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Bill Summary & Payment</h3>
               <span className="text-xs text-gray-400">{items.length} item{items.length === 1 ? '' : 's'}</span>
             </div>
 
-            <div className="p-5 space-y-3">
+            <div className="p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-xs text-gray-500">Weight</p>
@@ -690,8 +689,10 @@ export default function BillingPage() {
                   value={narration} onChange={e => setNarration(e.target.value)}
                   placeholder="Optional bill note..." />
               </div>
+              </div>
 
-              <div className="text-sm space-y-1.5 border-t border-gray-100 pt-3">
+              <div className="space-y-3">
+              <div className="text-sm space-y-1.5 lg:border-t lg:border-gray-100 lg:pt-3">
                 <div className="flex justify-between"><span className="text-gray-500">Taxable</span><span>₹{fm(taxableAmount)}</span></div>
                 {billType === 'GST' && <>
                   <div className="flex justify-between"><span className="text-gray-500">CGST (1.5%)</span><span className="text-green-600">₹{totals.totalCgst.toFixed(2)}</span></div>
@@ -708,6 +709,9 @@ export default function BillingPage() {
                 {balanceAmount > 0 && <div className="flex justify-between text-sm text-red-600 font-medium mt-1"><span>Balance</span><span>₹{fm(balanceAmount)}</span></div>}
               </div>
 
+              </div>
+
+              <div className="space-y-3 lg:border-l lg:border-gray-100 lg:pl-4">
               {/* Payment inline - no separate scroll */}
               {showPaymentPanel && (
                 <div className="border-t border-dashed border-gray-200 pt-3 space-y-2">
@@ -849,6 +853,7 @@ export default function BillingPage() {
                 {billKind !== 'ESTIMATE' && <p className="text-[10px] text-gray-400 text-center">Review the bill below, then confirm to generate it.</p>}
                 {payments.length > 0 && <button onClick={() => setPayments([])} className="btn-ghost w-full text-xs py-1 text-red-500">Clear payments</button>}
               </div>
+              </div>
             </div>
           </div>
         </div>
@@ -857,9 +862,9 @@ export default function BillingPage() {
       {/* Generate Bill Confirmation Modal */}
       {showConfirmBill && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirmBill(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 flex flex-col max-h-[88vh] modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 flex flex-col max-h-[88vh] modal-panel" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center"><Receipt className="w-5 h-5" /></div>
                 <div>
@@ -872,7 +877,7 @@ export default function BillingPage() {
 
             {/* Body: items + totals side by side */}
             <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-0 flex-1 min-h-0">
-              <div className="overflow-y-auto px-6 py-4 border-r border-gray-100">
+              <div className="overflow-y-auto px-4 py-3 border-r border-gray-100">
                 <div className="table-wrap">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b border-gray-100 text-gray-500"><th className="text-left py-2 font-medium">Item</th><th className="text-right py-2 font-medium">Wt</th><th className="text-right py-2 font-medium">Amount</th></tr></thead>
@@ -926,7 +931,7 @@ export default function BillingPage() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
+            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
               <span className="text-xs text-gray-400 max-w-sm">{billKind === 'ESTIMATE' ? 'Saved as an estimate — stock & GST are applied when you confirm it into a bill.' : 'A bill number is generated and stock/ledger are updated. The invoice opens for printing.'}</span>
               <div className="flex flex-wrap gap-2 shrink-0">
                 <button onClick={() => setShowConfirmBill(false)} className="btn-secondary text-sm">Back</button>
@@ -942,9 +947,9 @@ export default function BillingPage() {
       {/* Manual Item Modal */}
       {showManualItem && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowManualItem(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Add Manual Item <span className="text-xs text-gray-400 font-normal">(F5)</span></h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><label className="label">Particular</label><input className="input-field" value={manualItem.particular} onChange={e => setManualItem({ ...manualItem, particular: e.target.value })} placeholder="Gold Ring" autoFocus /></div>
               <div><label className="label">HSN</label><input className="input-field" value={manualItem.hsnCode} onChange={e => setManualItem({ ...manualItem, hsnCode: e.target.value })} /></div>
               <div><label className="label">Purity</label>
@@ -985,7 +990,7 @@ export default function BillingPage() {
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setShowManualItem(false)} className="btn-secondary">Cancel (Esc)</button>
               <button onClick={() => {
                 if (!manualItem.particular || !manualItem.netWeight || !manualItem.ratePerGram) { toast.error('Fill required fields'); return; }
@@ -1010,7 +1015,7 @@ export default function BillingPage() {
       {/* Inventory Select Modal */}
       {showInventorySelect && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowInventorySelect(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[85vh] modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 flex flex-col max-h-[85vh] modal-panel" onClick={e => e.stopPropagation()}>
             <div className="px-6 pt-6 pb-3">
               <h3 className="text-lg font-semibold">Select from Inventory <span className="text-xs text-gray-400 font-normal">(F9)</span></h3>
               <div className="relative mt-3">
@@ -1053,7 +1058,7 @@ export default function BillingPage() {
                 )}
               </div>
             </div>
-            <div className="flex justify-end px-6 py-4 border-t border-gray-100">
+            <div className="flex justify-end px-4 py-3 border-t border-gray-100">
               <button onClick={() => setShowInventorySelect(false)} className="btn-secondary">Close (Esc)</button>
             </div>
           </div>
@@ -1063,7 +1068,7 @@ export default function BillingPage() {
       {/* New Customer Modal */}
       {showNewCustomer && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowNewCustomer(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-4 sm:p-6 modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">New Customer</h3>
             <div className="space-y-3">
               <div><label className="label">Name *</label><input className="input-field" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} placeholder="Customer name" autoFocus /></div>
@@ -1074,7 +1079,7 @@ export default function BillingPage() {
                 <div><label className="label">GSTIN</label><input className="input-field" value={newCustomer.gstin} onChange={e => setNewCustomer({ ...newCustomer, gstin: e.target.value })} /></div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setShowNewCustomer(false)} className="btn-secondary">Cancel</button>
               <button onClick={handleCreateCustomer} className="btn-primary"><UserPlus className="w-4 h-4" /> Save & Select</button>
             </div>
@@ -1085,7 +1090,7 @@ export default function BillingPage() {
       {/* Edit Line Modal */}
       {editingItemId && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setEditingItemId(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 max-h-[85vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-6 max-h-[85vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-1">Edit Line — change rate, making, URD, GST</h3>
             <p className="text-xs text-gray-500 mb-4">Override gold rate, making charge, URD value, or exclude GST for this line only</p>
             <div className="grid grid-cols-2 gap-3">
@@ -1143,7 +1148,7 @@ export default function BillingPage() {
                 <span className="text-xs text-gray-500 ml-auto">Uncheck to exclude GST for this item (e.g. URD/old gold)</span>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
               <button onClick={() => setEditingItemId(null)} className="btn-secondary">Cancel</button>
               <button onClick={() => updateEditedItem(editingItemId)} className="btn-primary"><Save className="w-4 h-4" /> Save Changes</button>
             </div>

@@ -64,7 +64,7 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div><h1 className="page-title">Reports Center</h1><p className="text-gray-500 text-sm mt-1">Sales, GST segregation, ledgers, custom reports & more</p></div>
       </div>
@@ -135,9 +135,9 @@ export default function ReportsPage() {
 
       {/* ============ GST / NON-GST SEGREGATION ============ */}
       {tab === 'gst' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Comparison summary */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <div className="card">
               <h3 className="section-title mb-3 text-blue-700">GST Bills</h3>
               <div className="space-y-2 text-sm">
@@ -206,7 +206,7 @@ export default function ReportsPage() {
 
       {/* ============ GST REPORT FOR CA (GSTR-1 style) ============ */}
       {tab === 'ca' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Period & summary */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
@@ -256,7 +256,7 @@ export default function ReportsPage() {
           </div>
 
           {/* B2B / B2C split */}
-          <div className="grid stat-grid grid-cols-3 gap-4">
+          <div className="grid stat-grid grid-cols-3 gap-3">
             <div className="stat-card">
               <p className="stat-label">B2B Invoices (with GSTIN)</p>
               <p className="stat-value text-blue-700">{(salesReport?.sales || []).filter((s: any) => s.customerGstin).length}</p>
@@ -478,7 +478,7 @@ export default function ReportsPage() {
       {/* ============ LEDGERS ============ */}
       {tab === 'ledger' && (
         <div className="space-y-4">
-          <div className="grid stat-grid grid-cols-3 gap-4">
+          <div className="grid stat-grid grid-cols-3 gap-3">
             <div className="stat-card"><p className="stat-label">Customers</p><p className="stat-value">{customers?.total || 0}</p></div>
             <div className="stat-card"><p className="stat-label">Total Outstanding (Sales)</p><p className="stat-value text-red-600">{fm(salesReport?.summary?.totalOutstanding)}</p></div>
             <div className="stat-card"><p className="stat-label">Total Collection</p><p className="stat-value text-green-600">{fm(salesReport?.summary?.totalCollection)}</p></div>
@@ -559,7 +559,7 @@ export default function ReportsPage() {
       {tab === 'inventory' && (
         <div className="space-y-4">
           {inventoryReport && (
-            <div className="grid stat-grid grid-cols-3 gap-4">
+            <div className="grid stat-grid grid-cols-3 gap-3">
               <div className="stat-card"><p className="stat-label">Total Items</p><p className="stat-value">{inventoryReport.totalItems}</p></div>
               <div className="stat-card"><p className="stat-label">Total Weight</p><p className="stat-value">{(inventoryReport.totalWeight || 0).toFixed(3)}g</p></div>
               <div className="stat-card"><p className="stat-label">Stock Value</p><p className="stat-value">{fm(inventoryReport.totalValue)}</p></div>
