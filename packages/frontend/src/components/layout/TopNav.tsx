@@ -16,15 +16,16 @@ import { openShortcutHelp } from '../KeyboardShortcutsHelp';
  */
 function MenuLabel({ label, mnemonic }: { label: string; mnemonic: string }) {
   const i = mnemonicIndex(label, mnemonic);
-  if (i < 0) return <>{label}</>;
+  // Returns ONE element on purpose. The menu buttons are flex containers with
+  // a gap; a fragment would make "H", "o" and "me" three separate flex items
+  // and the gap would tear the word apart ("H ome").
+  if (i < 0) return <span>{label}</span>;
   return (
-    <>
+    <span>
       {label.slice(0, i)}
-      <span className="underline decoration-primary-500 decoration-1 underline-offset-2">
-        {label[i]}
-      </span>
+      <span className="underline decoration-primary-500 decoration-1 underline-offset-2">{label[i]}</span>
       {label.slice(i + 1)}
-    </>
+    </span>
   );
 }
 

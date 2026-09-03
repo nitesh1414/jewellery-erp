@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
+import { paymentAccounts } from '../../utils/accounts';
 import { Search, Plus, CircleDollarSign, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 
 export default function PaymentsPage() {
@@ -19,7 +20,7 @@ export default function PaymentsPage() {
   const { data } = useQuery({ queryKey: ['payments', search, page], queryFn: () => api.getPayments({ search, page, limit: 20 }) });
   const { data: customers } = useQuery({ queryKey: ['customers-all'], queryFn: () => api.getCustomers({ limit: 100 }) });
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
-  const activeAccounts = (Array.isArray(accounts) ? (accounts as any[]) : []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
+  const activeAccounts = paymentAccounts(accounts);
 
   const createMutation = useMutation({
     mutationFn: (b: any) => api.createPayment(b),
