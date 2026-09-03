@@ -158,11 +158,11 @@ export default function UrdPage() {
   const filters = ['ALL', 'ACTIVE', 'PROPOSED', 'ADJUSTED', 'SETTLED', 'SOLD'];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">URD Exchange</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-gray-500 text-[13px] mt-1">
             Old gold / silver taken from a customer → metal ledger + customer ledger, then adjusted in a bill, paid out or sold.
           </p>
         </div>
@@ -173,24 +173,24 @@ export default function UrdPage() {
 
       {/* Where the metal and the money are right now */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="card p-3 sm:p-4">
+        <div className="card p-3 sm:p-3">
           <p className="text-[11px] text-gray-500 uppercase tracking-wide">Old metal received</p>
-          <p className="text-lg sm:text-xl font-bold mt-1">{grams3(stats?.grams || 0)} g</p>
+          <p className="text-base sm:text-lg font-bold mt-1">{grams3(stats?.grams || 0)} g</p>
           <p className="text-[11px] text-gray-400 mt-0.5">credited to the metal ledger</p>
         </div>
-        <div className="card p-3 sm:p-4">
+        <div className="card p-3 sm:p-3">
           <p className="text-[11px] text-gray-500 uppercase tracking-wide">Value of old metal</p>
-          <p className="text-lg sm:text-xl font-bold mt-1">{fm(stats?.value || 0)}</p>
+          <p className="text-base sm:text-lg font-bold mt-1">{fm(stats?.value || 0)}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">across {stats?.total || 0} exchanges</p>
         </div>
-        <div className="card p-3 sm:p-4">
+        <div className="card p-3 sm:p-3">
           <p className="text-[11px] text-gray-500 uppercase tracking-wide">Paid to customers</p>
-          <p className="text-lg sm:text-xl font-bold mt-1">{fm(stats?.settled || 0)}</p>
+          <p className="text-base sm:text-lg font-bold mt-1">{fm(stats?.settled || 0)}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">out of cash / bank</p>
         </div>
-        <div className="card p-3 sm:p-4">
+        <div className="card p-3 sm:p-3">
           <p className="text-[11px] text-gray-500 uppercase tracking-wide">Still payable</p>
-          <p className="text-lg sm:text-xl font-bold mt-1 text-amber-600">{fm(stats?.payableToCustomers || 0)}</p>
+          <p className="text-base sm:text-lg font-bold mt-1 text-amber-600">{fm(stats?.payableToCustomers || 0)}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">{stats?.active || 0} exchanges pending</p>
         </div>
       </div>
@@ -237,7 +237,7 @@ export default function UrdPage() {
                     <td className="table-cell text-right">{fm(u.value)}</td>
                     <td className="table-cell text-right whitespace-nowrap">
                       <span className="font-medium">{fm(u.settledAmount || 0)}</span>
-                      {u.status === 'ACTIVE' && outstanding > 0 && <span className="block text-[10px] text-amber-600">{fm(outstanding)} due</span>}
+                      {u.status === 'ACTIVE' && outstanding > 0 && <span className="block text-[11px] text-amber-600">{fm(outstanding)} due</span>}
                     </td>
                     <td className="table-cell"><span className={'badge ' + (STATUS_STYLE[u.status] || 'badge-gray')} title={STATUS_HELP[u.status]}>{u.status}</span></td>
                     <td className="table-cell text-right">
@@ -261,21 +261,21 @@ export default function UrdPage() {
           </table>
         </div>
         {data && data.totalPages > 1 && (
-          <div className="flex justify-between px-4 py-3 border-t">
-            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-sm py-1">Prev</button>
-            <span className="text-sm text-gray-500">{page}/{data.totalPages}</span>
-            <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-sm py-1">Next</button>
+          <div className="flex justify-between px-3 py-3 border-t">
+            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-[13px] py-1">Prev</button>
+            <span className="text-[13px] text-gray-500">{page}/{data.totalPages}</span>
+            <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-[13px] py-1">Next</button>
           </div>
         )}
       </div>
 
       {/* Receive / edit old gold */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start justify-between mb-4">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-3" onClick={() => setShowForm(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-3">
               <div>
-                <h3 className="text-lg font-semibold">{editingId ? 'Edit URD / Old Metal Transaction' : 'Receive Old Gold / Silver'}</h3>
+                <h3 className="text-base font-semibold">{editingId ? 'Edit URD / Old Metal Transaction' : 'Receive Old Gold / Silver'}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">The metal is credited to the material ledger and the value to the customer ledger.</p>
               </div>
               <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
@@ -302,14 +302,14 @@ export default function UrdPage() {
                   {(customers?.items || customers?.customers || []).map((c: any) => <option key={c.id} value={c.name}>{c.mobile || ''}</option>)}
                 </datalist>
                 {form.customerId
-                  ? <p className="text-[10px] text-green-600 mt-0.5">Linked to the customer ledger</p>
-                  : <p className="text-[10px] text-amber-600 mt-0.5">Name only — no customer ledger entry</p>}
+                  ? <p className="text-[11px] text-green-600 mt-0.5">Linked to the customer ledger</p>
+                  : <p className="text-[11px] text-amber-600 mt-0.5">Name only — no customer ledger entry</p>}
               </div>
               <div><label className="label">Metal</label><select className="input-field" value={form.metalType} onChange={e => setForm({ ...form, metalType: e.target.value })}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
               <div><label className="label">Purity</label><select className="input-field" value={form.purity} onChange={e => setForm({ ...form, purity: e.target.value })}>{(settings?.allPurities || ['24K', '22K', '18K', 'SILVER_999', 'SILVER_925']).map((p: string) => <option key={p} value={p}>{p.replace('SILVER_', 'Silver ')}</option>)}</select></div>
               <div><label className="label">Gross Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.grossWeight || ''} onChange={e => { const grossWeight = Number(e.target.value); setForm({ ...form, grossWeight, netWeight: calcNet(grossWeight, form.stoneWeight) }); }} /></div>
               <div><label className="label">Stone Weight (g)</label><input type="number" step="0.001" className="input-field" value={form.stoneWeight || ''} onChange={e => { const stoneWeight = Number(e.target.value); setForm({ ...form, stoneWeight, netWeight: calcNet(form.grossWeight, stoneWeight) }); }} /></div>
-              <div><label className="label">Net Weight (g) * <span className="text-gray-400">auto</span></label><input type="number" step="0.001" className="input-field bg-gray-100" value={form.netWeight || ''} readOnly title="Net Weight = Gross Weight − Stone Weight" /><p className="text-[10px] text-gray-400 mt-0.5">Gross − stone</p></div>
+              <div><label className="label">Net Weight (g) * <span className="text-gray-400">auto</span></label><input type="number" step="0.001" className="input-field bg-gray-100" value={form.netWeight || ''} readOnly title="Net Weight = Gross Weight − Stone Weight" /><p className="text-[11px] text-gray-400 mt-0.5">Gross − stone</p></div>
               <div><label className="label">Rate (₹/g) *</label><input type="number" className="input-field" value={form.rate || ''} onChange={e => setForm({ ...form, rate: Number(e.target.value) })} /></div>
               <div><label className="label">Deduction (₹)</label><input type="number" className="input-field" value={form.deduction || ''} onChange={e => setForm({ ...form, deduction: Number(e.target.value) })} /></div>
               <div><label className="label">Melting Loss (%)</label><input type="number" step="0.1" className="input-field" value={form.meltingLoss || ''} onChange={e => setForm({ ...form, meltingLoss: Number(e.target.value) })} /></div>
@@ -317,15 +317,15 @@ export default function UrdPage() {
             </div>
 
             {form.netWeight > 0 && form.rate > 0 && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-xl space-y-2 text-sm">
+              <div className="mt-3 p-3 bg-gray-50 rounded-xl space-y-2 text-[13px]">
                 <div className="flex justify-between"><span>Gross Value</span><span className="font-medium">{fm(grossValue)}</span></div>
                 <div className="flex justify-between"><span>Deduction</span><span className="text-red-600">-{fm(form.deduction || 0)}</span></div>
                 <div className="flex justify-between"><span>Melting Loss</span><span className="text-red-600">-{fm(form.meltingLoss || 0)}%</span></div>
-                <div className="flex justify-between text-lg font-bold border-t pt-2"><span>Final Value</span><span>{fm(finalValue)}</span></div>
+                <div className="flex justify-between text-base font-bold border-t pt-2"><span>Final Value</span><span>{fm(finalValue)}</span></div>
               </div>
             )}
 
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => { setShowForm(false); setEditingId(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (!form.customerName || !form.netWeight || !form.rate) { toast.error('Fill required fields'); return; }
@@ -339,10 +339,10 @@ export default function UrdPage() {
 
       {/* Pay the customer / sell the old gold out */}
       {acting && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setActing(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-3" onClick={() => setActing(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-1">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
+              <h3 className="text-base font-semibold flex items-center gap-2">
                 {acting.mode === 'settle'
                   ? <><Wallet className="w-5 h-5 text-green-600" /> Pay the customer</>
                   : acting.mode === 'sell'
@@ -351,7 +351,7 @@ export default function UrdPage() {
               </h3>
               <button onClick={() => setActing(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-gray-500 mb-3">
               {acting.mode === 'settle'
                 ? `Clears ${acting.row.customerName}'s credit of ₹${Number(acting.row.finalValue || 0).toLocaleString('en-IN')} and takes the money out of cash / bank.`
                 : acting.mode === 'sell'
@@ -410,7 +410,7 @@ export default function UrdPage() {
                 <input className="input-field" value={actionForm.notes} onChange={e => setActionForm({ ...actionForm, notes: e.target.value })} />
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setActing(null)} className="btn-secondary">Cancel</button>
               <button
                 onClick={() => {
@@ -430,16 +430,16 @@ export default function UrdPage() {
 
       {/* View URD Modal */}
       {viewing && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setViewing(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start justify-between mb-4">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-3" onClick={() => setViewing(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-3">
               <div>
-                <h3 className="text-lg font-semibold">URD {viewing.urdNumber}</h3>
+                <h3 className="text-base font-semibold">URD {viewing.urdNumber}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">{STATUS_HELP[viewing.status] || ''}</p>
               </div>
               <button onClick={() => setViewing(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-2 gap-3 text-[13px]">
               <div><p className="text-xs text-gray-400">Customer</p><p className="font-medium">{viewing.customerName}</p></div>
               <div><p className="text-xs text-gray-400">Status</p><p className="font-medium"><span className={'badge ' + (STATUS_STYLE[viewing.status] || 'badge-gray')}>{viewing.status}</span></p></div>
               <div><p className="text-xs text-gray-400">Metal / Purity</p><p className="font-medium">{viewing.metalType} · {viewing.purity}</p></div>
@@ -454,7 +454,7 @@ export default function UrdPage() {
             </div>
 
             {/* the data flow of this exchange */}
-            <div className="mt-5 pt-4 border-t">
+            <div className="mt-5 pt-3 border-t">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ledger movements</p>
               {(!viewing.movements || viewing.movements.length === 0) ? (
                 <p className="text-xs text-gray-400">No ledger movements yet.</p>
@@ -478,16 +478,16 @@ export default function UrdPage() {
               )}
             </div>
 
-            <div className="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t">
-              <button onClick={() => setViewing(null)} className="btn-secondary text-sm">Close</button>
+            <div className="flex flex-wrap justify-end gap-2 mt-3 pt-3 border-t">
+              <button onClick={() => setViewing(null)} className="btn-secondary text-[13px]">Close</button>
               {viewing.status === 'ACTIVE' && (
                 <>
-                  <button onClick={() => openAction('adjust', viewing)} className="btn-secondary text-sm"><BadgeIndianRupee className="w-4 h-4" /> Adjust bill</button>
-                  <button onClick={() => openAction('sell', viewing)} className="btn-secondary text-sm"><ArrowUpRight className="w-4 h-4" /> Sell out</button>
-                  <button onClick={() => openAction('settle', viewing)} className="btn-secondary text-sm"><Wallet className="w-4 h-4" /> Pay customer</button>
+                  <button onClick={() => openAction('adjust', viewing)} className="btn-secondary text-[13px]"><BadgeIndianRupee className="w-4 h-4" /> Adjust bill</button>
+                  <button onClick={() => openAction('sell', viewing)} className="btn-secondary text-[13px]"><ArrowUpRight className="w-4 h-4" /> Sell out</button>
+                  <button onClick={() => openAction('settle', viewing)} className="btn-secondary text-[13px]"><Wallet className="w-4 h-4" /> Pay customer</button>
                 </>
               )}
-              <button onClick={() => { setViewing(null); openEdit(viewing); }} className="btn-primary text-sm"><Pencil className="w-4 h-4" /> Edit</button>
+              <button onClick={() => { setViewing(null); openEdit(viewing); }} className="btn-primary text-[13px]"><Pencil className="w-4 h-4" /> Edit</button>
             </div>
           </div>
         </div>

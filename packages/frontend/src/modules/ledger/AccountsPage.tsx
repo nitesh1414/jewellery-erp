@@ -131,11 +131,11 @@ export default function AccountsPage() {
   const totalGrams = metalAccounts.reduce((s, a) => s + (Number(a.grams) || 0), 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Ledger Accounts</h1>
-          <p className="text-gray-500 text-sm mt-1">Cash, bank, wallet — and metal/material ledgers stocked in grams</p>
+          <p className="text-gray-500 text-[13px] mt-1">Cash, bank, wallet — and metal/material ledgers stocked in grams</p>
         </div>
         <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}>
           <Plus className="w-4 h-4" /> Add Account
@@ -145,32 +145,32 @@ export default function AccountsPage() {
       <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit max-w-full overflow-x-auto">
         {([['ALL', 'All'], ['CASH_BANK', 'Cash & Bank'], ['METAL', 'Metal / Material']] as const).map(([key, label]) => (
           <button key={key} onClick={() => setFilter(key as any)}
-            className={'px-3 py-1.5 text-sm font-medium rounded-md transition-all ' + (filter === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
+            className={'px-3 py-1.5 text-[13px] font-medium rounded-md transition-all ' + (filter === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
             {label}
           </button>
         ))}
       </div>
 
       {metalAccounts.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="card bg-amber-50 border-amber-100">
             <p className="text-xs text-amber-700">Metal ledgers</p>
-            <p className="text-2xl font-bold text-amber-900 mt-1">{metalAccounts.length}</p>
+            <p className="text-xl font-bold text-amber-900 mt-1">{metalAccounts.length}</p>
           </div>
           <div className="card bg-amber-50 border-amber-100">
             <p className="text-xs text-amber-700">Total metal in stock</p>
-            <p className="text-2xl font-bold text-amber-900 mt-1">{fmtGrams(totalGrams)}</p>
+            <p className="text-xl font-bold text-amber-900 mt-1">{fmtGrams(totalGrams)}</p>
           </div>
           <div className="card bg-amber-50 border-amber-100">
             <p className="text-xs text-amber-700">Stock value</p>
-            <p className="text-2xl font-bold text-amber-900 mt-1">
+            <p className="text-xl font-bold text-amber-900 mt-1">
               {fmtMoney(metalAccounts.reduce((s, a) => s + (Number(a.currentBalance) || 0), 0))}
             </p>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {isLoading && <div className="col-span-full text-center py-12 text-gray-400">Loading…</div>}
         {!isLoading && list.length === 0 && (
           <div className="col-span-full card text-center py-12">
@@ -199,7 +199,7 @@ export default function AccountsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  {a.isPrimary && <span className="badge bg-yellow-100 text-yellow-800 text-[10px]">PRIMARY</span>}
+                  {a.isPrimary && <span className="badge bg-yellow-100 text-yellow-800 text-[11px]">PRIMARY</span>}
                   <button className="btn-ghost p-1 text-primary-600" onClick={() => openEdit(a)}><Edit2 className="w-3.5 h-3.5" /></button>
                   <button className="btn-ghost p-1 text-red-500" onClick={async () => { if (await confirmAction({ title: 'Delete account “' + a.name + '”?', message: 'Only accounts with no entries can be deleted.', danger: true, confirmLabel: 'Delete' })) deleteMut.mutate(a.id); }}><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
@@ -209,7 +209,7 @@ export default function AccountsPage() {
                 {metal ? (
                   <>
                     <p className="text-xs text-gray-500">Metal in stock</p>
-                    <p className="text-2xl font-bold mt-1 text-amber-800">{fmtGrams(a.grams)}</p>
+                    <p className="text-xl font-bold mt-1 text-amber-800">{fmtGrams(a.grams)}</p>
                     <div className="mt-2 flex gap-3 text-[11px] text-gray-500">
                       <span>In: <em className="text-green-600 not-italic font-semibold">{fmtGrams(a.totals?.gramsIn || 0)}</em></span>
                       <span>Out: <em className="text-red-600 not-italic font-semibold">{fmtGrams(a.totals?.gramsOut || 0)}</em></span>
@@ -221,7 +221,7 @@ export default function AccountsPage() {
                 ) : (
                   <>
                     <p className="text-xs text-gray-500">Current Balance</p>
-                    <p className={'text-2xl font-bold mt-1 ' + (a.currentBalance >= 0 ? 'text-green-700' : 'text-red-600')}>
+                    <p className={'text-xl font-bold mt-1 ' + (a.currentBalance >= 0 ? 'text-green-700' : 'text-red-600')}>
                       <IndianRupee className="inline w-4 h-4" /> {fmtMoney(a.currentBalance)}
                     </p>
                     {a.totals && (
@@ -239,10 +239,10 @@ export default function AccountsPage() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-3">{editing ? 'Edit' : 'New'} Ledger Account</h3>
-            <p className="text-xs text-gray-500 mb-4">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-3" onClick={() => setShowForm(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-3 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">{editing ? 'Edit' : 'New'} Ledger Account</h3>
+            <p className="text-xs text-gray-500 mb-3">
               {isMetal
                 ? 'A metal (material) ledger tracks stock in grams for one metal + purity — set its opening inventory below.'
                 : 'Track money held in cash, bank, wallet or card-receivables.'}
@@ -325,7 +325,7 @@ export default function AccountsPage() {
                 <input className="input-field" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</button>
               <button className="btn-primary" onClick={submit} disabled={!form.name}>{editing ? 'Update' : 'Save'}</button>
             </div>

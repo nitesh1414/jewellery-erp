@@ -220,16 +220,16 @@ export default function JewelleryPage() {
   const fm = (n: number) => (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Jewellery Items</h1><p className="text-gray-500 text-sm mt-1">Material entry and inventory management</p></div>
+        <div><h1 className="page-title">Jewellery Items</h1><p className="text-gray-500 text-[13px] mt-1">Material entry and inventory management</p></div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setShowBulk(true)} className="btn-secondary"><Package className="w-4 h-4" /> Bulk Import</button>
           <button onClick={openAddItem} className="btn-primary"><Plus className="w-4 h-4" /> Add Item</button>
         </div>
       </div>
 
-      <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="stat-card"><p className="stat-label">Total</p><p className="stat-value">{stats?.totalItems || 0}</p></div>
         <div className="stat-card"><p className="stat-label">In Stock</p><p className="stat-value text-green-600">{stats?.inStock || 0}</p></div>
         <div className="stat-card"><p className="stat-label">Sold</p><p className="stat-value">{stats?.sold || 0}</p></div>
@@ -327,11 +327,11 @@ export default function JewelleryPage() {
         </table>
         </div>
         {data && data.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
-            <span className="text-sm text-gray-500">Page {page} of {data.totalPages}</span>
+          <div className="flex items-center justify-between px-3 py-3 border-t">
+            <span className="text-[13px] text-gray-500">Page {page} of {data.totalPages}</span>
             <div className="flex flex-wrap gap-2">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-sm py-1">Prev</button>
-              <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-sm py-1">Next</button>
+              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-[13px] py-1">Prev</button>
+              <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-[13px] py-1">Next</button>
             </div>
           </div>
         )}
@@ -340,8 +340,8 @@ export default function JewelleryPage() {
       {/* Add Item Modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Jewellery Item' : 'Add Jewellery Item (Material Entry)'}</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 p-3 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">{editingId ? 'Edit Jewellery Item' : 'Add Jewellery Item (Material Entry)'}</h3>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="label">Design Code</label><input className="input-field" value={form.designCode} onChange={e => setForm({...form, designCode: e.target.value})} placeholder="RING-001" /></div>
               <div><label className="label">Metal Type</label><select className="input-field" value={form.metalType} onChange={e => { const metalType = e.target.value; setForm({...form, metalType, metalLedgerAccountId: autoLedgerFor(metalType, form.purity)?.id || ''}); }}>{(settings?.allMetals || ['GOLD', 'SILVER']).map((m: string) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}</select></div>
@@ -356,12 +356,12 @@ export default function JewelleryPage() {
                     <option key={a.id} value={a.id}>{a.name} · {(Number(a.grams) || 0).toFixed(3)} g</option>
                   ))}
                 </select>
-                <p className="text-[10px] text-gray-400 mt-0.5">
+                <p className="text-[11px] text-gray-400 mt-0.5">
                   {metalAccountById(form.metalLedgerAccountId)
                     ? `Stock in this ledger: ${(Number(metalAccountById(form.metalLedgerAccountId)?.grams) || 0).toFixed(3)} g`
                     : 'Pick a metal ledger to filter the ornament master and set metal + purity'}
                 </p>
-                <p className="text-[10px] mt-0.5 text-amber-700">
+                <p className="text-[11px] mt-0.5 text-amber-700">
                   {form.metalLedgerAccountId
                     ? `On save ${fmtG(form.netWeight)} g (net) is deducted from ${metalAccountById(form.metalLedgerAccountId)?.name || 'this ledger'} and added to ornament stock — gross ${fmtG(form.grossWeight)} − stone ${fmtG(form.stoneWeight)} − other ${fmtG(form.otherWeight)}.`
                     : 'No ledger selected — the metal stock will not change.'}
@@ -380,7 +380,7 @@ export default function JewelleryPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-[10px] text-gray-400 mt-0.5">
+                <p className="text-[11px] text-gray-400 mt-0.5">
                   {form.metalLedgerAccountId
                     ? `Stock shown is for ${metalAccountById(form.metalLedgerAccountId)?.metalType || ''} ${metalAccountById(form.metalLedgerAccountId)?.purity || ''}`
                     : 'Stock shown is the total across all metals'}
@@ -399,7 +399,7 @@ export default function JewelleryPage() {
               <div>
                 <label className="label">Net Weight (g) * <span className="text-gray-400">auto</span></label>
                 <input type="number" step="0.001" className="input-field bg-gray-100" value={form.netWeight || ''} readOnly title="Net Weight = Gross Weight − Stone Weight" />
-                <p className="text-[10px] text-gray-400 mt-0.5">Gross − stone − other</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Gross − stone − other</p>
               </div>
               <div><label className="label">Rate / g (₹) *</label><input type="number" className="input-field" value={form.currentRate || ''} onChange={e => setForm({...form, currentRate: Number(e.target.value)})} /></div>
               <div><label className="label">Quantity</label><input type="number" className="input-field" value={form.quantity} onChange={e => setForm({...form, quantity: Number(e.target.value)})} /></div>
@@ -420,7 +420,7 @@ export default function JewelleryPage() {
               <div><label className="label">Hallmark Number</label><input className="input-field" value={form.hallmarkNumber || ''} onChange={e => setForm({...form, hallmarkNumber: e.target.value})} placeholder="HM-916-xxxx" /></div>
             </div>
             <p className="text-xs text-gray-400 mt-2">* Required fields. Barcode auto-generated.</p>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => { setShowAdd(false); setEditingId(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (!form.designCode || !form.netWeight || !form.currentRate) { toast.error('Fill required fields'); return; }
@@ -437,12 +437,12 @@ export default function JewelleryPage() {
       {/* Bulk Import Modal */}
       {showBulk && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowBulk(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Bulk Material Import</h3>
-            <p className="text-sm text-gray-500 mb-3">Paste JSON array of items. Each needs: designCode, metalType, purity, netWeight, currentRate</p>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">Bulk Material Import</h3>
+            <p className="text-[13px] text-gray-500 mb-3">Paste JSON array of items. Each needs: designCode, metalType, purity, netWeight, currentRate</p>
             <textarea className="input-field font-mono text-xs h-48" value={bulkItems} onChange={e => setBulkItems(e.target.value)}
               placeholder='[{"designCode":"RING-002","metalType":"GOLD","purity":"22K","netWeight":10.5,"currentRate":70000},{"designCode":"EARRING-003","metalType":"GOLD","purity":"18K","netWeight":5.2,"currentRate":56000}]' />
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowBulk(false)} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 try { const items = JSON.parse(bulkItems); if (!Array.isArray(items) || items.length === 0) { toast.error('Invalid format'); return; } bulkMutation.mutate(items); }
@@ -457,16 +457,16 @@ export default function JewelleryPage() {
     
       {/* Item detail drawer */}
       {detail && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDetail(null)}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-3" onClick={() => setDetail(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 modal-panel" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <div className="flex items-center justify-between px-3 py-3 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center">
                   <Diamond className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg leading-tight">{detail.designCode || detail.product?.name || 'Item'}</h3>
+                  <h3 className="font-semibold text-base leading-tight">{detail.designCode || detail.product?.name || 'Item'}</h3>
                   <p className="font-mono text-xs text-primary-700">{detail.barcode}</p>
                 </div>
               </div>
@@ -476,25 +476,25 @@ export default function JewelleryPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
               {/* Left summary */}
               <div className="p-6 border-r border-gray-100 bg-gray-50/50 md:rounded-l-2xl">
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
-                    <p className="text-[10px] uppercase tracking-wide text-gray-400">Status</p>
+                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Status</p>
                     <span className={'badge ' + (detail.status === 'IN_STOCK' ? 'badge-success' : detail.status === 'SOLD' ? 'badge-danger' : detail.status === 'RESERVED' ? 'badge-info' : 'badge-warning')}>{detail.status?.replace(/_/g, ' ')}</span>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-wide text-gray-400">Metal / Purity</p>
+                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Metal / Purity</p>
                     <p className="font-semibold">{detail.metalType} · {detail.purity}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><p className="text-[10px] uppercase tracking-wide text-gray-400">Net</p><p className="font-semibold">{detail.netWeight} g</p></div>
-                    <div><p className="text-[10px] uppercase tracking-wide text-gray-400">Gross</p><p className="font-semibold">{detail.grossWeight} g</p></div>
+                    <div><p className="text-[11px] uppercase tracking-wide text-gray-400">Net</p><p className="font-semibold">{detail.netWeight} g</p></div>
+                    <div><p className="text-[11px] uppercase tracking-wide text-gray-400">Gross</p><p className="font-semibold">{detail.grossWeight} g</p></div>
                   </div>
-                  <div className="flex items-center justify-between bg-primary-50 rounded-xl px-4 py-3">
-                    <span className="text-sm text-primary-700">Value at rate</span>
+                  <div className="flex items-center justify-between bg-primary-50 rounded-xl px-3 py-3">
+                    <span className="text-[13px] text-primary-700">Value at rate</span>
                     <span className="font-bold text-primary-900">₹{(detail.netWeight * detail.currentRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-wide text-gray-400">Current rate</p>
+                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Current rate</p>
                     <p className="font-semibold">₹{detail.currentRate?.toLocaleString('en-IN')}/g</p>
                   </div>
                 </div>
@@ -502,7 +502,7 @@ export default function JewelleryPage() {
 
               {/* Right details */}
               <div className="col-span-2 p-6">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-[13px]">
                   {[
                     ['Category', detail.category || '—'],
                     ['Sub category', detail.subCategory || '—'],
@@ -520,7 +520,7 @@ export default function JewelleryPage() {
                     ['Purchase date', detail.purchaseDate ? new Date(detail.purchaseDate).toLocaleDateString('en-IN') : '—'],
                   ].map(([label, value]: any) => (
                     <div key={label} className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wide text-gray-400">{label}</p>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-400">{label}</p>
                       <p className="font-medium truncate">{value}</p>
                     </div>
                   ))}
@@ -528,14 +528,14 @@ export default function JewelleryPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-100">
-              <button onClick={() => { openEditItem(detail); setDetail(null); }} className="btn-secondary text-sm">
+            <div className="flex items-center justify-end gap-2 px-3 py-3 border-t border-gray-100">
+              <button onClick={() => { openEditItem(detail); setDetail(null); }} className="btn-secondary text-[13px]">
                 <Pencil className="w-4 h-4" /> Edit Item
               </button>
-              <button onClick={() => setDetail(null)} className="btn-secondary text-sm">
+              <button onClick={() => setDetail(null)} className="btn-secondary text-[13px]">
                 <X className="w-4 h-4" /> Close
               </button>
-              <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(detail.barcode), '_blank')} className="btn-primary text-sm">
+              <button onClick={() => window.open('/print/barcodes?codes=' + encodeURIComponent(detail.barcode), '_blank')} className="btn-primary text-[13px]">
                 <Printer className="w-4 h-4" /> Print Barcode
               </button>
             </div>

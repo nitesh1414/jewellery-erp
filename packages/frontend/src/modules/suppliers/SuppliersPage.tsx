@@ -32,9 +32,9 @@ export default function SuppliersPage() {
   const fm = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Suppliers</h1><p className="text-gray-500 text-sm mt-1">{data?.total || 0} suppliers</p></div>
+        <div><h1 className="page-title">Suppliers</h1><p className="text-gray-500 text-[13px] mt-1">{data?.total || 0} suppliers</p></div>
         <button onClick={() => setShowAdd(true)} className="btn-primary"><Plus className="w-4 h-4" /> Add Supplier</button>
       </div>
 
@@ -43,12 +43,12 @@ export default function SuppliersPage() {
         <input type="text" placeholder="Search suppliers..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); setSelectedSupplier(null); }} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             {data?.items?.map((s: any) => (
               <div key={s.id} onClick={() => setSelectedSupplier(s)}
-                className={'p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ' + (selectedSupplier?.id === s.id ? 'bg-primary-50 border-l-4 border-l-primary-500' : '')}>
+                className={'p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ' + (selectedSupplier?.id === s.id ? 'bg-primary-50 border-l-4 border-l-primary-500' : '')}>
                 <p className="font-medium text-gray-900">{s.name}</p>
                 <p className="text-xs text-gray-500 mt-1">{s.mobile}</p>
               </div>
@@ -57,21 +57,21 @@ export default function SuppliersPage() {
           </div>
           {data && data.totalPages > 1 && (
             <div className="flex justify-between items-center mt-3">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-sm py-1">Prev</button>
-              <span className="text-sm text-gray-500">{page}/{data.totalPages}</span>
-              <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-sm py-1">Next</button>
+              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-[13px] py-1">Prev</button>
+              <span className="text-[13px] text-gray-500">{page}/{data.totalPages}</span>
+              <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-[13px] py-1">Next</button>
             </div>
           )}
         </div>
 
         <div className="lg:col-span-2">
           {selectedSupplier ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="card">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">{selectedSupplier.name}</h2>
-                    <div className="mt-2 space-y-1 text-sm text-gray-600">
+                    <h2 className="text-lg font-bold text-gray-900">{selectedSupplier.name}</h2>
+                    <div className="mt-2 space-y-1 text-[13px] text-gray-600">
                       {selectedSupplier.mobile && <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" />{selectedSupplier.mobile}</p>}
                       {selectedSupplier.address && <p className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5" />{selectedSupplier.address}</p>}
                       {selectedSupplier.gstin && <p className="text-xs text-gray-400">GST: {selectedSupplier.gstin}</p>}
@@ -85,7 +85,7 @@ export default function SuppliersPage() {
                 <h3 className="section-title mb-3">Ledger</h3>
                 <div className="overflow-auto max-h-64">
                   <div className="table-wrap">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-[13px]">
                     <thead><tr className="border-b"><th className="text-left py-2 text-gray-500">Date</th><th className="text-left py-2 text-gray-500">Type</th><th className="text-right py-2 text-gray-500">Debit</th><th className="text-right py-2 text-gray-500">Credit</th><th className="text-right py-2 text-gray-500">Balance</th></tr></thead>
                     <tbody>
                       {supplierDetail?.ledgerEntries?.map((e: any) => (
@@ -110,8 +110,8 @@ export default function SuppliersPage() {
             <div className="card flex items-center justify-center py-16 text-gray-400">
               <div className="text-center">
                 <Truck className="w-12 h-12 mx-auto mb-3" />
-                <p className="text-lg font-medium">Select a supplier</p>
-                <p className="text-sm">View details, ledger, and purchase history</p>
+                <p className="text-base font-medium">Select a supplier</p>
+                <p className="text-[13px]">View details, ledger, and purchase history</p>
               </div>
             </div>
           )}
@@ -120,8 +120,8 @@ export default function SuppliersPage() {
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Add Supplier</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">Add Supplier</h3>
             <div className="space-y-3">
               <div><label className="label">Name *</label><input className="input-field" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
               <div><label className="label">Mobile</label><input className="input-field" value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} /></div>
@@ -129,7 +129,7 @@ export default function SuppliersPage() {
               <div><label className="label">GSTIN</label><input className="input-field" value={form.gstin} onChange={e => setForm({...form, gstin: e.target.value})} /></div>
               <div><label className="label">Contact Person</label><input className="input-field" value={form.contact} onChange={e => setForm({...form, contact: e.target.value})} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowAdd(false)} className="btn-secondary">Cancel</button>
               <button onClick={() => { if (!form.name) { toast.error('Name required'); return; } createMutation.mutate(form); }} disabled={createMutation.isPending} className="btn-primary">Save</button>
             </div>

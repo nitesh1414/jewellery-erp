@@ -485,7 +485,7 @@ export default function BillingPage() {
   };
 
   return (
-    <div className="space-y-3 pb-4 print:hidden">
+    <div className="space-y-3 pb-3 print:hidden">
       {/* Header — the title only; every control lives in the toolbar below */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <h1 className="page-title">Billing / POS</h1>
@@ -494,14 +494,14 @@ export default function BillingPage() {
             <span className="badge badge-warning whitespace-nowrap">✏ Editing estimate</span>
           )}
           <p className="text-gray-500 text-xs hidden 2xl:block whitespace-nowrap">
-            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F2</kbd> New ·
-            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F3</kbd> Customer ·
-            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F4</kbd> Scan ·
-            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F5</kbd> Manual ·
-            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F6</kbd> Payment ·
-            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F7</kbd> Save ·
-            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F8</kbd> Discount ·
-            <kbd className="bg-gray-100 px-1 rounded text-[10px]">F9</kbd> Inventory
+            <kbd className="bg-gray-100 px-1 rounded text-[11px]">F2</kbd> New ·
+            <kbd className="bg-gray-100 px-1 rounded text-[11px]">F3</kbd> Customer ·
+            <kbd className="bg-gray-100 px-1 rounded text-[11px]">F4</kbd> Scan ·
+            <kbd className="bg-gray-100 px-1 rounded text-[11px]">F5</kbd> Manual ·
+            <kbd className="bg-gray-100 px-1 rounded text-[11px]">F6</kbd> Payment ·
+            <kbd className="bg-gray-100 px-1 rounded text-[11px]">F7</kbd> Save ·
+            <kbd className="bg-gray-100 px-1 rounded text-[11px]">F8</kbd> Discount ·
+            <kbd className="bg-gray-100 px-1 rounded text-[11px]">F9</kbd> Inventory
           </p>
         </div>
       </div>
@@ -512,9 +512,9 @@ export default function BillingPage() {
           {/* Customer + Barcode row */}
           <div className="flex flex-col sm:flex-row gap-2 shrink-0">
             <div className="flex-1 relative">
-              <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm">
+              <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 shadow-sm">
                 <User className="w-4 h-4 text-gray-400" />
-                <input ref={customerInputRef} type="text" className="flex-1 text-sm outline-none bg-transparent"
+                <input ref={customerInputRef} type="text" className="flex-1 text-[13px] outline-none bg-transparent"
                   placeholder="Search customer (F3)..."
                   value={customerSearch}
                   onChange={e => { setCustomerSearch(e.target.value); setShowCustomerResults(true); if (!e.target.value) setCustomer(null); }}
@@ -529,16 +529,16 @@ export default function BillingPage() {
                 <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
                   {customerResults?.items?.map((c: any) => (
                     <button key={c.id} onClick={() => { setCustomer(c); setCustomerSearch(c.name + ' - ' + (c.mobile || '')); setShowCustomerResults(false); }}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                      className="w-full text-left px-3 py-3 hover:bg-gray-50 border-b border-gray-100 flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{c.name}</p>
+                        <p className="text-[13px] font-medium text-gray-900">{c.name}</p>
                         <p className="text-xs text-gray-500">{c.mobile} | {c.city || ''}</p>
                       </div>
                       {c.outstanding > 0 && <span className="text-xs text-red-600 font-medium">₹{fm(c.outstanding)}</span>}
                     </button>
                   ))}
                   <button onClick={() => { setShowCustomerResults(false); setShowNewCustomer(true); }}
-                    className="w-full text-left px-4 py-3 hover:bg-blue-50 text-blue-600 font-medium flex items-center gap-2 border-t border-gray-100">
+                    className="w-full text-left px-3 py-3 hover:bg-blue-50 text-blue-600 font-medium flex items-center gap-2 border-t border-gray-100">
                     <UserPlus className="w-4 h-4" /> Add New Customer &quot;{customerSearch}&quot;
                   </button>
                 </div>
@@ -546,15 +546,15 @@ export default function BillingPage() {
             </div>
 
             <div className="relative sm:w-72">
-              <div className={'flex items-center gap-2 bg-white border-2 rounded-xl px-4 py-2.5 shadow-sm transition-colors ' + (scanFlash ? 'border-green-500 bg-green-50' : 'border-primary-200 focus-within:border-primary-500')}>
+              <div className={'flex items-center gap-2 bg-white border-2 rounded-xl px-3 py-2.5 shadow-sm transition-colors ' + (scanFlash ? 'border-green-500 bg-green-50' : 'border-primary-200 focus-within:border-primary-500')}>
                 <Scan className="w-5 h-5 text-primary-500" />
-                <input ref={barcodeInputRef} type="text" className="flex-1 text-sm outline-none bg-transparent font-mono"
+                <input ref={barcodeInputRef} type="text" className="flex-1 text-[13px] outline-none bg-transparent font-mono"
                   placeholder="Scan barcode (F4)..." value={barcodeInput}
                   onChange={e => setBarcodeInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleBarcodeLookup(barcodeInput); } }} />
                 <button onClick={() => handleBarcodeLookup(barcodeInput)} className="text-xs text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap">Scan</button>
               </div>
-              <p className="text-[10px] text-gray-400 mt-1">Point a barcode scanner here — it adds the item automatically.</p>
+              <p className="text-[11px] text-gray-400 mt-1">Point a barcode scanner here — it adds the item automatically.</p>
             </div>
 
             <div className="flex items-center gap-1.5 flex-wrap shrink-0">
@@ -583,7 +583,7 @@ export default function BillingPage() {
 
           {/* Customer bar */}
           {customer && (
-            <div className="shrink-0 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 flex items-center gap-x-4 gap-y-1 flex-wrap text-sm">
+            <div className="shrink-0 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 flex items-center gap-x-4 gap-y-1 flex-wrap text-[13px]">
               <span className="font-medium text-blue-800">{customer.name}</span>
               <span className="text-blue-400">|</span>
               <span className="text-blue-700">{customer.mobile}</span>
@@ -597,8 +597,8 @@ export default function BillingPage() {
             {items.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3 min-h-[300px] py-10">
                 <ShoppingCart className="w-12 h-12" />
-                <p className="text-lg font-medium">Empty Bill</p>
-                <p className="text-sm">
+                <p className="text-base font-medium">Empty Bill</p>
+                <p className="text-[13px]">
                   Scan barcode <kbd className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">F4</kbd> |
                   Manual item <kbd className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">F5</kbd> |
                   From inventory <kbd className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">F9</kbd>
@@ -620,9 +620,9 @@ export default function BillingPage() {
                       <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50">
                         <td className="table-cell text-gray-400">{idx + 1}</td>
                         <td className="table-cell">
-                          <p className="text-sm font-medium">{item.particular}</p>
+                          <p className="text-[13px] font-medium">{item.particular}</p>
                           {item.barcode && <p className="text-xs text-gray-400">#{item.barcode}</p>}
-                          {item.hallmarkNumber && <p className="text-[10px] text-amber-700">HM: {item.hallmarkNumber} · {item.purity}</p>}
+                          {item.hallmarkNumber && <p className="text-[11px] text-amber-700">HM: {item.hallmarkNumber} · {item.purity}</p>}
                         </td>
                         <td className="table-cell">{item.purity}</td>
                         <td className="table-cell text-right">{item.grossWeight.toFixed(3)}</td>
@@ -631,7 +631,7 @@ export default function BillingPage() {
                         <td className="table-cell text-right">₹{fm(item.metalValue)}</td>
                         <td className="table-cell text-right">
                           {item.makingCharges ? '₹' + fm(item.makingCharges) : '-'}
-                          {item.hallMarkAmount > 0 && <p className="text-[10px] text-amber-700">+HM ₹{fm(item.hallMarkAmount)}</p>}
+                          {item.hallMarkAmount > 0 && <p className="text-[11px] text-amber-700">+HM ₹{fm(item.hallMarkAmount)}</p>}
                         </td>
                         <td className="table-cell text-right text-green-600">{item.cgst ? '₹' + item.cgst.toFixed(2) : '-'}</td>
                         <td className="table-cell text-right text-green-600">{item.sgst ? '₹' + item.sgst.toFixed(2) : '-'}</td>
@@ -653,14 +653,14 @@ export default function BillingPage() {
         {/* Bill Summary & Payment — the full width, under the items */}
         <div className="w-full">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-4 pt-3 pb-2.5 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-3 pt-3 pb-2.5 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Bill Summary & Payment</h3>
               <span className="text-xs text-gray-400">{items.length} item{items.length === 1 ? '' : 's'}</span>
             </div>
 
-            <div className="p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="p-3 sm:p-3 grid grid-cols-1 lg:grid-cols-3 gap-3">
               <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-[13px]">
                 <div>
                   <p className="text-xs text-gray-500">Weight</p>
                   <p className="font-medium text-gray-900">{items.reduce((s, i) => s + i.netWeight, 0).toFixed(3)} g</p>
@@ -674,14 +674,14 @@ export default function BillingPage() {
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{discountType === 'PERCENTAGE' ? '%' : '₹'}</span>
-                  <input ref={discountInputRef} type="number" placeholder="Discount" className="input-field text-sm py-1.5 pl-6 w-full" value={discount || ''}
+                  <input ref={discountInputRef} type="number" placeholder="Discount" className="input-field text-[13px] py-1.5 pl-6 w-full" value={discount || ''}
                     onChange={e => setDiscount(Number(e.target.value) || 0)} />
                 </div>
-                <select value={discountType} onChange={e => setDiscountType(e.target.value as any)} className="input-field py-1.5 w-20 text-sm">
+                <select value={discountType} onChange={e => setDiscountType(e.target.value as any)} className="input-field py-1.5 w-20 text-[13px]">
                   <option value="FIXED">₹</option><option value="PERCENTAGE">%</option>
                 </select>
               </div>
-              {discount > 0 && <div className="flex justify-between text-sm"><span className="text-gray-500">Discount</span><span className="font-medium text-red-600">-₹{fm(discountAmount)}</span></div>}
+              {discount > 0 && <div className="flex justify-between text-[13px]"><span className="text-gray-500">Discount</span><span className="font-medium text-red-600">-₹{fm(discountAmount)}</span></div>}
 
               <div>
                 <label className="label !text-xs text-gray-500 mb-1">Notes / Remark</label>
@@ -692,7 +692,7 @@ export default function BillingPage() {
               </div>
 
               <div className="space-y-3">
-              <div className="text-sm space-y-1.5 lg:border-t lg:border-gray-100 lg:pt-3">
+              <div className="text-[13px] space-y-1.5 lg:border-t lg:border-gray-100 lg:pt-3">
                 <div className="flex justify-between"><span className="text-gray-500">Taxable</span><span>₹{fm(taxableAmount)}</span></div>
                 {billType === 'GST' && <>
                   <div className="flex justify-between"><span className="text-gray-500">CGST (1.5%)</span><span className="text-green-600">₹{totals.totalCgst.toFixed(2)}</span></div>
@@ -702,11 +702,11 @@ export default function BillingPage() {
               </div>
 
               <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-3 -mx-1">
-                <div className="flex justify-between text-base font-bold text-primary-900">
+                <div className="flex justify-between text-sm font-bold text-primary-900">
                   <span>Net Amount</span><span>₹{fm(netAmount)}</span>
                 </div>
-                {totalPaid > 0 && <div className="flex justify-between text-sm text-green-700 font-medium mt-1"><span>Paid</span><span>₹{fm(totalPaid)}</span></div>}
-                {balanceAmount > 0 && <div className="flex justify-between text-sm text-red-600 font-medium mt-1"><span>Balance</span><span>₹{fm(balanceAmount)}</span></div>}
+                {totalPaid > 0 && <div className="flex justify-between text-[13px] text-green-700 font-medium mt-1"><span>Paid</span><span>₹{fm(totalPaid)}</span></div>}
+                {balanceAmount > 0 && <div className="flex justify-between text-[13px] text-red-600 font-medium mt-1"><span>Balance</span><span>₹{fm(balanceAmount)}</span></div>}
               </div>
 
               </div>
@@ -722,7 +722,7 @@ export default function BillingPage() {
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₹</span>
-                      <input type="number" className="input-field text-sm py-1.5 pl-6 w-full" placeholder="Amount received"
+                      <input type="number" className="input-field text-[13px] py-1.5 pl-6 w-full" placeholder="Amount received"
                         value={paymentAmount || ''} onChange={e => setPaymentAmount(Number(e.target.value) || 0)} autoFocus />
                     </div>
                     <button onClick={() => setPaymentAmount(balanceAmount)} className="btn-secondary text-xs px-2 py-1 whitespace-nowrap">Full</button>
@@ -796,20 +796,20 @@ export default function BillingPage() {
                         }}>
                           {(settings?.allPurities || ['24K', '22K', '18K']).map((pr: string) => <option key={pr} value={pr}>{pr.replace('SILVER_', 'Silver ')}</option>)}
                         </select>
-                        <div><label className="text-[10px] text-gray-500">Gross (g)</label>
+                        <div><label className="text-[11px] text-gray-500">Gross (g)</label>
                           <input type="number" step="0.001" className="input-field text-xs py-1" value={urdForm.grossWeight || ''}
                             onChange={e => { const grossWeight = Number(e.target.value); setUrdForm({ ...urdForm, grossWeight, netWeight: calcNet(grossWeight, urdForm.stoneWeight) }); }} /></div>
-                        <div><label className="text-[10px] text-gray-500">Stone (g)</label>
+                        <div><label className="text-[11px] text-gray-500">Stone (g)</label>
                           <input type="number" step="0.001" className="input-field text-xs py-1" value={urdForm.stoneWeight || ''}
                             onChange={e => { const stoneWeight = Number(e.target.value); setUrdForm({ ...urdForm, stoneWeight, netWeight: calcNet(urdForm.grossWeight, stoneWeight) }); }} /></div>
-                        <div><label className="text-[10px] text-gray-500">Net (g) auto</label>
+                        <div><label className="text-[11px] text-gray-500">Net (g) auto</label>
                           <input type="number" step="0.001" className="input-field text-xs py-1 bg-gray-50" value={urdForm.netWeight || ''}
                             onChange={e => setUrdForm({ ...urdForm, netWeight: Number(e.target.value) })} /></div>
-                        <div><label className="text-[10px] text-gray-500">Rate ₹/g</label>
+                        <div><label className="text-[11px] text-gray-500">Rate ₹/g</label>
                           <input type="number" className="input-field text-xs py-1" value={urdForm.rate || ''} onChange={e => setUrdForm({ ...urdForm, rate: Number(e.target.value) })} /></div>
-                        <div><label className="text-[10px] text-gray-500">Deduction ₹</label>
+                        <div><label className="text-[11px] text-gray-500">Deduction ₹</label>
                           <input type="number" className="input-field text-xs py-1" value={urdForm.deduction || ''} onChange={e => setUrdForm({ ...urdForm, deduction: Number(e.target.value) })} /></div>
-                        <div><label className="text-[10px] text-gray-500">Melting loss %</label>
+                        <div><label className="text-[11px] text-gray-500">Melting loss %</label>
                           <input type="number" className="input-field text-xs py-1" value={urdForm.meltingLoss || ''} onChange={e => setUrdForm({ ...urdForm, meltingLoss: Number(e.target.value) })} /></div>
                       </div>
                       <div className="text-[11px] space-y-0.5 text-gray-600">
@@ -831,7 +831,7 @@ export default function BillingPage() {
               {/* Bottom action row */}
               <div className="space-y-2 pt-3 border-t">
                 {!showPaymentPanel && (
-                  <button onClick={() => setShowPaymentPanel(true)} className="btn-secondary w-full py-2 text-sm" title="Payment (F6)">
+                  <button onClick={() => setShowPaymentPanel(true)} className="btn-secondary w-full py-2 text-[13px]" title="Payment (F6)">
                     <CreditCard className="w-4 h-4" /> Add Payment
                   </button>
                 )}
@@ -845,12 +845,12 @@ export default function BillingPage() {
                 )}
                 <div className="flex flex-wrap gap-2">
                   <button onClick={() => { if (items.length === 0) { toast.error('Add at least one item'); return; } setShowConfirmBill(true); }} disabled={items.length === 0 || createSaleMutation.isPending}
-                    className={'flex-1 py-3 text-base inline-flex items-center justify-center gap-2 ' + (billKind === 'ESTIMATE' ? 'bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors' : 'btn-primary')}>
+                    className={'flex-1 py-3 text-sm inline-flex items-center justify-center gap-2 ' + (billKind === 'ESTIMATE' ? 'bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors' : 'btn-primary')}>
                     {createSaleMutation.isPending ? 'Saving...' : <><Save className="w-4 h-4" /> {billKind === 'ESTIMATE' ? 'Save Estimated Bill' : (balanceAmount <= 0 ? 'Finalize & Save' : 'Save Bill')}</>}
                   </button>
                   <button onClick={handleNewBill} className="btn-secondary" title="New Bill (F2)"><X className="w-4 h-4" /></button>
                 </div>
-                {billKind !== 'ESTIMATE' && <p className="text-[10px] text-gray-400 text-center">Review the bill below, then confirm to generate it.</p>}
+                {billKind !== 'ESTIMATE' && <p className="text-[11px] text-gray-400 text-center">Review the bill below, then confirm to generate it.</p>}
                 {payments.length > 0 && <button onClick={() => setPayments([])} className="btn-ghost w-full text-xs py-1 text-red-500">Clear payments</button>}
               </div>
               </div>
@@ -861,14 +861,14 @@ export default function BillingPage() {
 
       {/* Generate Bill Confirmation Modal */}
       {showConfirmBill && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirmBill(false)}>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3" onClick={() => setShowConfirmBill(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 flex flex-col max-h-[88vh] modal-panel" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <div className="flex items-center justify-between px-3 py-3 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center"><Receipt className="w-5 h-5" /></div>
                 <div>
-                  <h3 className="text-lg font-semibold leading-tight">{billKind === 'ESTIMATE' ? 'Save Estimated Bill' : 'Confirm & Generate Bill'}</h3>
+                  <h3 className="text-base font-semibold leading-tight">{billKind === 'ESTIMATE' ? 'Save Estimated Bill' : 'Confirm & Generate Bill'}</h3>
                   <p className="text-xs text-gray-400">{items.length} item{items.length === 1 ? '' : 's'}{customer?.name ? ` · ${customer.name}` : ''}</p>
                 </div>
               </div>
@@ -877,9 +877,9 @@ export default function BillingPage() {
 
             {/* Body: items + totals side by side */}
             <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-0 flex-1 min-h-0">
-              <div className="overflow-y-auto px-4 py-3 border-r border-gray-100">
+              <div className="overflow-y-auto px-3 py-3 border-r border-gray-100">
                 <div className="table-wrap">
-                <table className="w-full text-sm">
+                <table className="w-full text-[13px]">
                   <thead><tr className="border-b border-gray-100 text-gray-500"><th className="text-left py-2 font-medium">Item</th><th className="text-right py-2 font-medium">Wt</th><th className="text-right py-2 font-medium">Amount</th></tr></thead>
                   <tbody>
                     {items.map((it: any, idx: number) => (
@@ -895,7 +895,7 @@ export default function BillingPage() {
               </div>
 
               {/* Totals */}
-              <div className="p-6 bg-gray-50/50 space-y-2 text-sm">
+              <div className="p-6 bg-gray-50/50 space-y-2 text-[13px]">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Bill Summary</p>
                 <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span className="font-medium">₹{fm(totals.subtotal)}</span></div>
                 {discountAmount > 0 && <div className="flex justify-between text-red-600"><span>Discount</span><span>-₹{fm(discountAmount)}</span></div>}
@@ -905,8 +905,8 @@ export default function BillingPage() {
                   <div className="flex justify-between text-green-700"><span>SGST ({(Number(settings?.defaultSgstRate ?? 1.5)).toFixed(1)}%)</span><span>₹{totals.totalSgst.toFixed(2)}</span></div>
                 </>}
                 <div className="flex justify-between text-gray-500"><span>Round Off</span><span>{roundOff.toFixed(2)}</span></div>
-                <div className="flex justify-between items-center bg-primary-600 rounded-xl px-4 py-3 text-white mt-2">
-                  <span className="font-semibold">Net Amount</span><span className="text-lg font-bold">₹{fm(netAmount)}</span>
+                <div className="flex justify-between items-center bg-primary-600 rounded-xl px-3 py-3 text-white mt-2">
+                  <span className="font-semibold">Net Amount</span><span className="text-base font-bold">₹{fm(netAmount)}</span>
                 </div>
                 {totalPaid > 0 && <div className="flex justify-between text-green-700 font-medium"><span>Paid</span><span>₹{fm(totalPaid)}</span></div>}
                 {balanceAmount > 0 && <div className="flex justify-between text-red-600 font-medium"><span>Balance</span><span>₹{fm(balanceAmount)}</span></div>}
@@ -931,11 +931,11 @@ export default function BillingPage() {
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
+            <div className="px-3 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
               <span className="text-xs text-gray-400 max-w-sm">{billKind === 'ESTIMATE' ? 'Saved as an estimate — stock & GST are applied when you confirm it into a bill.' : 'A bill number is generated and stock/ledger are updated. The invoice opens for printing.'}</span>
               <div className="flex flex-wrap gap-2 shrink-0">
-                <button onClick={() => setShowConfirmBill(false)} className="btn-secondary text-sm">Back</button>
-                <button onClick={() => { setShowConfirmBill(false); handleFinalizeBill(); }} disabled={createSaleMutation.isPending} className="btn-primary text-sm inline-flex items-center gap-2">
+                <button onClick={() => setShowConfirmBill(false)} className="btn-secondary text-[13px]">Back</button>
+                <button onClick={() => { setShowConfirmBill(false); handleFinalizeBill(); }} disabled={createSaleMutation.isPending} className="btn-primary text-[13px] inline-flex items-center gap-2">
                   <Save className="w-4 h-4" /> {createSaleMutation.isPending ? 'Saving...' : billKind === 'ESTIMATE' ? 'Save Estimate' : 'Generate & Print'}
                 </button>
               </div>
@@ -947,8 +947,8 @@ export default function BillingPage() {
       {/* Manual Item Modal */}
       {showManualItem && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowManualItem(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Add Manual Item <span className="text-xs text-gray-400 font-normal">(F5)</span></h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">Add Manual Item <span className="text-xs text-gray-400 font-normal">(F5)</span></h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><label className="label">Particular</label><input className="input-field" value={manualItem.particular} onChange={e => setManualItem({ ...manualItem, particular: e.target.value })} placeholder="Gold Ring" autoFocus /></div>
               <div><label className="label">HSN</label><input className="input-field" value={manualItem.hsnCode} onChange={e => setManualItem({ ...manualItem, hsnCode: e.target.value })} /></div>
@@ -970,7 +970,7 @@ export default function BillingPage() {
                 </select></div>
               <div><label className="label">Making Value</label><input type="number" className="input-field" value={manualItem.makingChargeValue} onChange={e => setManualItem({ ...manualItem, makingChargeValue: Number(e.target.value) })} /></div>
               <div className="col-span-2 border rounded-lg p-3 bg-amber-50/50">
-                <p className="label !text-[10px] !mb-2">Hallmark (populated from database master)</p>
+                <p className="label !text-[11px] !mb-2">Hallmark (populated from database master)</p>
                 <select
                   className="input-field mb-2"
                   value=""
@@ -990,7 +990,7 @@ export default function BillingPage() {
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowManualItem(false)} className="btn-secondary">Cancel (Esc)</button>
               <button onClick={() => {
                 if (!manualItem.particular || !manualItem.netWeight || !manualItem.ratePerGram) { toast.error('Fill required fields'); return; }
@@ -1017,7 +1017,7 @@ export default function BillingPage() {
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowInventorySelect(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 flex flex-col max-h-[85vh] modal-panel" onClick={e => e.stopPropagation()}>
             <div className="px-6 pt-6 pb-3">
-              <h3 className="text-lg font-semibold">Select from Inventory <span className="text-xs text-gray-400 font-normal">(F9)</span></h3>
+              <h3 className="text-base font-semibold">Select from Inventory <span className="text-xs text-gray-400 font-normal">(F9)</span></h3>
               <div className="relative mt-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" placeholder="Search by barcode, design, SKU..." className="input-field pl-10" value={inventorySearch} onChange={e => setInventorySearch(e.target.value)} autoFocus />
@@ -1043,11 +1043,11 @@ export default function BillingPage() {
                     <div className="flex items-center gap-3">
                       <Diamond className="w-5 h-5 text-gray-300" />
                       <div>
-                        <p className="font-medium text-sm">{item.designCode}</p>
+                        <p className="font-medium text-[13px]">{item.designCode}</p>
                         <p className="text-xs text-gray-400">#{item.barcode} | {item.purity}</p>
                       </div>
                     </div>
-                    <div className="text-right text-sm">
+                    <div className="text-right text-[13px]">
                       <p className="font-medium">₹{fm(item.currentRate)}/g</p>
                       <p className="text-xs text-gray-400">{item.netWeight}g</p>
                     </div>
@@ -1058,7 +1058,7 @@ export default function BillingPage() {
                 )}
               </div>
             </div>
-            <div className="flex justify-end px-4 py-3 border-t border-gray-100">
+            <div className="flex justify-end px-3 py-3 border-t border-gray-100">
               <button onClick={() => setShowInventorySelect(false)} className="btn-secondary">Close (Esc)</button>
             </div>
           </div>
@@ -1068,8 +1068,8 @@ export default function BillingPage() {
       {/* New Customer Modal */}
       {showNewCustomer && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowNewCustomer(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">New Customer</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">New Customer</h3>
             <div className="space-y-3">
               <div><label className="label">Name *</label><input className="input-field" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} placeholder="Customer name" autoFocus /></div>
               <div><label className="label">Mobile</label><input className="input-field" value={newCustomer.mobile} onChange={e => setNewCustomer({ ...newCustomer, mobile: e.target.value })} placeholder="Mobile number" /></div>
@@ -1079,7 +1079,7 @@ export default function BillingPage() {
                 <div><label className="label">GSTIN</label><input className="input-field" value={newCustomer.gstin} onChange={e => setNewCustomer({ ...newCustomer, gstin: e.target.value })} /></div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowNewCustomer(false)} className="btn-secondary">Cancel</button>
               <button onClick={handleCreateCustomer} className="btn-primary"><UserPlus className="w-4 h-4" /> Save & Select</button>
             </div>
@@ -1090,9 +1090,9 @@ export default function BillingPage() {
       {/* Edit Line Modal */}
       {editingItemId && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setEditingItemId(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-6 max-h-[85vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-1">Edit Line — change rate, making, URD, GST</h3>
-            <p className="text-xs text-gray-500 mb-4">Override gold rate, making charge, URD value, or exclude GST for this line only</p>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-3 sm:p-6 max-h-[85vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-1">Edit Line — change rate, making, URD, GST</h3>
+            <p className="text-xs text-gray-500 mb-3">Override gold rate, making charge, URD value, or exclude GST for this line only</p>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="label">Purity</label>
                 <select className="input-field" value={editForm.purity} onChange={e => {
@@ -1115,7 +1115,7 @@ export default function BillingPage() {
               <div><label className="label">Discount on line (₹)</label><input type="number" className="input-field" value={editForm.discount} onChange={e => setEditForm({ ...editForm, discount: Number(e.target.value) })} /></div>
               <div><label className="label">URD Value (₹)</label><input type="number" className="input-field" value={editForm.urd} onChange={e => setEditForm({ ...editForm, urd: Number(e.target.value) })} /></div>
               <div className="col-span-2 border rounded-lg p-3 bg-amber-50/50">
-                <p className="label !text-[10px] !mb-2">Hallmark (populated from database master)</p>
+                <p className="label !text-[11px] !mb-2">Hallmark (populated from database master)</p>
                 <select
                   className="input-field mb-2"
                   value=""
@@ -1127,9 +1127,9 @@ export default function BillingPage() {
                   ))}
                 </select>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="label !text-[10px]">Hallmark Number</label>
+                  <div><label className="label !text-[11px]">Hallmark Number</label>
                     <input className="input-field" placeholder="HM-916-xxxx (optional)" value={editForm.hallmarkNumber || ''} onChange={e => setEditForm({ ...editForm, hallmarkNumber: e.target.value })} /></div>
-                  <div><label className="label !text-[10px]">Hallmark Charge (₹)</label>
+                  <div><label className="label !text-[11px]">Hallmark Charge (₹)</label>
                     <div className="flex gap-2">
                       <input type="number" className="input-field" value={editForm.hallmarkCharge || ''} onChange={e => setEditForm({ ...editForm, hallmarkCharge: Number(e.target.value) })} placeholder="0" />
                       <button type="button" className="btn-ghost text-xs px-2 border rounded-lg whitespace-nowrap"
@@ -1143,12 +1143,12 @@ export default function BillingPage() {
               <div className="col-span-2 flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={editForm.gstIncluded} onChange={e => setEditForm({ ...editForm, gstIncluded: e.target.checked })} />
-                  <span className="text-sm font-medium">Include GST on this line</span>
+                  <span className="text-[13px] font-medium">Include GST on this line</span>
                 </label>
                 <span className="text-xs text-gray-500 ml-auto">Uncheck to exclude GST for this item (e.g. URD/old gold)</span>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setEditingItemId(null)} className="btn-secondary">Cancel</button>
               <button onClick={() => updateEditedItem(editingItemId)} className="btn-primary"><Save className="w-4 h-4" /> Save Changes</button>
             </div>

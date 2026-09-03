@@ -54,11 +54,11 @@ export default function OrnamentMasterPage() {
   const byGender = (g: string) => items.filter((o: any) => o.gender === g);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="page-title">Ledger Master — Ornaments</h1>
-          <p className="text-gray-500 text-sm mt-1">Master list of ornaments classified as male / female / unisex. Used in item entry, inventory and job work.</p>
+          <p className="text-gray-500 text-[13px] mt-1">Master list of ornaments classified as male / female / unisex. Used in item entry, inventory and job work.</p>
         </div>
         <button onClick={() => { setEditing(null); setForm({ name: '', gender: 'FEMALE', category: '', notes: '', metalLedgerAccountId: '' }); setShowAdd(true); }} className="btn-primary">
           <Plus className="w-4 h-4" /> Add Ornament
@@ -81,9 +81,9 @@ export default function OrnamentMasterPage() {
       {isLoading ? (
         <div className="text-center py-12 text-gray-400">Loading…</div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           {GENDERS.map((g) => (
-            <div key={g.value} className={'rounded-xl border p-4 ' + g.tone}>
+            <div key={g.value} className={'rounded-xl border p-3 ' + g.tone}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 font-semibold">
                   <g.icon className="w-4 h-4" /> {g.label}
@@ -91,11 +91,11 @@ export default function OrnamentMasterPage() {
                 <span className="text-xs opacity-70">{byGender(g.value).length} items</span>
               </div>
               <div className="space-y-2">
-                {byGender(g.value).length === 0 && <p className="text-xs opacity-60 py-4 text-center">Nothing here yet — add one</p>}
+                {byGender(g.value).length === 0 && <p className="text-xs opacity-60 py-3 text-center">Nothing here yet — add one</p>}
                 {byGender(g.value).map((o: any) => (
                   <div key={o.id} className="bg-white rounded-lg border border-black/5 px-3 py-2 flex items-center justify-between group">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{o.name}</p>
+                      <p className="text-[13px] font-medium truncate">{o.name}</p>
                       <p className="text-[11px] text-gray-400">{o.category || '—'}{!o.isActive ? ' · inactive' : ''}</p>
                       <p className="text-[11px] mt-0.5 flex flex-wrap items-center gap-1">
                         {o.metalLedgerAccountId && (
@@ -126,9 +126,9 @@ export default function OrnamentMasterPage() {
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => { setShowAdd(false); setEditing(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Ornament' : 'Add Ornament'}</h3>
-            <div className="space-y-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-3 sm:p-4 modal-panel" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">{editing ? 'Edit Ornament' : 'Add Ornament'}</h3>
+            <div className="space-y-3">
               <div><label className="label">Ornament Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ladies Ring" autoFocus /></div>
               <div>
                 <label className="label">Classification</label>
@@ -156,7 +156,7 @@ export default function OrnamentMasterPage() {
               </div>
               <div><label className="label">Notes</label><input className="input-field" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => { setShowAdd(false); setEditing(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => { if (!form.name.trim()) { toast.error('Name required'); return; } saveMutation.mutate(form); }} className="btn-primary" disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? 'Saving…' : editing ? 'Update' : 'Add'}

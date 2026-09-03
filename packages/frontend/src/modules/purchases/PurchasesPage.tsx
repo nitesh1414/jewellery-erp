@@ -263,9 +263,9 @@ export default function PurchasesPage() {
   const metalAccountName = (id: string) => metalAccounts.find((a: any) => a.id === id)?.name || '';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Purchases</h1><p className="text-gray-500 text-sm mt-1">Metal (bullion) purchases add weight to a metal ledger — ornament purchases add items to inventory and deduct their net weight (gross − stone − other) from it</p></div>
+        <div><h1 className="page-title">Purchases</h1><p className="text-gray-500 text-[13px] mt-1">Metal (bullion) purchases add weight to a metal ledger — ornament purchases add items to inventory and deduct their net weight (gross − stone − other) from it</p></div>
         <button onClick={() => { resetForm(); setShowCreate(true); }} className="btn-primary"><Plus className="w-4 h-4" /> New Purchase</button>
       </div>
 
@@ -291,12 +291,12 @@ export default function PurchasesPage() {
               <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
                 <td className="table-cell font-medium">{p.invoiceNumber}</td>
                 <td className="table-cell">
-                  <span className={'badge text-[10px] ' + ((p.entryType || 'ORNAMENT') === 'METAL' ? 'bg-amber-100 text-amber-800' : 'bg-primary-50 text-primary-700')}>
+                  <span className={'badge text-[11px] ' + ((p.entryType || 'ORNAMENT') === 'METAL' ? 'bg-amber-100 text-amber-800' : 'bg-primary-50 text-primary-700')}>
                     {(p.entryType || 'ORNAMENT') === 'METAL' ? 'Metal' : 'Ornament'}
                   </span>
                 </td>
                 <td className="table-cell"><Truck className="w-3.5 h-3.5 inline mr-1 text-gray-400" />{p.supplier?.name || '—'}</td>
-                <td className="table-cell text-sm">{new Date(p.invoiceDate).toLocaleDateString('en-IN')}</td>
+                <td className="table-cell text-[13px]">{new Date(p.invoiceDate).toLocaleDateString('en-IN')}</td>
                 <td className="table-cell">{p.metalType}{p.purity && p.purity !== 'MIXED' ? ' · ' + p.purity : ''}{(p.items?.length || 0) > 1 ? ` (${p.items.length} items)` : ''}</td>
                 <td className="table-cell text-right font-medium">{p.netWeight?.toFixed(3)}g</td>
                 <td className="table-cell text-right">{fm(p.totalAmount)}</td>
@@ -314,11 +314,11 @@ export default function PurchasesPage() {
         </table>
         </div>
         {data && data.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
-            <span className="text-sm text-gray-500">Page {page} of {data.totalPages}</span>
+          <div className="flex items-center justify-between px-3 py-3 border-t">
+            <span className="text-[13px] text-gray-500">Page {page} of {data.totalPages}</span>
             <div className="flex flex-wrap gap-2">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-sm py-1">Prev</button>
-              <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-sm py-1">Next</button>
+              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-[13px] py-1">Prev</button>
+              <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-[13px] py-1">Next</button>
             </div>
           </div>
         )}
@@ -327,25 +327,25 @@ export default function PurchasesPage() {
       {/* View Purchase Modal */}
       {viewing && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setViewing(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start justify-between mb-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 p-3 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold">Purchase {viewing.invoiceNumber}</h3>
-                <span className={'badge text-[10px] ' + ((viewing.entryType || 'ORNAMENT') === 'METAL' ? 'bg-amber-100 text-amber-800' : 'bg-primary-50 text-primary-700')}>
+                <h3 className="text-base font-semibold">Purchase {viewing.invoiceNumber}</h3>
+                <span className={'badge text-[11px] ' + ((viewing.entryType || 'ORNAMENT') === 'METAL' ? 'bg-amber-100 text-amber-800' : 'bg-primary-50 text-primary-700')}>
                   {(viewing.entryType || 'ORNAMENT') === 'METAL' ? 'Metal purchase' : 'Ornament purchase'}
                 </span>
               </div>
               <button onClick={() => setViewing(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[13px] mb-3">
               <div><p className="text-xs text-gray-400">Supplier</p><p className="font-medium">{viewing.supplier?.name || '—'}</p></div>
               <div><p className="text-xs text-gray-400">Invoice Date</p><p className="font-medium">{new Date(viewing.invoiceDate).toLocaleDateString('en-IN')}</p></div>
               <div><p className="text-xs text-gray-400">Total</p><p className="font-medium">{fm(viewing.totalAmount)}</p></div>
               <div><p className="text-xs text-gray-400">Paid / Balance</p><p className="font-medium text-green-600">{fm(viewing.paidAmount)}</p><p className="text-red-600">{viewing.balanceAmount > 0 ? fm(viewing.balanceAmount) : 'Settled'}</p></div>
             </div>
-            <div className="border rounded-xl overflow-hidden mb-4">
+            <div className="border rounded-xl overflow-hidden mb-3">
               <div className="table-wrap">
-              <table className="w-full text-sm">
+              <table className="w-full text-[13px]">
                 <thead><tr className="bg-gray-50 border-b">
                   <th className="text-left px-3 py-2 text-gray-500">Design</th>
                   <th className="text-left px-3 py-2 text-gray-500">Metal</th>
@@ -374,8 +374,8 @@ export default function PurchasesPage() {
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => { setViewing(null); openEdit(viewing); }} className="btn-secondary text-sm"><Pencil className="w-4 h-4" /> Edit</button>
-              <button onClick={() => setViewing(null)} className="btn-primary text-sm">Close</button>
+              <button onClick={() => { setViewing(null); openEdit(viewing); }} className="btn-secondary text-[13px]"><Pencil className="w-4 h-4" /> Edit</button>
+              <button onClick={() => setViewing(null)} className="btn-primary text-[13px]">Close</button>
             </div>
           </div>
         </div>
@@ -384,8 +384,8 @@ export default function PurchasesPage() {
       {/* Create / Edit Purchase Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowCreate(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl mx-4 p-4 sm:p-6 max-h-[92vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">{editingId ? 'Edit Purchase' : 'New Purchase'} — Material Entry (multiple metals)</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl mx-4 p-3 sm:p-6 max-h-[92vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">{editingId ? 'Edit Purchase' : 'New Purchase'} — Material Entry (multiple metals)</h3>
 
             {/* Purchase type: raw metal (bullion) or finished ornament */}
             <div className="mb-5">
@@ -396,7 +396,7 @@ export default function PurchasesPage() {
                   onClick={() => { setEntryType('METAL'); setItemForm({ ...emptyItem(), rate: getRateForPurity(itemForm.purity) }); setItems([]); }}
                   className={'text-left border rounded-xl p-3 transition-all ' + (isMetalEntry ? 'border-amber-400 bg-amber-50 ring-2 ring-amber-200' : 'border-gray-200 hover:border-gray-300')}
                 >
-                  <div className="flex items-center gap-2 font-semibold text-sm"><Gem className="w-4 h-4 text-amber-600" /> Metal / Bullion</div>
+                  <div className="flex items-center gap-2 font-semibold text-[13px]"><Gem className="w-4 h-4 text-amber-600" /> Metal / Bullion</div>
                   <p className="text-[11px] text-gray-500 mt-1">Raw metal (coin, bar, scrap). The weight is <strong>added</strong> to the metal ledger of that metal + purity — no inventory item is created.</p>
                 </button>
                 <button
@@ -404,14 +404,14 @@ export default function PurchasesPage() {
                   onClick={() => { setEntryType('ORNAMENT'); setItemForm(emptyItem()); setItems([]); }}
                   className={'text-left border rounded-xl p-3 transition-all ' + (!isMetalEntry ? 'border-primary-400 bg-primary-50 ring-2 ring-primary-200' : 'border-gray-200 hover:border-gray-300')}
                 >
-                  <div className="flex items-center gap-2 font-semibold text-sm"><Package className="w-4 h-4 text-primary-600" /> Ornament / Jewellery</div>
+                  <div className="flex items-center gap-2 font-semibold text-[13px]"><Package className="w-4 h-4 text-primary-600" /> Ornament / Jewellery</div>
                   <p className="text-[11px] text-gray-500 mt-1">Readymade pieces. Each line is barcoded into inventory and its <strong>net weight (gross − stone − other) is deducted</strong> from the metal ledger you select.</p>
                 </button>
               </div>
             </div>
 
             {/* Purchase Header */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               <div className="col-span-2"><label className="label">Supplier *</label>
                 <select className="input-field" value={form.supplierId} onChange={e => setForm({...form, supplierId: e.target.value})}>
                   <option value="">Select supplier...</option>
@@ -430,8 +430,8 @@ export default function PurchasesPage() {
             </div>
 
             {/* Item Entry */}
-            <div className="border rounded-xl p-4 mb-4 bg-gray-50">
-              <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+            <div className="border rounded-xl p-3 mb-3 bg-gray-50">
+              <h4 className="font-medium text-[13px] mb-3 flex items-center gap-2">
                 {isMetalEntry ? <><Gem className="w-4 h-4 text-amber-600" /> Metal line</> : <><Plus className="w-4 h-4" /> Ornament line</>}
               </h4>
 
@@ -525,7 +525,7 @@ export default function PurchasesPage() {
                           </option>
                         ))}
                       </select>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Stock from inventory for {itemForm.metalType} {itemForm.purity}</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">Stock from inventory for {itemForm.metalType} {itemForm.purity}</p>
                     </div>
                     <div>
                       <label className="label">Ornament For</label>
@@ -547,7 +547,7 @@ export default function PurchasesPage() {
                       <label className="label">Net (g) <span className="text-gray-400">auto</span></label>
                       <input type="number" step="0.001" className="input-field text-xs bg-gray-100" value={itemForm.netWeight || ''} readOnly
                         title="Net Weight = Gross Weight − Stone Weight" />
-                      <p className="text-[10px] text-gray-400 mt-0.5">Gross − stone</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">Gross − stone</p>
                     </div>
                     <div><label className="label">Rate/g (₹) *</label>
                       <input type="number" className="input-field text-xs" value={itemForm.rate || ''} onChange={e => setItemForm({...itemForm, rate: Number(e.target.value)})} /></div>
@@ -596,9 +596,9 @@ export default function PurchasesPage() {
             </div>
 
             {items.length > 0 && (
-              <div className="mb-4">
+              <div className="mb-3">
                 <div className="table-wrap">
-                <table className="w-full text-sm">
+                <table className="w-full text-[13px]">
                   <thead><tr className="border-b">
                     <th className="text-left py-2 text-gray-500">Design</th>
                     <th className="text-left py-2 text-gray-500">Metal</th>
@@ -642,7 +642,7 @@ export default function PurchasesPage() {
             )}
 
             {/* Payment */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div><label className="label">Paid Amount (₹)</label>
                 <input type="number" className="input-field" value={form.paidAmount || ''} onChange={e => setForm({...form, paidAmount: Number(e.target.value)})} /></div>
               <div><label className="label">Payment Mode</label>
@@ -659,7 +659,7 @@ export default function PurchasesPage() {
                 <input className="input-field" value={fm(balanceAmount)} disabled /></div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowCreate(false)} className="btn-secondary">Cancel</button>
               <button onClick={save} disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary">
                 {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : editingId ? 'Update Purchase' : isMetalEntry ? 'Save Metal Purchase' : 'Create Purchase & Add to Inventory'}

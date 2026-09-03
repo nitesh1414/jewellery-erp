@@ -64,9 +64,9 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Reports Center</h1><p className="text-gray-500 text-sm mt-1">Sales, GST segregation, ledgers, custom reports & more</p></div>
+        <div><h1 className="page-title">Reports Center</h1><p className="text-gray-500 text-[13px] mt-1">Sales, GST segregation, ledgers, custom reports & more</p></div>
       </div>
 
       {/* Date filter */}
@@ -80,7 +80,7 @@ export default function ReportsPage() {
       <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit flex-wrap">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => setTab(key)}
-            className={'px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ' + (tab === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
+            className={'px-3 py-2 text-[13px] font-medium rounded-md transition-all flex items-center gap-2 ' + (tab === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
             <Icon className="w-4 h-4" />{label}
           </button>
         ))}
@@ -88,9 +88,9 @@ export default function ReportsPage() {
 
       {/* ============ SALES REGISTER ============ */}
       {tab === 'sales' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {salesReport?.summary && (
-            <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <div className="stat-card"><p className="stat-label">Total Bills</p><p className="stat-value">{salesReport.summary.totalSales}</p></div>
               <div className="stat-card"><p className="stat-label">Total Sales</p><p className="stat-value">{fm(salesReport.summary.totalAmount)}</p></div>
               <div className="stat-card"><p className="stat-label">Tax</p><p className="stat-value">{fm(salesReport.summary.totalTax)}</p></div>
@@ -99,7 +99,7 @@ export default function ReportsPage() {
             </div>
           )}
           <div className="flex justify-end">
-            <button onClick={() => exportCSV(salesReport?.sales, 'sales-register-' + startDate + '-' + endDate)} className="btn-secondary text-sm">
+            <button onClick={() => exportCSV(salesReport?.sales, 'sales-register-' + startDate + '-' + endDate)} className="btn-secondary text-[13px]">
               <Download className="w-4 h-4" /> Export CSV
             </button>
           </div>
@@ -115,7 +115,7 @@ export default function ReportsPage() {
                 {salesReport?.sales?.map((s: any) => (
                   <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50">
                     <td className="table-cell font-medium">{s.billNumber}</td>
-                    <td className="table-cell text-sm">{new Date(s.billDate).toLocaleDateString('en-IN')}</td>
+                    <td className="table-cell text-[13px]">{new Date(s.billDate).toLocaleDateString('en-IN')}</td>
                     <td className="table-cell">{s.customerName}</td>
                     <td className="table-cell"><span className={'badge ' + (s.billType === 'GST' ? 'badge-info' : 'badge-gray')}>{s.billType}</span></td>
                     <td className="table-cell text-right font-medium">{fm(s.netAmount)}</td>
@@ -135,12 +135,12 @@ export default function ReportsPage() {
 
       {/* ============ GST / NON-GST SEGREGATION ============ */}
       {tab === 'gst' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Comparison summary */}
           <div className="grid grid-cols-3 gap-3">
             <div className="card">
               <h3 className="section-title mb-3 text-blue-700">GST Bills</h3>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-[13px]">
                 <div className="flex justify-between"><span>Bills</span><span className="font-bold">{gstSales?.summary?.totalSales || 0}</span></div>
                 <div className="flex justify-between"><span>Taxable Value</span><span className="font-bold">{fm(gstSales?.summary?.totalAmount)}</span></div>
                 <div className="flex justify-between"><span>CGST</span><span>{fm(gstSales?.summary?.totalCgst)}</span></div>
@@ -150,7 +150,7 @@ export default function ReportsPage() {
             </div>
             <div className="card">
               <h3 className="section-title mb-3 text-gray-600">Non-GST Bills</h3>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-[13px]">
                 <div className="flex justify-between"><span>Bills</span><span className="font-bold">{ngSales?.summary?.totalSales || 0}</span></div>
                 <div className="flex justify-between"><span>Total Value</span><span className="font-bold">{fm(ngSales?.summary?.totalAmount)}</span></div>
                 <div className="flex justify-between"><span>Tax</span><span>—</span></div>
@@ -160,7 +160,7 @@ export default function ReportsPage() {
             </div>
             <div className="card bg-gray-50">
               <h3 className="section-title mb-3">Combined</h3>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-[13px]">
                 <div className="flex justify-between"><span>Total Bills</span><span className="font-bold">{(gstSales?.summary?.totalSales || 0) + (ngSales?.summary?.totalSales || 0)}</span></div>
                 <div className="flex justify-between"><span>Total Sales</span><span className="font-bold">{fm((gstSales?.summary?.totalAmount || 0) + (ngSales?.summary?.totalAmount || 0))}</span></div>
                 <div className="flex justify-between"><span>Total Collection</span><span className="font-bold text-green-600">{fm((gstSales?.summary?.totalCollection || 0) + (ngSales?.summary?.totalCollection || 0))}</span></div>
@@ -173,7 +173,7 @@ export default function ReportsPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="section-title">HSN-wise GST Summary</h3>
-              <button onClick={() => exportCSV(hsnReport, 'hsn-summary')} className="btn-secondary text-sm"><Download className="w-4 h-4" /> Export</button>
+              <button onClick={() => exportCSV(hsnReport, 'hsn-summary')} className="btn-secondary text-[13px]"><Download className="w-4 h-4" /> Export</button>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="table-wrap">
@@ -206,10 +206,10 @@ export default function ReportsPage() {
 
       {/* ============ GST REPORT FOR CA (GSTR-1 style) ============ */}
       {tab === 'ca' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Period & summary */}
           <div className="card">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="section-title">GST Summary — {new Date(startDate).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</h3>
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => {
@@ -227,30 +227,30 @@ export default function ReportsPage() {
                     'Total Tax': (s.totalTax || 0).toFixed(2),
                   }));
                   exportCSV(rows, 'GST-return-' + startDate + '-to-' + endDate);
-                }} className="btn-secondary text-sm"><Download className="w-4 h-4" /> Export GST CSV (for CA)</button>
-                <button onClick={() => window.print()} className="btn-secondary text-sm"><FileText className="w-4 h-4" /> Print</button>
+                }} className="btn-secondary text-[13px]"><Download className="w-4 h-4" /> Export GST CSV (for CA)</button>
+                <button onClick={() => window.print()} className="btn-secondary text-[13px]"><FileText className="w-4 h-4" /> Print</button>
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              <div className="p-4 bg-blue-50 rounded-xl">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="p-3 bg-blue-50 rounded-xl">
                 <p className="text-xs text-blue-700">Taxable Value</p>
-                <p className="text-xl font-bold text-blue-800 mt-1">{fm(salesReport?.summary?.totalAmount)}</p>
+                <p className="text-lg font-bold text-blue-800 mt-1">{fm(salesReport?.summary?.totalAmount)}</p>
               </div>
-              <div className="p-4 bg-green-50 rounded-xl">
+              <div className="p-3 bg-green-50 rounded-xl">
                 <p className="text-xs text-green-700">CGST Collected</p>
-                <p className="text-xl font-bold text-green-800 mt-1">{fm(salesReport?.summary?.totalCgst)}</p>
+                <p className="text-lg font-bold text-green-800 mt-1">{fm(salesReport?.summary?.totalCgst)}</p>
               </div>
-              <div className="p-4 bg-green-50 rounded-xl">
+              <div className="p-3 bg-green-50 rounded-xl">
                 <p className="text-xs text-green-700">SGST Collected</p>
-                <p className="text-xl font-bold text-green-800 mt-1">{fm(salesReport?.summary?.totalSgst)}</p>
+                <p className="text-lg font-bold text-green-800 mt-1">{fm(salesReport?.summary?.totalSgst)}</p>
               </div>
-              <div className="p-4 bg-purple-50 rounded-xl">
+              <div className="p-3 bg-purple-50 rounded-xl">
                 <p className="text-xs text-purple-700">IGST Collected</p>
-                <p className="text-xl font-bold text-purple-800 mt-1">{fm(salesReport?.summary?.totalIgst)}</p>
+                <p className="text-lg font-bold text-purple-800 mt-1">{fm(salesReport?.summary?.totalIgst)}</p>
               </div>
-              <div className="p-4 bg-gray-800 rounded-xl text-white">
+              <div className="p-3 bg-gray-800 rounded-xl text-white">
                 <p className="text-xs text-gray-300">Total GST Payable</p>
-                <p className="text-xl font-bold mt-1">{fm(salesReport?.summary?.totalTax)}</p>
+                <p className="text-lg font-bold mt-1">{fm(salesReport?.summary?.totalTax)}</p>
               </div>
             </div>
           </div>
@@ -273,7 +273,7 @@ export default function ReportsPage() {
 
           {/* Invoice-wise GSTR-1 table */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
+            <div className="px-3 py-3 border-b bg-gray-50 flex items-center justify-between">
               <h3 className="font-semibold text-gray-700">Invoice-wise Taxable Supplies (GSTR-1)</h3>
               <span className="text-xs text-gray-400">{salesReport?.sales?.length || 0} invoices</span>
             </div>
@@ -298,7 +298,7 @@ export default function ReportsPage() {
                   {(salesReport?.sales || []).map((s: any) => (
                     <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50">
                       <td className="table-cell font-medium">{s.billNumber}</td>
-                      <td className="table-cell text-sm whitespace-nowrap">{new Date(s.billDate).toLocaleDateString('en-IN')}</td>
+                      <td className="table-cell text-[13px] whitespace-nowrap">{new Date(s.billDate).toLocaleDateString('en-IN')}</td>
                       <td className="table-cell">{s.customerName}</td>
                       <td className="table-cell font-mono text-xs">{s.customerGstin || '—'}</td>
                       <td className="table-cell">
@@ -336,7 +336,7 @@ export default function ReportsPage() {
 
           {/* HSN summary */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b bg-gray-50">
+            <div className="px-3 py-3 border-b bg-gray-50">
               <h3 className="font-semibold text-gray-700">HSN-wise Summary (for GSTR-1 Table 12)</h3>
             </div>
             <div className="table-wrap">
@@ -371,10 +371,10 @@ export default function ReportsPage() {
 
       {/* ============ CUSTOM REPORT BUILDER ============ */}
       {tab === 'custom' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="card">
-            <h3 className="section-title mb-4">Custom Report Builder</h3>
-            <div className="flex items-center gap-4">
+            <h3 className="section-title mb-3">Custom Report Builder</h3>
+            <div className="flex items-center gap-3">
               <div>
                 <label className="label">Report On</label>
                 <select className="input-field w-48" value={customEntity} onChange={e => setCustomEntity(e.target.value as any)}>
@@ -404,7 +404,7 @@ export default function ReportsPage() {
                 </button>
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-4">Exports the full filtered dataset to CSV. Open in Excel for further pivoting.</p>
+            <p className="text-xs text-gray-400 mt-3">Exports the full filtered dataset to CSV. Open in Excel for further pivoting.</p>
           </div>
 
           {/* Live preview */}
@@ -419,7 +419,7 @@ export default function ReportsPage() {
                 <tbody>
                   {(salesReport?.sales || []).slice(0, 15).map((s: any) => (
                     <tr key={s.id} className="border-b border-gray-50">
-                      <td className="table-cell font-medium">{s.billNumber}</td><td className="table-cell text-sm">{new Date(s.billDate).toLocaleDateString('en-IN')}</td>
+                      <td className="table-cell font-medium">{s.billNumber}</td><td className="table-cell text-[13px]">{new Date(s.billDate).toLocaleDateString('en-IN')}</td>
                       <td className="table-cell">{s.customerName}</td><td className="table-cell">{s.billType}</td>
                       <td className="table-cell text-right">{fm(s.netAmount)}</td><td className="table-cell text-right">{fm(s.paidAmount)}</td>
                       <td className="table-cell text-right">{fm(s.balanceAmount)}</td>
@@ -442,7 +442,7 @@ export default function ReportsPage() {
                       <td className="table-cell font-mono text-xs">{c.customerId}</td><td className="table-cell font-medium">{c.name}</td>
                       <td className="table-cell">{c.mobile || '—'}</td><td className="table-cell">{c.city || '—'}</td>
                       <td className="table-cell">{c.gstin || '—'}</td>
-                      <td className="table-cell text-sm">{new Date(c.registrationDate).toLocaleDateString('en-IN')}</td>
+                      <td className="table-cell text-[13px]">{new Date(c.registrationDate).toLocaleDateString('en-IN')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -464,7 +464,7 @@ export default function ReportsPage() {
                       <td className="table-cell text-right font-medium">{fm(p.amount)}</td>
                       <td className="table-cell"><span className="badge-info">{p.paymentMode}</span></td>
                       <td className="table-cell">{p.reference || '—'}</td>
-                      <td className="table-cell text-sm">{new Date(p.date).toLocaleDateString('en-IN')}</td>
+                      <td className="table-cell text-[13px]">{new Date(p.date).toLocaleDateString('en-IN')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -477,7 +477,7 @@ export default function ReportsPage() {
 
       {/* ============ LEDGERS ============ */}
       {tab === 'ledger' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="grid stat-grid grid-cols-3 gap-3">
             <div className="stat-card"><p className="stat-label">Customers</p><p className="stat-value">{customers?.total || 0}</p></div>
             <div className="stat-card"><p className="stat-label">Total Outstanding (Sales)</p><p className="stat-value text-red-600">{fm(salesReport?.summary?.totalOutstanding)}</p></div>
@@ -487,7 +487,7 @@ export default function ReportsPage() {
           <div className="card">
             <div className="flex items-center justify-between mb-3">
               <h3 className="section-title">Customer Ledger</h3>
-              <button onClick={() => exportCSV(customers?.items, 'customer-ledger')} className="btn-secondary text-sm"><Download className="w-4 h-4" /> Export</button>
+              <button onClick={() => exportCSV(customers?.items, 'customer-ledger')} className="btn-secondary text-[13px]"><Download className="w-4 h-4" /> Export</button>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="table-wrap">
@@ -522,8 +522,8 @@ export default function ReportsPage() {
 
       {/* ============ COLLECTION ============ */}
       {tab === 'collection' && (
-        <div className="space-y-4">
-          <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="space-y-3">
+          <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             <div className="stat-card"><p className="stat-label">Cash</p><p className="stat-value">{fm((payments?.items || []).filter((p: any) => p.paymentMode === 'CASH').reduce((s: number, p: any) => s + p.amount, 0))}</p></div>
             <div className="stat-card"><p className="stat-label">UPI</p><p className="stat-value">{fm((payments?.items || []).filter((p: any) => p.paymentMode === 'UPI').reduce((s: number, p: any) => s + p.amount, 0))}</p></div>
             <div className="stat-card"><p className="stat-label">Cards</p><p className="stat-value">{fm((payments?.items || []).filter((p: any) => ['DEBIT_CARD', 'CREDIT_CARD'].includes(p.paymentMode)).reduce((s: number, p: any) => s + p.amount, 0))}</p></div>
@@ -544,7 +544,7 @@ export default function ReportsPage() {
                     <td className="table-cell text-right font-medium">{fm(p.amount)}</td>
                     <td className="table-cell"><span className="badge-info">{p.paymentMode}</span></td>
                     <td className="table-cell">{p.reference || '—'}</td>
-                    <td className="table-cell text-sm">{new Date(p.date).toLocaleDateString('en-IN')}</td>
+                    <td className="table-cell text-[13px]">{new Date(p.date).toLocaleDateString('en-IN')}</td>
                   </tr>
                 ))}
                 {(!payments?.items || payments.items.length === 0) && <tr><td colSpan={6} className="text-center py-12 text-gray-400">No payments recorded</td></tr>}
@@ -557,7 +557,7 @@ export default function ReportsPage() {
 
       {/* ============ INVENTORY ============ */}
       {tab === 'inventory' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {inventoryReport && (
             <div className="grid stat-grid grid-cols-3 gap-3">
               <div className="stat-card"><p className="stat-label">Total Items</p><p className="stat-value">{inventoryReport.totalItems}</p></div>
@@ -566,7 +566,7 @@ export default function ReportsPage() {
             </div>
           )}
           <div className="flex justify-end">
-            <button onClick={() => exportCSV(inventoryReport?.byMetal, 'inventory-report')} className="btn-secondary text-sm"><Download className="w-4 h-4" /> Export</button>
+            <button onClick={() => exportCSV(inventoryReport?.byMetal, 'inventory-report')} className="btn-secondary text-[13px]"><Download className="w-4 h-4" /> Export</button>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="table-wrap">
@@ -593,9 +593,9 @@ export default function ReportsPage() {
 
       {/* ============ JOB WORK ============ */}
       {tab === 'jobwork' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex justify-end">
-            <button onClick={() => exportCSV(jobReport, 'job-work-report')} className="btn-secondary text-sm"><Download className="w-4 h-4" /> Export</button>
+            <button onClick={() => exportCSV(jobReport, 'job-work-report')} className="btn-secondary text-[13px]"><Download className="w-4 h-4" /> Export</button>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="table-wrap">
@@ -612,7 +612,7 @@ export default function ReportsPage() {
                     <td className="table-cell">{j.customerName}</td>
                     <td className="table-cell">{j.productDescription}</td>
                     <td className="table-cell">{j.purity}</td>
-                    <td className="table-cell text-sm">{new Date(j.expectedDelivery).toLocaleDateString('en-IN')}</td>
+                    <td className="table-cell text-[13px]">{new Date(j.expectedDelivery).toLocaleDateString('en-IN')}</td>
                     <td className="table-cell text-right">{fm(j.estimatedAmount)}</td>
                     <td className="table-cell text-right text-green-600">{fm(j.advanceAmount)}</td>
                     <td className="table-cell text-right text-red-600">{fm(j.balanceAmount)}</td>

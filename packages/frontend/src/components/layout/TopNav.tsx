@@ -178,9 +178,9 @@ export function TopNav() {
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm z-30 sticky top-0" ref={navRef}>
       {/* Main navigation bar */}
-      <div className="h-14 px-4 flex items-center justify-between">
+      <div className="h-14 px-3 flex items-center justify-between">
         {/* Left: Logo + Main menu */}
-        <div className="flex items-center gap-3 lg:gap-4 flex-1 min-w-0">
+        <div className="flex items-center gap-3 lg:gap-3 flex-1 min-w-0">
           {/* Mobile / tablet menu button */}
           <button
             onClick={() => setShowDrawer(true)}
@@ -198,8 +198,8 @@ export function TopNav() {
               </div>
             )}
             <div className="hidden sm:block max-w-[160px]">
-              <h1 className="text-sm font-bold text-gray-900 leading-tight truncate">{settings?.shopName || 'Jewellery Shop'}</h1>
-              <p className="text-[10px] text-gray-500 leading-tight">ERP & POS</p>
+              <h1 className="text-[13px] font-bold text-gray-900 leading-tight truncate">{settings?.shopName || 'Jewellery Shop'}</h1>
+              <p className="text-[11px] text-gray-500 leading-tight">ERP & POS</p>
             </div>
           </NavLink>
 
@@ -212,7 +212,7 @@ export function TopNav() {
                   <NavLink
                     key={idx}
                     to={item.to}
-                    className={'px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ' +
+                    className={'px-3 py-2 text-[13px] font-medium rounded-md transition-colors flex items-center gap-2 ' +
                       (isActive ? 'text-primary-700 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50')}
                   >
                     {item.icon && <item.icon className="w-4 h-4" />}
@@ -228,7 +228,7 @@ export function TopNav() {
                   <button
                     onClick={() => setOpenMenu(isOpen ? null : menuKey)}
                     onMouseEnter={() => setOpenMenu(menuKey)}
-                    className={'px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1 ' +
+                    className={'px-3 py-2 text-[13px] font-medium rounded-md transition-colors flex items-center gap-1 ' +
                       (isActive || isOpen ? 'text-primary-700 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50')}
                   >
                     {item.icon && <item.icon className="w-4 h-4" />}
@@ -247,7 +247,7 @@ export function TopNav() {
                           <NavLink
                             key={subIdx}
                             to={sub.to}
-                            className={'flex items-center gap-2 px-3 py-2 text-sm transition-colors ' +
+                            className={'flex items-center gap-2 px-3 py-2 text-[13px] transition-colors ' +
                               (subActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50')}
                           >
                             <SubIcon className="w-4 h-4 text-gray-400" />
@@ -288,7 +288,7 @@ export function TopNav() {
             >
               <Bell className="w-4 h-4" />
               {notifUnread > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
                   {notifUnread > 9 ? '9+' : notifUnread}
                 </span>
               )}
@@ -296,21 +296,21 @@ export function TopNav() {
             {showNotif && (
               <div className="absolute right-0 top-full mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                 <div className="px-3 py-2 border-b bg-gray-50 flex items-center justify-between">
-                  <span className="text-sm font-semibold">Notifications</span>
+                  <span className="text-[13px] font-semibold">Notifications</span>
                   <button onClick={() => api.put('/notifications/read-all').then(() => qc.invalidateQueries({ queryKey: ['notifications'] }))} className="text-xs text-primary-600 hover:text-primary-700">
                     Mark all read
                   </button>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                   {notifications?.items?.length === 0 && (
-                    <div className="px-3 py-8 text-center text-gray-400 text-sm">No notifications</div>
+                    <div className="px-3 py-8 text-center text-gray-400 text-[13px]">No notifications</div>
                   )}
                   {notifications?.items?.map((n: any) => (
                     <div key={n.id} className={'px-3 py-2.5 hover:bg-gray-50 border-b border-gray-50 cursor-pointer ' + (n.status === 'UNREAD' ? 'bg-blue-50/50' : '')}
                       onClick={() => { api.put('/notifications/' + n.id + '/read'); qc.invalidateQueries({ queryKey: ['notifications'] }); }}>
-                      <p className="text-sm font-medium text-gray-800">{n.title}</p>
+                      <p className="text-[13px] font-medium text-gray-800">{n.title}</p>
                       <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString('en-IN')}</p>
+                      <p className="text-[11px] text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString('en-IN')}</p>
                     </div>
                   ))}
                 </div>
@@ -330,17 +330,17 @@ export function TopNav() {
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-xs font-medium text-gray-900 leading-tight">{user.name}</p>
-                  <p className="text-[10px] text-gray-500 leading-tight capitalize">{user.role?.replace('_', ' ')}</p>
+                  <p className="text-[11px] text-gray-500 leading-tight capitalize">{user.role?.replace('_', ' ')}</p>
                 </div>
                 <ChevronDown className="w-3 h-3 text-gray-400" />
               </button>
               {showUser && (
                 <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
                   <div className="px-3 py-2 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+                    <p className="text-[13px] font-medium text-gray-900 truncate">{user.name}</p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                   </div>
-                  <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100">
+                  <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 border-t border-gray-100">
                     <LogOut className="w-4 h-4" /> Logout
                   </button>
                 </div>
@@ -355,10 +355,10 @@ export function TopNav() {
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowDrawer(false)} />
           <div className="relative w-[86vw] max-w-sm bg-white h-full shadow-xl flex flex-col">
-            <div className="flex items-center justify-between px-4 h-14 border-b border-gray-100">
+            <div className="flex items-center justify-between px-3 h-14 border-b border-gray-100">
               <div className="min-w-0">
-                <p className="text-sm font-bold text-gray-900 truncate">{settings?.shopName || 'Jewellery Shop'}</p>
-                <p className="text-[10px] text-gray-500">ERP &amp; POS</p>
+                <p className="text-[13px] font-bold text-gray-900 truncate">{settings?.shopName || 'Jewellery Shop'}</p>
+                <p className="text-[11px] text-gray-500">ERP &amp; POS</p>
               </div>
               <button onClick={() => setShowDrawer(false)} className="p-2 rounded-md hover:bg-gray-100 text-gray-600" aria-label="Close menu">
                 <X className="w-5 h-5" />
@@ -372,7 +372,7 @@ export function TopNav() {
                     <NavLink
                       key={idx}
                       to={item.to}
-                      className={'flex items-center gap-3 px-4 py-3 text-sm font-medium ' + (active ? 'text-primary-700 bg-primary-50' : 'text-gray-700 hover:bg-gray-50')}
+                      className={'flex items-center gap-3 px-3 py-3 text-[13px] font-medium ' + (active ? 'text-primary-700 bg-primary-50' : 'text-gray-700 hover:bg-gray-50')}
                     >
                       {item.icon && <item.icon className="w-4 h-4 text-gray-400" />}
                       {item.label}
@@ -392,7 +392,7 @@ export function TopNav() {
                           <NavLink
                             key={subIdx}
                             to={sub.to}
-                            className={'flex items-center justify-between gap-2 px-2 py-2.5 text-sm rounded-md ' +
+                            className={'flex items-center justify-between gap-2 px-2 py-2.5 text-[13px] rounded-md ' +
                               (location.pathname === sub.to ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50')}
                           >
                             <span className="flex items-center gap-2 min-w-0">

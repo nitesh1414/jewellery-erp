@@ -108,11 +108,11 @@ export default function BillsPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Bills</h1>
-          <p className="text-gray-500 text-sm mt-1">View, print, and settle sales bills</p>
+          <p className="text-gray-500 text-[13px] mt-1">View, print, and settle sales bills</p>
         </div>
         <button onClick={() => navigate('/billing')} className="btn-primary">
           <FileText className="w-4 h-4" /> New Bill
@@ -123,7 +123,7 @@ export default function BillsPage() {
       <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit max-w-full overflow-x-auto">
         {([['ALL', 'All Bills'], ['BILLS', 'Bills'], ['ESTIMATES', 'Estimated Bills']] as const).map(([key, label]) => (
           <button key={key} onClick={() => { setTab(key); setStatus(''); setPage(1); }}
-            className={'px-4 py-2 text-sm font-medium rounded-md transition-all ' + (tab === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
+            className={'px-3 py-2 text-[13px] font-medium rounded-md transition-all ' + (tab === key ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
             {label}
           </button>
         ))}
@@ -151,7 +151,7 @@ export default function BillsPage() {
           onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
           title="From date"
         />
-        <span className="text-gray-400 text-sm">to</span>
+        <span className="text-gray-400 text-[13px]">to</span>
         <input
           type="date"
           className="input-field flex-1 min-w-[140px] sm:flex-none sm:w-36"
@@ -160,13 +160,13 @@ export default function BillsPage() {
           title="To date"
         />
         {(startDate || endDate) && (
-          <button onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }} className="btn-ghost text-red-500 text-sm" title="Clear dates">
+          <button onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }} className="btn-ghost text-red-500 text-[13px]" title="Clear dates">
             <X className="w-3.5 h-3.5" /> Clear
           </button>
         )}
         <button
           onClick={() => setStatus(status === 'PART_PAID' ? '' : 'PART_PAID')}
-          className={'btn-secondary text-sm ' + (status === 'PART_PAID' ? '!bg-orange-50 !border-orange-300 !text-orange-700' : '')}
+          className={'btn-secondary text-[13px] ' + (status === 'PART_PAID' ? '!bg-orange-50 !border-orange-300 !text-orange-700' : '')}
         >
           <HandCoins className="w-4 h-4" /> Part-Paid Only
         </button>
@@ -253,11 +253,11 @@ export default function BillsPage() {
                             <>
                               <div className="fixed inset-0 z-10" onClick={() => setThermalFor(null)} />
                               <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20">
-                                <p className="px-3 py-1 text-[10px] uppercase tracking-wide text-gray-400">Thermal roll</p>
+                                <p className="px-3 py-1 text-[11px] uppercase tracking-wide text-gray-400">Thermal roll</p>
                                 {[['80 mm — standard POS', 'THERMAL'], ['76 mm — 3-inch roll', 'THERMAL_76'], ['58 mm — mini printer', 'THERMAL_58']].map(([label, fmt]) => (
                                   <button key={fmt}
                                     onClick={() => { setThermalFor(null); navigate('/print/sale/' + bill.id + '?format=' + fmt + '&auto=1'); }}
-                                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    className="w-full text-left px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50">
                                     {label}
                                   </button>
                                 ))}
@@ -284,11 +284,11 @@ export default function BillsPage() {
         </div>
 
         {data && data.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-            <span className="text-sm text-gray-500">Page {page} of {data.totalPages}</span>
+          <div className="flex items-center justify-between px-3 py-3 border-t border-gray-100">
+            <span className="text-[13px] text-gray-500">Page {page} of {data.totalPages}</span>
             <div className="flex flex-wrap gap-2">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-sm py-1">Previous</button>
-              <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-sm py-1">Next</button>
+              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-[13px] py-1">Previous</button>
+              <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-[13px] py-1">Next</button>
             </div>
           </div>
         )}
@@ -297,12 +297,12 @@ export default function BillsPage() {
 
       {/* Bill Detail Modal */}
       {viewBill && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setViewBill(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 p-4 sm:p-6 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start justify-between mb-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-3" onClick={() => setViewBill(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 p-3 sm:p-6 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-3">
               <div>
-                <h2 className="text-xl font-bold">{viewBill.billNumber}</h2>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <h2 className="text-lg font-bold">{viewBill.billNumber}</h2>
+                <p className="text-[13px] text-gray-500 mt-0.5">
                   {new Date(viewBill.billDate).toLocaleString('en-IN')} · {viewBill.billType}
                 </p>
               </div>
@@ -313,7 +313,7 @@ export default function BillsPage() {
             </div>
 
             {/* Customer */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-3 mb-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="font-semibold text-blue-900">{viewBill.customerName}</p>
@@ -321,15 +321,15 @@ export default function BillsPage() {
                     {viewBill.customerMobile}{viewBill.customerGstin ? ' · GSTIN ' + viewBill.customerGstin : ''}
                   </p>
                 </div>
-                <div className="text-right text-sm">
+                <div className="text-right text-[13px]">
                   <p className="text-blue-800">₹{(viewBill.netAmount || 0).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             </div>
 
             {/* Items */}
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Items</h3>
-            <div className="overflow-x-auto rounded-lg border mb-4">
+            <h3 className="text-[13px] font-semibold text-gray-700 mb-2">Items</h3>
+            <div className="overflow-x-auto rounded-lg border mb-3">
               <div className="table-wrap">
               <table className="w-full">
                 <thead><tr className="border-b bg-gray-50">
@@ -342,7 +342,7 @@ export default function BillsPage() {
                     <tr key={idx} className="border-b border-gray-50">
                       <td className="table-cell text-gray-400">{idx + 1}</td>
                       <td className="table-cell">
-                        <p className="font-medium text-sm">{item.particular}</p>
+                        <p className="font-medium text-[13px]">{item.particular}</p>
                         {item.barcode && <p className="text-xs text-gray-400">#{item.barcode}</p>}
                       </td>
                       <td className="table-cell">{item.purity}</td>
@@ -360,8 +360,8 @@ export default function BillsPage() {
             {/* Payments */}
             {(viewBill.payments || []).length > 0 && (
               <>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Payments</h3>
-                <div className="rounded-lg border mb-4 overflow-hidden">
+                <h3 className="text-[13px] font-semibold text-gray-700 mb-2">Payments</h3>
+                <div className="rounded-lg border mb-3 overflow-hidden">
                   <div className="table-wrap">
                   <table className="w-full">
                     <thead><tr className="border-b bg-gray-50">
@@ -372,8 +372,8 @@ export default function BillsPage() {
                         <tr key={idx} className="border-b border-gray-50">
                           <td className="table-cell"><span className="badge-info">{p.paymentMode}</span></td>
                           <td className="table-cell text-right font-medium">₹{p.amount?.toLocaleString('en-IN')}</td>
-                          <td className="table-cell text-sm text-gray-500">{p.reference || '—'}</td>
-                          <td className="table-cell text-sm">{new Date(p.date).toLocaleDateString('en-IN')}</td>
+                          <td className="table-cell text-[13px] text-gray-500">{p.reference || '—'}</td>
+                          <td className="table-cell text-[13px]">{new Date(p.date).toLocaleDateString('en-IN')}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -385,22 +385,22 @@ export default function BillsPage() {
 
             {/* Notes / Remark */}
             {viewBill.narration && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 mb-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-3 mb-3">
                 <p className="text-xs font-semibold text-yellow-800 uppercase mb-1">Notes / Remark</p>
-                <p className="text-sm text-yellow-900">{viewBill.narration}</p>
+                <p className="text-[13px] text-yellow-900">{viewBill.narration}</p>
               </div>
             )}
 
             {/* Totals */}
             <div className="flex justify-end">
-              <div className="w-full sm:w-80 space-y-1.5 text-sm">
+              <div className="w-full sm:w-80 space-y-1.5 text-[13px]">
                 <div className="flex justify-between"><span className="text-gray-500">Gross Amount</span><span>₹{(viewBill.grossAmount || 0).toLocaleString('en-IN')}</span></div>
                 {viewBill.discount > 0 && <div className="flex justify-between"><span className="text-gray-500">Discount</span><span className="text-red-600">−₹{viewBill.discount.toLocaleString('en-IN')}</span></div>}
                 <div className="flex justify-between"><span className="text-gray-500">Taxable</span><span>₹{(viewBill.taxableAmount || 0).toLocaleString('en-IN')}</span></div>
                 {viewBill.cgst > 0 && <div className="flex justify-between"><span className="text-gray-500">CGST</span><span>₹{viewBill.cgst.toLocaleString('en-IN')}</span></div>}
                 {viewBill.sgst > 0 && <div className="flex justify-between"><span className="text-gray-500">SGST</span><span>₹{viewBill.sgst.toLocaleString('en-IN')}</span></div>}
                 <div className="flex justify-between"><span className="text-gray-500">Round Off</span><span>{viewBill.roundOff || 0}</span></div>
-                <div className="flex justify-between font-bold text-base border-t pt-2"><span>Net Amount</span><span>₹{(viewBill.netAmount || 0).toLocaleString('en-IN')}</span></div>
+                <div className="flex justify-between font-bold text-sm border-t pt-2"><span>Net Amount</span><span>₹{(viewBill.netAmount || 0).toLocaleString('en-IN')}</span></div>
                 <div className="flex justify-between text-green-600 font-medium"><span>Paid</span><span>₹{(viewBill.paidAmount || 0).toLocaleString('en-IN')}</span></div>
                 {viewBill.balanceAmount > 0 && (
                   <div className="flex justify-between text-red-600 font-semibold"><span>Balance Due</span><span>₹{viewBill.balanceAmount.toLocaleString('en-IN')}</span></div>
@@ -408,10 +408,10 @@ export default function BillsPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
-              <button onClick={() => handlePrint(viewBill)} className="btn-secondary text-sm"><Printer className="w-4 h-4" /> Print</button>
+            <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
+              <button onClick={() => handlePrint(viewBill)} className="btn-secondary text-[13px]"><Printer className="w-4 h-4" /> Print</button>
               {viewBill.balanceAmount > 0 && (
-                <button onClick={() => { setPayBill(viewBill); setPayForm({ amount: viewBill.balanceAmount, paymentMode: 'CASH', reference: '', accountId: '' }); setViewBill(null); }} className="btn-primary text-sm">
+                <button onClick={() => { setPayBill(viewBill); setPayForm({ amount: viewBill.balanceAmount, paymentMode: 'CASH', reference: '', accountId: '' }); setViewBill(null); }} className="btn-primary text-[13px]">
                   <HandCoins className="w-4 h-4" /> Receive Payment
                 </button>
               )}
@@ -424,9 +424,9 @@ export default function BillsPage() {
       {/* Receive Payment Modal */}
       {payBill && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setPayBill(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-1">Receive Payment</h3>
-            <p className="text-sm text-gray-500 mb-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-1">Receive Payment</h3>
+            <p className="text-[13px] text-gray-500 mb-3">
               {payBill.billNumber} · {payBill.customerName}<br/>
               Total: ₹{payBill.netAmount?.toLocaleString('en-IN')} · Paid: ₹{payBill.paidAmount?.toLocaleString('en-IN')} · <strong className="text-red-600">Balance: ₹{payBill.balanceAmount?.toLocaleString('en-IN')}</strong>
             </p>
@@ -449,9 +449,9 @@ export default function BillsPage() {
                   <option value="">— no ledger —</option>
                   {activeAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
                 </select>
-                <p className="text-[10px] text-gray-400 mt-1">Amount is credited to this account in the ledger.</p></div>
+                <p className="text-[11px] text-gray-400 mt-1">Amount is credited to this account in the ledger.</p></div>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setPayBill(null)} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (payForm.amount <= 0) { toast.error('Enter amount'); return; }
@@ -468,12 +468,12 @@ export default function BillsPage() {
       {/* Confirm Estimate → Bill modal */}
       {confirmingEstimate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setConfirmingEstimate(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-4 sm:p-5 modal-panel" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-1">Confirm Estimated Bill</h3>
-            <p className="text-sm text-gray-500 mb-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-3 sm:p-4 modal-panel" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-1">Confirm Estimated Bill</h3>
+            <p className="text-[13px] text-gray-500 mb-3">
               {confirmingEstimate.billNumber} · {confirmingEstimate.customerName} · ₹{confirmingEstimate.netAmount?.toLocaleString('en-IN')}
             </p>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {(proposed.payments.length > 0 || proposed.urd.length > 0) && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs space-y-1">
                   <p className="font-semibold text-amber-800">Proposed on the estimate — carried into the bill</p>
@@ -495,7 +495,7 @@ export default function BillsPage() {
                 <div className="flex gap-2">
                   {['GST', 'NON_GST'].map((t) => (
                     <button key={t} onClick={() => setConfirmForm({ ...confirmForm, billType: t })}
-                      className={'flex-1 py-2 text-sm rounded-lg border transition-all ' + (confirmForm.billType === t ? 'border-primary-500 bg-primary-50 text-primary-700 font-medium' : 'border-gray-200 text-gray-500')}>
+                      className={'flex-1 py-2 text-[13px] rounded-lg border transition-all ' + (confirmForm.billType === t ? 'border-primary-500 bg-primary-50 text-primary-700 font-medium' : 'border-gray-200 text-gray-500')}>
                       {t === 'GST' ? 'GST Bill' : 'Non-GST Bill'}
                     </button>
                   ))}
@@ -515,7 +515,7 @@ export default function BillsPage() {
               </div>
               <p className="text-xs text-gray-400">Whatever the estimate proposed is carried over; add what you collect now on top. Leave it at 0 to generate the bill with the balance still due. Stock, metal ledger and the customer ledger are updated now — they were not touched by the estimate.</p>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setConfirmingEstimate(null)} className="btn-secondary">Cancel</button>
               <button
                 onClick={() =>

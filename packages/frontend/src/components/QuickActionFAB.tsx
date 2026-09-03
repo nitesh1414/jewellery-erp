@@ -43,7 +43,7 @@ export function QuickActionFAB() {
           <div className="fixed bottom-24 right-6 z-40 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 w-56">
             <div className="px-3 py-2 border-b border-gray-100 mb-1">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quick Actions</p>
-              <p className="text-[10px] text-gray-400">Press <kbd className="bg-gray-100 px-1 rounded">Alt+N</kbd> · <kbd className="bg-gray-100 px-1 rounded">Esc</kbd> to close</p>
+              <p className="text-[11px] text-gray-400">Press <kbd className="bg-gray-100 px-1 rounded">Alt+N</kbd> · <kbd className="bg-gray-100 px-1 rounded">Esc</kbd> to close</p>
             </div>
             {actions.map((a, i) => {
               const Icon = a.icon;
@@ -51,7 +51,7 @@ export function QuickActionFAB() {
                 <button
                   key={i}
                   onClick={() => { navigate(a.path); setOpen(false); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <div className={'w-7 h-7 rounded-md flex items-center justify-center text-white ' + a.color}>
                     <Icon className="w-4 h-4" />

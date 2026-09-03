@@ -64,14 +64,14 @@ export default function InventoryPage() {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Inventory</h1><p className="text-gray-500 text-sm mt-1">Stock ledger, balances, and movement tracking</p></div>
+        <div><h1 className="page-title">Inventory</h1><p className="text-gray-500 text-[13px] mt-1">Stock ledger, balances, and movement tracking</p></div>
         <button onClick={() => setShowAdjust(true)} className="btn-primary"><RotateCcw className="w-4 h-4" /> Adjust Stock</button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="stat-card"><p className="stat-label">Total Pieces</p><p className="stat-value">{summary?.totalPieces || 0}</p></div>
         <div className="stat-card"><p className="stat-label">Gold Stock</p><p className="stat-value">{(summary?.totalGoldWeight || 0).toFixed(2)}g</p></div>
         <div className="stat-card"><p className="stat-label">Silver Stock</p><p className="stat-value">{(summary?.totalSilverWeight || 0).toFixed(2)}g</p></div>
@@ -83,7 +83,7 @@ export default function InventoryPage() {
       <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit max-w-full overflow-x-auto">
         {(['balance', 'transactions', 'valuation', 'alerts'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={'px-4 py-2 text-sm font-medium rounded-md transition-all ' + (tab === t ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
+            className={'px-3 py-2 text-[13px] font-medium rounded-md transition-all ' + (tab === t ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700')}>
             {t === 'balance' ? 'Stock Balance' : t === 'transactions' ? 'Transactions' : t === 'valuation' ? 'Valuation' : 'Low Stock'}
           </button>
         ))}
@@ -91,7 +91,7 @@ export default function InventoryPage() {
 
       {/* Stock Balance Tab */}
       {tab === 'balance' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Metal & purity stock at a glance (all metals, including empty ones) */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
@@ -103,13 +103,13 @@ export default function InventoryPage() {
                 <div key={row.key}
                   className={'rounded-lg border px-3 py-2 flex items-center justify-between gap-2 ' + (row.total > 0 ? 'bg-amber-50/50 border-amber-200' : 'bg-gray-50 border-gray-200')}>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{row.metal.replace(/_/g, ' ')}</p>
+                    <p className="text-[13px] font-medium truncate">{row.metal.replace(/_/g, ' ')}</p>
                     <p className="text-[11px] text-gray-500 truncate">{formatPurity(row.purity)}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={'text-sm font-bold ' + (row.total > 0 ? 'text-amber-800' : 'text-gray-400')}>{formatGrams(row.total)} g</p>
+                    <p className={'text-[13px] font-bold ' + (row.total > 0 ? 'text-amber-800' : 'text-gray-400')}>{formatGrams(row.total)} g</p>
                     {(row.metalGrams > 0 || row.ornamentGrams > 0) && (
-                      <p className="text-[10px] text-gray-500">
+                      <p className="text-[11px] text-gray-500">
                         {row.metalGrams > 0 ? `metal ${formatGrams(row.metalGrams)}` : ''}
                         {row.metalGrams > 0 && row.ornamentGrams > 0 ? ' · ' : ''}
                         {row.ornamentGrams > 0 ? `orn ${formatGrams(row.ornamentGrams)}` : ''}
@@ -119,14 +119,14 @@ export default function InventoryPage() {
                 </div>
               ))}
               {allPurityRows.length === 0 && (
-                <p className="text-sm text-gray-400 col-span-full">Add metals &amp; purities in Settings to see the full stock list.</p>
+                <p className="text-[13px] text-gray-400 col-span-full">Add metals &amp; purities in Settings to see the full stock list.</p>
               )}
             </div>
           </div>
 
           {/* Combined stock table */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 border-b bg-gray-50 flex items-center gap-2 text-sm text-gray-600">
+            <div className="px-3 py-2.5 border-b bg-gray-50 flex items-center gap-2 text-[13px] text-gray-600">
               <Layers className="w-4 h-4 text-gray-400" />
               Metal / material stock comes from the metal ledger accounts, ornament stock from jewellery items in stock.
             </div>
@@ -183,7 +183,7 @@ export default function InventoryPage() {
       {/* Transactions Tab */}
       {tab === 'transactions' && (
         <div>
-          <div className="flex gap-3 mb-4">
+          <div className="flex gap-3 mb-3">
             <select className="input-field w-48" value={txType} onChange={e => { setTxType(e.target.value); setTxPage(1); }}>
               <option value="">All Types</option>
               <option value="PURCHASE">Purchase</option>
@@ -207,7 +207,7 @@ export default function InventoryPage() {
               <tbody>
                 {transactions?.items?.map((tx: any) => (
                   <tr key={tx.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="table-cell text-sm">{new Date(tx.createdAt).toLocaleString('en-IN')}</td>
+                    <td className="table-cell text-[13px]">{new Date(tx.createdAt).toLocaleString('en-IN')}</td>
                     <td className="table-cell">
                       <span className={'badge ' + (tx.transactionType === 'PURCHASE' ? 'badge-success' : tx.transactionType === 'SALE' ? 'badge-danger' : tx.transactionType === 'TRANSFER' ? 'badge-info' : 'badge-gray')}>
                         {humanize(tx.transactionType)}
@@ -231,11 +231,11 @@ export default function InventoryPage() {
             </table>
             </div>
             {transactions && transactions.totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t">
-                <span className="text-sm text-gray-500">Page {txPage} of {transactions.totalPages}</span>
+              <div className="flex items-center justify-between px-3 py-3 border-t">
+                <span className="text-[13px] text-gray-500">Page {txPage} of {transactions.totalPages}</span>
                 <div className="flex flex-wrap gap-2">
-                  <button disabled={txPage <= 1} onClick={() => setTxPage(p => p - 1)} className="btn-secondary text-sm py-1">Prev</button>
-                  <button disabled={txPage >= transactions.totalPages} onClick={() => setTxPage(p => p + 1)} className="btn-secondary text-sm py-1">Next</button>
+                  <button disabled={txPage <= 1} onClick={() => setTxPage(p => p - 1)} className="btn-secondary text-[13px] py-1">Prev</button>
+                  <button disabled={txPage >= transactions.totalPages} onClick={() => setTxPage(p => p + 1)} className="btn-secondary text-[13px] py-1">Next</button>
                 </div>
               </div>
             )}
@@ -245,10 +245,10 @@ export default function InventoryPage() {
 
       {/* Valuation Tab */}
       {tab === 'valuation' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="card col-span-2">
-            <h3 className="section-title mb-4">Stock Valuation Summary</h3>
-            <div className="space-y-4">
+            <h3 className="section-title mb-3">Stock Valuation Summary</h3>
+            <div className="space-y-3">
               <div className="flex justify-between p-3 bg-gray-50 rounded-lg"><span>Total Items</span><span className="font-bold">{valuation?.totalItems || 0}</span></div>
               <div className="flex justify-between p-3 bg-gray-50 rounded-lg"><span>Total Weight</span><span className="font-bold">{(valuation?.totalWeight || 0).toFixed(3)} g</span></div>
               <div className="flex justify-between p-3 bg-green-50 rounded-lg"><span>Current Value</span><span className="font-bold text-green-700">{fm(valuation?.totalCurrentValue)}</span></div>
@@ -257,11 +257,11 @@ export default function InventoryPage() {
             </div>
           </div>
           <div className="card">
-            <h3 className="section-title mb-4">By Metal</h3>
+            <h3 className="section-title mb-3">By Metal</h3>
             {valuation?.byMetal && Object.entries(valuation.byMetal).map(([metal, v]: [string, any]) => (
-              <div key={metal} className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <div key={metal} className="mb-3 p-3 bg-gray-50 rounded-lg">
                 <p className="font-semibold text-gray-900">{metal}</p>
-                <div className="mt-2 space-y-1 text-sm">
+                <div className="mt-2 space-y-1 text-[13px]">
                   <p className="flex justify-between"><span>Weight</span><span>{v.weight.toFixed(3)} g</span></p>
                   <p className="flex justify-between"><span>Value</span><span>{fm(v.value)}</span></p>
                   <p className="flex justify-between"><span>Items</span><span>{v.count}</span></p>
@@ -275,7 +275,7 @@ export default function InventoryPage() {
       {/* Low Stock Alerts */}
       {tab === 'alerts' && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-4 bg-orange-50 border-b border-orange-200 flex items-center gap-2">
+          <div className="p-3 bg-orange-50 border-b border-orange-200 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-orange-500" />
             <span className="font-medium text-orange-800">{alerts?.totalItems || 0} items with low stock (≤ {alerts?.threshold || 2})</span>
           </div>
@@ -310,9 +310,9 @@ export default function InventoryPage() {
       {/* Adjust Stock Modal */}
       {showAdjust && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdjust(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-5 modal-panel" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Adjust Stock</h3>
-            <div className="space-y-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">Adjust Stock</h3>
+            <div className="space-y-3">
               <div><label className="label">Jewellery Item Barcode or ID</label>
                 <input className="input-field" placeholder="Scan barcode..." value={adjustForm.jewelleryItemId}
                   onChange={e => setAdjustForm({...adjustForm, jewelleryItemId: e.target.value})} /></div>
@@ -352,7 +352,7 @@ export default function InventoryPage() {
                 <input className="input-field" placeholder="Required..." value={adjustForm.reason}
                   onChange={e => setAdjustForm({...adjustForm, reason: e.target.value})} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowAdjust(false)} className="btn-secondary">Cancel</button>
               <button onClick={() => {
                 if (!adjustForm.reason) { toast.error('Reason is required'); return; }

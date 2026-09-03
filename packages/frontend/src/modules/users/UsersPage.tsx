@@ -71,9 +71,9 @@ export default function UsersPage() {
   const branchName = (id?: string) => brList.find((b) => b.id === id)?.name || '—';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">User Management</h1><p className="text-gray-500 text-sm mt-1">Create operators — assign a role & one or more branch access</p></div>
+        <div><h1 className="page-title">User Management</h1><p className="text-gray-500 text-[13px] mt-1">Create operators — assign a role & one or more branch access</p></div>
         <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add User</button>
       </div>
 
@@ -103,9 +103,9 @@ export default function UsersPage() {
                     <span className="font-medium">{u.name}</span>
                   </div>
                 </td>
-                <td className="table-cell text-sm">{u.email}</td>
+                <td className="table-cell text-[13px]">{u.email}</td>
                 <td className="table-cell"><span className="badge-info">{u.role}</span></td>
-                <td className="table-cell text-sm">{branchName(u.branchId)}</td>
+                <td className="table-cell text-[13px]">{branchName(u.branchId)}</td>
                 <td className="table-cell text-xs">
                   {(u.branchIds || []).length > 1
                     ? `${(u.branchIds || []).length} branches`
@@ -130,9 +130,9 @@ export default function UsersPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">{editing ? 'Edit User' : 'New User'}</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-3 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold">{editing ? 'Edit User' : 'New User'}</h3>
               <button onClick={() => { setShowForm(false); resetForm(); }} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-3">
@@ -158,18 +158,18 @@ export default function UsersPage() {
                 <label className="label">Branch Access <span className="text-gray-400">(multi-branch — tick all branches this user may operate in)</span></label>
                 <div className="grid grid-cols-2 gap-2 border rounded-xl p-3 max-h-40 overflow-y-auto">
                   {brList.map((b: any) => (
-                    <label key={b.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <label key={b.id} className="flex items-center gap-2 text-[13px] cursor-pointer">
                       <input type="checkbox" checked={form.branchIds.includes(b.id)} onChange={() => toggleBranch(b.id)} className="accent-primary-600" />
                       <span className={b.id === form.branchId ? 'font-semibold text-primary-700' : ''}>{b.name} ({b.code})</span>
                     </label>
                   ))}
                   {brList.length === 0 && <p className="text-xs text-gray-400">No branches yet. Add a branch first.</p>}
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1">The branch selector in the top bar only lists the branches ticked here.</p>
+                <p className="text-[11px] text-gray-400 mt-1">The branch selector in the top bar only lists the branches ticked here.</p>
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-3">Invite the user to login with their email and the password you set.</p>
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</button>
               <button className="btn-primary" onClick={submit}>{editing ? 'Update User' : 'Create User'}</button>
             </div>

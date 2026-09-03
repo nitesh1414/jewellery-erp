@@ -45,7 +45,7 @@ export function AppLayout() {
       <ScrollToTop />
       <SetupRedirect />
       <main className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-5">
+        <div className="mx-auto w-full max-w-[1600px] p-3 sm:p-3 lg:p-4">
           <Outlet />
         </div>
       </main>

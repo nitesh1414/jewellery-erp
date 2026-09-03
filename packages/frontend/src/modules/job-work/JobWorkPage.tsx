@@ -322,8 +322,8 @@ export default function JobWorkPage() {
       {/* ------------------------------------------------------------ header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Job Work</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-xl font-bold">Job Work</h1>
+          <p className="text-[13px] text-gray-500">
             OUT — metal &amp; material issued to a worker · IN — finished ornaments received with barcodes
           </p>
         </div>
@@ -345,7 +345,7 @@ export default function JobWorkPage() {
       </div>
 
       {/* ----------------------------------------------------------- filters */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
+      <div className="flex items-center gap-3 mb-3 flex-wrap">
         <div className="relative w-full sm:max-w-xs">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -360,7 +360,7 @@ export default function JobWorkPage() {
             <button
               key={t.key}
               onClick={() => { setStatus(t.key); setPage(1); }}
-              className={'px-3 py-1.5 text-sm rounded-md ' + (status === t.key ? 'bg-white shadow font-medium' : 'text-gray-500 hover:text-gray-700')}
+              className={'px-3 py-1.5 text-[13px] rounded-md ' + (status === t.key ? 'bg-white shadow font-medium' : 'text-gray-500 hover:text-gray-700')}
             >
               {t.label}
             </button>
@@ -402,13 +402,13 @@ export default function JobWorkPage() {
                     <div className="flex items-center gap-2">
                       <span className="w-7 h-7 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center"><HardHat className="w-3.5 h-3.5" /></span>
                       <div>
-                        <p className="text-sm">{j.workerName}</p>
+                        <p className="text-[13px]">{j.workerName}</p>
                         <p className="text-xs text-gray-400">{j.workerMobile || j.worker?.role?.replace('_', ' ') || ''}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="table-cell text-sm">{d(j.issueDate)}</td>
-                  <td className="table-cell text-sm">
+                  <td className="table-cell text-[13px]">{d(j.issueDate)}</td>
+                  <td className="table-cell text-[13px]">
                     {j.dueDate ? (
                       <span className={new Date(j.dueDate) < new Date() && j.status !== 'COMPLETED' && j.status !== 'CANCELLED' ? 'text-red-600 font-medium' : ''}>
                         {d(j.dueDate)}
@@ -416,7 +416,7 @@ export default function JobWorkPage() {
                     ) : '\u2014'}
                   </td>
                   <td className="table-cell text-right">{g3(j.totalIssuedWeight)} g<span className="block text-xs text-gray-400">{fm0(j.totalIssuedValue)}</span></td>
-                  <td className="table-cell text-sm">
+                  <td className="table-cell text-[13px]">
                     {received}/{total}
                     <span className="block text-xs text-gray-400">{g3(j.totalReceivedWeight)} g received</span>
                   </td>
@@ -447,11 +447,11 @@ export default function JobWorkPage() {
       </div>
 
       {data?.totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm">
+        <div className="flex items-center justify-between mt-3 text-[13px]">
           <span className="text-gray-500">{data.total} job work(s)</span>
           <div className="flex flex-wrap gap-2">
-            <button className="btn-secondary text-sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
-            <button className="btn-secondary text-sm" disabled={page >= data.totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
+            <button className="btn-secondary text-[13px]" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
+            <button className="btn-secondary text-[13px]" disabled={page >= data.totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
           </div>
         </div>
       )}
@@ -459,8 +459,8 @@ export default function JobWorkPage() {
       {/* --------------------------------------------- create / edit (OUT) */}
       {showCreate && (
         <Modal onClose={() => { setShowCreate(false); setEditing(null); }} wide>
-          <h3 className="text-lg font-semibold mb-1">{editing ? `Edit ${editing.jobNumber}` : 'New Job Work — OUT'}</h3>
-          <p className="text-xs text-gray-500 mb-4">
+          <h3 className="text-base font-semibold mb-1">{editing ? `Edit ${editing.jobNumber}` : 'New Job Work — OUT'}</h3>
+          <p className="text-xs text-gray-500 mb-3">
             Metal given here is <b>debited from its metal ledger</b> as soon as you save. When the finished ornaments
             come back, use <b>Receive</b> to add them to stock with barcodes.
           </p>
@@ -613,7 +613,7 @@ export default function JobWorkPage() {
               );
             })}
           </div>
-          <div className="flex justify-end gap-4 text-sm mt-2 text-gray-600">
+          <div className="flex justify-end gap-3 text-[13px] mt-2 text-gray-600">
             <span>Metal out: <b>{g3(metalGrams)} g</b></span>
             <span>Material value: <b>{fm0(materialValue)}</b></span>
           </div>
@@ -667,7 +667,7 @@ export default function JobWorkPage() {
               </div>
             ))}
           </div>
-          <div className="flex justify-end text-sm mt-2 text-gray-600">
+          <div className="flex justify-end text-[13px] mt-2 text-gray-600">
             <span>Expected weight: <b>{g3(expectedGrams)} g</b></span>
           </div>
 
@@ -711,7 +711,7 @@ export default function JobWorkPage() {
         <Modal onClose={() => setViewing(null)} wide>
           <div className="flex items-start justify-between mb-3">
             <div>
-              <h3 className="text-lg font-semibold">{viewing.jobNumber}</h3>
+              <h3 className="text-base font-semibold">{viewing.jobNumber}</h3>
               <p className="text-xs text-gray-500">
                 {viewing.workerName}{viewing.workerMobile ? ' · ' + viewing.workerMobile : ''} · issued {d(viewing.issueDate)}
                 {viewing.dueDate ? ' · due ' + d(viewing.dueDate) : ''}
@@ -720,16 +720,16 @@ export default function JobWorkPage() {
             <span className={'badge ' + (STATUS_BADGE[viewing.status] || 'badge-gray')}>{STATUS_LABEL[viewing.status] || viewing.status}</span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-4 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-3 text-[13px]">
             <Kpi label="Metal issued" value={`${g3(viewing.totalIssuedWeight)} g`} hint={fm0(viewing.totalIssuedValue)} />
             <Kpi label="Received (net)" value={`${g3(viewing.totalReceivedWeight)} g`} />
             <Kpi label="Scrap returned" value={`${g3(viewing.returnWeight)} g`} />
             <Kpi label="Wages" value={fm0(viewing.wages)} hint={Number(viewing.wagesPaid) ? `${fm0(viewing.wagesPaid)} paid` : 'payable'} />
           </div>
 
-          <h4 className="font-medium text-sm mb-2">Material given</h4>
+          <h4 className="font-medium text-[13px] mb-2">Material given</h4>
           <div className="table-wrap">
-          <table className="w-full text-sm mb-4">
+          <table className="w-full text-[13px] mb-3">
             <thead><tr className="border-b bg-gray-50">
               <th className="table-header">Material</th><th className="table-header text-right">Weight / Qty</th>
               <th className="table-header text-right">Rate</th><th className="table-header text-right">Value</th>
@@ -747,9 +747,9 @@ export default function JobWorkPage() {
           </table>
           </div>
 
-          <h4 className="font-medium text-sm mb-2">Ornaments</h4>
+          <h4 className="font-medium text-[13px] mb-2">Ornaments</h4>
           <div className="table-wrap">
-          <table className="w-full text-sm mb-4">
+          <table className="w-full text-[13px] mb-3">
             <thead><tr className="border-b bg-gray-50">
               <th className="table-header">Ornament</th><th className="table-header">Metal</th>
               <th className="table-header text-right">Expected</th><th className="table-header text-right">Received (net)</th>
@@ -776,8 +776,8 @@ export default function JobWorkPage() {
 
           {!!viewing.history?.length && (
             <>
-              <h4 className="font-medium text-sm mb-2">Status history</h4>
-              <ul className="text-sm space-y-1 mb-4">
+              <h4 className="font-medium text-[13px] mb-2">Status history</h4>
+              <ul className="text-[13px] space-y-1 mb-3">
                 {viewing.history.map((h: any) => (
                   <li key={h.id} className="flex gap-2 text-gray-600">
                     <span className="text-gray-400 w-24 shrink-0">{new Date(h.createdAt).toLocaleString('en-IN')}</span>
@@ -795,13 +795,13 @@ export default function JobWorkPage() {
           <div className="flex justify-between gap-2">
             <div className="flex gap-2">
               {viewing.status === 'GIVEN' && (
-                <button className="btn-secondary text-sm" onClick={() => statusMut.mutate({ id: viewing.id, status: 'IN_PROCESS' })}><Play className="w-4 h-4" /> Start</button>
+                <button className="btn-secondary text-[13px]" onClick={() => statusMut.mutate({ id: viewing.id, status: 'IN_PROCESS' })}><Play className="w-4 h-4" /> Start</button>
               )}
               {(viewing.status === 'GIVEN' || viewing.status === 'IN_PROCESS') && (
-                <button className="btn-primary text-sm" onClick={() => { const j = viewing; setViewing(null); setReceiving(j); }}><PackageCheck className="w-4 h-4" /> Receive</button>
+                <button className="btn-primary text-[13px]" onClick={() => { const j = viewing; setViewing(null); setReceiving(j); }}><PackageCheck className="w-4 h-4" /> Receive</button>
               )}
             </div>
-            <button className="btn-secondary text-sm" onClick={() => setViewing(null)}>Close</button>
+            <button className="btn-secondary text-[13px]" onClick={() => setViewing(null)}>Close</button>
           </div>
         </Modal>
       )}
@@ -813,12 +813,12 @@ export default function JobWorkPage() {
 
 function StatCard({ label, value, icon, tone, hint }: { label: string; value: any; icon: any; tone: string; hint?: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3">
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-500">{label}</p>
         <span className={tone}>{icon}</span>
       </div>
-      <p className={'text-xl font-bold mt-1 ' + tone}>{value}</p>
+      <p className={'text-lg font-bold mt-1 ' + tone}>{value}</p>
       {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
     </div>
   );
@@ -845,7 +845,7 @@ function IconBtn({ children, onClick, title, className = '' }: any) {
 function SectionTitle({ title, action }: { title: string; action?: any }) {
   return (
     <div className="flex items-center justify-between mt-5 mb-2">
-      <h4 className="font-medium text-sm">{title}</h4>
+      <h4 className="font-medium text-[13px]">{title}</h4>
       {action}
     </div>
   );
@@ -855,7 +855,7 @@ function Modal({ children, onClose, wide }: any) {
   return (
     <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 overflow-y-auto py-8" onClick={onClose}>
       <div
-        className={'bg-white rounded-2xl shadow-xl w-full mx-4 p-4 sm:p-5 modal-panel ' + (wide ? 'max-w-5xl' : 'max-w-lg')}
+        className={'bg-white rounded-2xl shadow-xl w-full mx-4 p-3 sm:p-4 modal-panel ' + (wide ? 'max-w-5xl' : 'max-w-lg')}
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -950,8 +950,8 @@ function ReceiveModal({
 
   return (
     <Modal onClose={onClose} wide>
-      <h3 className="text-lg font-semibold mb-1">Job Work IN — {job.jobNumber}</h3>
-      <p className="text-xs text-gray-500 mb-4">
+      <h3 className="text-base font-semibold mb-1">Job Work IN — {job.jobNumber}</h3>
+      <p className="text-xs text-gray-500 mb-3">
         Every ornament you receive becomes a jewellery item with its own barcode. Scrap / wastage returned is
         credited back into the metal ledger.
       </p>
@@ -964,7 +964,7 @@ function ReceiveModal({
         {lines.map((l) => (
           <div key={l.id} className={'border rounded-lg p-3 ' + (l.receive ? 'border-primary-200 bg-primary-50/30' : 'border-gray-200')}>
             <div className="flex items-center justify-between mb-2">
-              <label className="flex items-center gap-2 text-sm font-medium">
+              <label className="flex items-center gap-2 text-[13px] font-medium">
                 <input type="checkbox" checked={l.receive} onChange={(e) => setLine(l.id, { receive: e.target.checked })} />
                 {l.ornament || 'Ornament'} <span className="text-xs text-gray-400">({l.metalType} {l.purity})</span>
               </label>
@@ -1049,7 +1049,7 @@ function ReceiveModal({
             </select>
           </div>
           <input
-            type="number" step="0.001" className="input-field !py-1 mt-1 text-sm" placeholder="grams"
+            type="number" step="0.001" className="input-field !py-1 mt-1 text-[13px]" placeholder="grams"
             value={returnWeight || ''} onChange={(e) => setReturnWeight(Number(e.target.value))}
           />
           <p className="text-xs text-gray-400 mt-1">credited back to the metal ledger</p>

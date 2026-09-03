@@ -64,10 +64,10 @@ export function ConfirmHost() {
   if (!state.open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4" onClick={() => close(false)}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-4 sm:p-5" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900">{state.title}</h3>
-        {state.message && <p className="text-sm text-gray-500 mt-2">{state.message}</p>}
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-3" onClick={() => close(false)}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-3 sm:p-4" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{state.title}</h3>
+        {state.message && <p className="text-[13px] text-gray-500 mt-2">{state.message}</p>}
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={() => close(false)} className="btn-secondary">
             {state.cancelLabel}

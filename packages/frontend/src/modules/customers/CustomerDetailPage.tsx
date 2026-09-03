@@ -17,21 +17,21 @@ export default function CustomerDetailPage() {
   if (!customer) return <div className="text-center py-12 text-gray-500">Customer not found</div>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <button onClick={() => navigate('/customers')} className="btn-ghost">
         <ArrowLeft className="w-4 h-4" /> Back to Customers
       </button>
 
       <div className="card">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-2xl font-bold">
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xl font-bold">
               {customer.name?.charAt(0)}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
-              <p className="text-sm text-gray-500">{customer.customerId}</p>
-              <div className="flex gap-4 mt-2 text-sm text-gray-600">
+              <h1 className="text-xl font-bold text-gray-900">{customer.name}</h1>
+              <p className="text-[13px] text-gray-500">{customer.customerId}</p>
+              <div className="flex gap-3 mt-2 text-[13px] text-gray-600">
                 {customer.mobile && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{customer.mobile}</span>}
                 {customer.email && <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{customer.email}</span>}
                 {customer.city && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{customer.city}</span>}
@@ -42,13 +42,13 @@ export default function CustomerDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Ledger */}
         <div className="card">
-          <h2 className="section-title mb-4">Ledger</h2>
+          <h2 className="section-title mb-3">Ledger</h2>
           <div className="overflow-auto max-h-80">
             <div className="table-wrap">
-            <table className="w-full text-sm">
+            <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b"><th className="text-left py-2 text-gray-500 font-medium">Date</th><th className="text-left py-2 text-gray-500 font-medium">Description</th><th className="text-right py-2 text-gray-500 font-medium">Debit</th><th className="text-right py-2 text-gray-500 font-medium">Credit</th><th className="text-right py-2 text-gray-500 font-medium">Balance</th></tr>
               </thead>
@@ -73,10 +73,10 @@ export default function CustomerDetailPage() {
 
         {/* Recent Bills */}
         <div className="card">
-          <h2 className="section-title mb-4">Recent Bills</h2>
+          <h2 className="section-title mb-3">Recent Bills</h2>
           <div className="overflow-auto max-h-80">
             <div className="table-wrap">
-            <table className="w-full text-sm">
+            <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b"><th className="text-left py-2 text-gray-500 font-medium">Bill No.</th><th className="text-left py-2 text-gray-500 font-medium">Date</th><th className="text-right py-2 text-gray-500 font-medium">Amount</th><th className="text-right py-2 text-gray-500 font-medium">Status</th></tr>
               </thead>

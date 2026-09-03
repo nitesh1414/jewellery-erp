@@ -41,7 +41,7 @@ export default function SetupWizardPage() {
       <div className="mb-8">
         <h1 className="page-title">Welcome! Let's set up your business.</h1>
         <p className="text-gray-500 mt-1">This wizard runs only on first install. You can change everything later from Settings.</p>
-        <div className="mt-4 grid grid-cols-5 gap-2">
+        <div className="mt-3 grid grid-cols-5 gap-2">
           {STEPS.map((s, idx) => (
             <button key={s.key} onClick={() => setStep(idx)} disabled={idx > step}
               className={'flex flex-col items-center text-center p-3 rounded-lg transition-colors ' +
@@ -59,8 +59,8 @@ export default function SetupWizardPage() {
       </div>
 
       <div className="card">
-        <h2 className="text-xl font-bold mb-1">{current.title}</h2>
-        <p className="text-sm text-gray-500 mb-5">{current.desc}</p>
+        <h2 className="text-lg font-bold mb-1">{current.title}</h2>
+        <p className="text-[13px] text-gray-500 mb-5">{current.desc}</p>
 
         {current.key === 'profile' && (
           <div className="space-y-3">
@@ -81,10 +81,10 @@ export default function SetupWizardPage() {
 
         {current.key === 'branches' && (
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">A primary branch will be created automatically. Add more branches later from the Branches page.</p>
-            <div className="bg-gray-50 rounded-xl p-4 text-center">
+            <p className="text-[13px] text-gray-600">A primary branch will be created automatically. Add more branches later from the Branches page.</p>
+            <div className="bg-gray-50 rounded-xl p-3 text-center">
               <CheckCircle className="w-8 h-8 mx-auto text-green-600 mb-2" />
-              <p className="text-sm font-medium">"Main Branch" will be created</p>
+              <p className="text-[13px] font-medium">"Main Branch" will be created</p>
               <p className="text-xs text-gray-500 mt-1">You can rename and add more branches after setup</p>
             </div>
           </div>
@@ -92,14 +92,14 @@ export default function SetupWizardPage() {
 
         {current.key === 'accounts' && (
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">Default "Cash Counter" and "Bank Account" will be created. Set their opening balances below.</p>
+            <p className="text-[13px] text-gray-600">Default "Cash Counter" and "Bank Account" will be created. Set their opening balances below.</p>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-gray-50 rounded-xl p-3">
                 <p className="font-semibold mb-2">Cash Counter (opening)</p>
                 <label className="label">Opening balance (₹)</label>
                 <input type="number" className="input-field" value={accounts.cashOpening || ''} onChange={(e) => setAccounts({ ...accounts, cashOpening: Number(e.target.value) })} />
               </div>
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-gray-50 rounded-xl p-3">
                 <p className="font-semibold mb-2">Bank Account</p>
                 <label className="label">Bank name</label>
                 <input className="input-field" value={accounts.bankName} onChange={(e) => setAccounts({ ...accounts, bankName: e.target.value })} />
@@ -116,8 +116,8 @@ export default function SetupWizardPage() {
 
         {current.key === 'users' && (
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">You can add operators, salesmen, cashiers, etc. later from the Users page. This step is optional.</p>
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm">
+            <p className="text-[13px] text-gray-600">You can add operators, salesmen, cashiers, etc. later from the Users page. This step is optional.</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-[13px]">
               <strong>Tip:</strong> Each user will need a unique email and password to login. Roles determine what permissions they get.
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function SetupWizardPage() {
         {current.key === 'done' && (
           <div className="text-center py-6">
             <CheckCircle className="w-16 h-16 mx-auto text-green-600 mb-3" />
-            <p className="text-xl font-semibold">All set!</p>
+            <p className="text-lg font-semibold">All set!</p>
             <p className="text-gray-500 mt-1">Your business is configured and ready to operate.</p>
           </div>
         )}

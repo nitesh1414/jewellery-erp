@@ -63,9 +63,9 @@ export default function RolesPage() {
   const roleList: any[] = (roles as any) || [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div><h1 className="page-title">Roles & Access</h1><p className="text-gray-500 text-sm mt-1">Define which tabs/modules each role can view (read) or edit (write). Create custom roles too.</p></div>
+        <div><h1 className="page-title">Roles & Access</h1><p className="text-gray-500 text-[13px] mt-1">Define which tabs/modules each role can view (read) or edit (write). Create custom roles too.</p></div>
         <button className="btn-primary" onClick={openNew}><Plus className="w-4 h-4" /> New Custom Role</button>
       </div>
 
@@ -84,7 +84,7 @@ export default function RolesPage() {
                 <td className="table-cell font-medium"><span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-primary-600" />{r.name}</span></td>
                 <td className="table-cell"><span className={'badge ' + (r.isSystem ? 'badge-info' : 'badge-warning')}>{r.isSystem ? 'System' : 'Custom'}</span></td>
                 <td className="table-cell text-xs text-gray-500">{[...new Set((r.permissions || []).map((p: string) => p.split('_')[0]))].join(', ') || '—'}</td>
-                <td className="table-cell text-sm text-gray-500">{r.description || '—'}</td>
+                <td className="table-cell text-[13px] text-gray-500">{r.description || '—'}</td>
                 <td className="table-cell text-right">
                   <div className="flex items-center justify-end gap-1">
                     <button onClick={() => openEdit(r)} className="btn-ghost p-1 text-amber-600" title="Edit access"><Pencil className="w-3.5 h-3.5" /></button>
@@ -103,9 +103,9 @@ export default function RolesPage() {
       {/* Role form modal — permission matrix */}
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">{editing ? 'Edit Role Access' : 'New Custom Role'}</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 p-3 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold">{editing ? 'Edit Role Access' : 'New Custom Role'}</h3>
               <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
 
@@ -128,7 +128,7 @@ export default function RolesPage() {
                   <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">{m.label}</p>
                   <div className="space-y-1.5">
                     {m.permissions.map((p: any) => (
-                      <label key={p.name} className="flex items-center justify-between cursor-pointer text-sm">
+                      <label key={p.name} className="flex items-center justify-between cursor-pointer text-[13px]">
                         <span className="text-gray-700">{p.label}</span>
                         <span className="flex items-center gap-1.5">
                           {p.action === 'read' ? <span className="badge-info">Read</span> : <span className="badge-warning">Write</span>}
@@ -141,7 +141,7 @@ export default function RolesPage() {
               ))}
             </div>
 
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
               <button className="btn-primary" onClick={save} disabled={createMut.isPending || updateMut.isPending}>
                 <Save className="w-4 h-4" /> {editing ? 'Save Access' : 'Create Role'}
