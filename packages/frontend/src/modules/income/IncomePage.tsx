@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
+import { paymentAccounts } from '../../utils/accounts';
 import { Plus, Trash2 } from 'lucide-react';
 
 const SOURCES = ['Rent Received', 'Interest', 'Commission', 'Old Gold Scrap', 'Misc Income', 'Refund', 'Other'];
@@ -29,7 +30,7 @@ export default function IncomePage() {
   });
 
   const list: any[] = ((incData as any)?.items) || [];
-  const accList: any[] = Array.isArray(accounts) ? (accounts as any[]) : [];
+  const accList = paymentAccounts(accounts);
   const total = list.reduce((s, i) => s + i.amount, 0);
   const fmtMoney = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 

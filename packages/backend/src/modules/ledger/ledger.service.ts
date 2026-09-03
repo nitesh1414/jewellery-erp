@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+import { assertMoneyAccounts } from '../../common/payment-accounts';
 
 // Entries created automatically by a bill / purchase / URD exchange — they can
 // only be changed from the document that produced them, never by hand.
@@ -327,6 +328,9 @@ export class LedgerService {
 
   async createExpense(organizationId: string, branchId: string | undefined, data: any, user: any) {
     if (!data?.amount || Number(data.amount) <= 0) throw new BadRequestException('Amount required');
+    // Expenses are paid out of a cash / bank ledger — never a metal (stock) account, which is
+    // measured in grams. Checked before the transaction so nothing is half-written.
+    await assertMoneyAccounts(this.prisma, organizationId, [data.accountId]);
     return this.prisma.$transaction(async (tx) => {
       const expense = await tx.expense.create({
         data: {
@@ -425,6 +429,9 @@ export class LedgerService {
 
   async createIncome(organizationId: string, branchId: string | undefined, data: any, user: any) {
     if (!data?.amount || Number(data.amount) <= 0) throw new BadRequestException('Amount required');
+    // Income is received into a cash / bank ledger — never a metal (stock) account, which is
+    // measured in grams. Checked before the transaction so nothing is half-written.
+    await assertMoneyAccounts(this.prisma, organizationId, [data.accountId]);
     return this.prisma.$transaction(async (tx) => {
       const income = await tx.income.create({
         data: {

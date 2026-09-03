@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
+import { paymentAccounts } from '../../utils/accounts';
 import { Plus, Trash2 } from 'lucide-react';
 
 const CATEGORIES = ['Inventory', 'Salary', 'Rent', 'Utilities', 'Marketing', 'Maintenance', 'Office', 'Travel', 'Insurance', 'Tax', 'Misc'];
@@ -29,7 +30,7 @@ export default function ExpensesPage() {
   });
 
   const list: any[] = ((expData as any)?.items) || [];
-  const accList: any[] = Array.isArray(accounts) ? (accounts as any[]) : [];
+  const accList = paymentAccounts(accounts);
   const total = list.reduce((s, e) => s + e.amount, 0);
   const fmtMoney = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
