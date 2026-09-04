@@ -10,7 +10,16 @@ export class OrnamentsController {
 
   @Get()
   async findAll(@CurrentUser() user: any, @Query() query: any) {
-    return this.ornamentsService.findAll(user.organizationId, query);
+    return this.ornamentsService.findAll(user.organizationId, query, user.branchId);
+  }
+
+  /**
+   * Ornaments with the stock held in a metal + purity (taken from the metal
+   * ledger when one is selected) — drives the ornament picker in item entry.
+   */
+  @Get('with-stock')
+  async findAllWithStock(@CurrentUser() user: any, @Query() query: any) {
+    return this.ornamentsService.findAllWithStock(user.organizationId, query, user.branchId);
   }
 
   @Post()

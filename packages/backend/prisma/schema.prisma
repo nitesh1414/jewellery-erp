@@ -47,6 +47,7 @@ model Organization {
   purchases       Purchase[]
   urdTransactions UrdTransaction[]
   jobOrders       JobOrder[]
+  jobWorks        JobWork[]
   repairs         Repair[]
   payments        Payment[]
   notifications   Notification[]
@@ -84,6 +85,7 @@ model Branch {
   purchases       Purchase[]
   urdTransactions UrdTransaction[]
   jobOrders       JobOrder[]
+  jobWorks        JobWork[]
   payments        Payment[]
   notifications   Notification[]
   auditLogs       AuditLog[]
@@ -348,6 +350,7 @@ model JewelleryItem {
   supplierId        String?
   purchaseId        String?
   purchaseDate      DateTime?
+  metalLedgerAccountId String?  // metal ledger the gross weight of this ornament was taken from
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -355,6 +358,7 @@ organization Organization @relation(fields: [organizationId], references: [id])
   branch       Branch       @relation(fields: [branchId], references: [id])
   product      Product?     @relation(fields: [productId], references: [id])
   barcodeRef   Barcode?
+  jobWorkLine  JobWorkItem?
 }
 
 model Barcode {
@@ -485,6 +489,7 @@ model Sale {
   items        SaleItem[]
   payments     SalePayment[]
   returns      SaleReturn[]
+  urdTransactions UrdTransaction[] @relation("SaleUrd")
 }
 
 model SaleItem {
@@ -523,6 +528,7 @@ model SalePayment {
   paymentMode String
   reference   String?
   accountId   String?  // cash / bank ledger account the money was received into
+  isProposed  Boolean  @default(false) // estimate: planned payment, not collected yet
   date        DateTime @default(now())
   employeeId  String?
   notes       String?
@@ -573,6 +579,11 @@ model Purchase {
   supplierId     String
   invoiceNumber  String
   invoiceDate    DateTime
+  // METAL = raw metal / bullion purchase (adds grams to the metal ledger),
+  // ORNAMENT = readymade jewellery purchase (deducts gross weight from the
+  // metal ledger selected on the line and creates inventory items).
+  entryType      String   @default("ORNAMENT")
+  metalLedgerAccountId String?              // metal ledger credited/debited by this purchase
   metalType      String
   purity         String
   grossWeight    Float
@@ -626,6 +637,7 @@ model PurchaseItem {
   stoneCharges       Float    @default(0)
   otherCharges       Float    @default(0)
   lineAmount         Float    @default(0)
+  metalLedgerAccountId String?              // metal ledger this line takes metal from / adds metal to
   createdAt          DateTime @default(now())
 
   purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
@@ -647,6 +659,10 @@ model PurchasePayment {
 // URD TRANSACTIONS
 // ============================
 
+/// URD EXCHANGE — old gold / silver taken from a customer.
+///   incoming : the metal is credited to the material (metal) ledger
+///   customer : the value is credited to the customer ledger
+///   outgoing : sold / melted out (URD_OUT) or settled by paying the customer
 model UrdTransaction {
   id             String   @id @default(uuid())
   organizationId String
@@ -667,12 +683,19 @@ model UrdTransaction {
   paymentMode    String?
   referenceBillId String?
   notes          String?
+  /// PROPOSED (on an estimate) | ACTIVE (metal in, value owed to the customer)
+  /// ADJUSTED (value used against a bill) | SETTLED (paid out) | SOLD (metal out)
   status         String   @default("ACTIVE")
+  /// how much of finalValue has already been paid to the customer
+  settledAmount  Float    @default(0)
+  settledAt      DateTime?
+  soldAt         DateTime?
   createdAt      DateTime @default(now())
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  branch       Branch       @relation(fields: [branchId], references: [id])
-  customer     Customer?    @relation(fields: [customerId], references: [id])
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  branch        Branch       @relation(fields: [branchId], references: [id])
+  customer      Customer?    @relation(fields: [customerId], references: [id])
+  referenceBill Sale?        @relation("SaleUrd", fields: [referenceBillId], references: [id])
 }
 
 // ============================
@@ -780,6 +803,114 @@ model JobStatusHistory {
 }
 
 // ============================
+// JOB WORK — OUT (issue to a worker) → IN (finished ornaments received)
+// ============================
+
+/// Job work OUT: metal / material handed to a worker (karigar).
+/// The metal is debited from its metal ledger the moment it is issued and
+/// credited back when the worker returns wastage / scrap (job work IN).
+model JobWork {
+  id                 String    @id @default(uuid())
+  organizationId     String
+  branchId           String
+  jobNumber          String    @unique          // JWO-2026-00001
+  workerId           String?
+  workerName         String
+  workerMobile       String?
+  issueDate          DateTime  @default(now())
+  dueDate            DateTime?
+  completedDate      DateTime?
+  status             String    @default("GIVEN")  // GIVEN | IN_PROCESS | COMPLETED | CANCELLED
+  totalIssuedWeight  Float     @default(0)      // grams of metal handed to the worker
+  totalIssuedValue   Float     @default(0)      // value of that metal at issue
+  totalReceivedWeight Float    @default(0)      // net weight of the finished ornaments received
+  returnWeight       Float     @default(0)      // wastage / scrap metal returned & credited back
+  wages              Float     @default(0)      // labour / making charges payable to the worker
+  wagesPaid          Float     @default(0)
+  notes              String?
+  createdById        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id])
+  branch       Branch              @relation(fields: [branchId], references: [id])
+  worker       Employee?           @relation("jobWorkWorker", fields: [workerId], references: [id])
+  items        JobWorkItem[]
+  materials    JobWorkMaterial[]
+  history      JobWorkStatusLog[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, workerId])
+}
+
+/// Material given to the worker: metal (grams, from a metal ledger) or other
+/// material (stones, chemicals, findings …).
+model JobWorkMaterial {
+  id                   String   @id @default(uuid())
+  jobWorkId            String
+  kind                 String   @default("METAL")   // METAL | OTHER
+  metalType            String?
+  purity               String?
+  name                 String?                      // description for OTHER material
+  weight               Float    @default(0)         // grams (METAL)
+  quantity             Float    @default(1)         // pieces (OTHER)
+  rate                 Float    @default(0)         // rate per gram (METAL) / per piece (OTHER)
+  value                Float    @default(0)
+  metalLedgerAccountId String?
+  notes                String?
+  createdAt            DateTime @default(now())
+
+  jobWork            JobWork        @relation(fields: [jobWorkId], references: [id], onDelete: Cascade)
+  metalLedgerAccount LedgerAccount? @relation(fields: [metalLedgerAccountId], references: [id])
+}
+
+/// An ornament to be made (job work OUT) and, once received, the jewellery
+/// item + barcode created from it (job work IN).
+model JobWorkItem {
+  id                String    @id @default(uuid())
+  jobWorkId         String
+  ornament          String?
+  category          String?
+  metalType         String    @default("GOLD")
+  purity            String    @default("22K")
+  quantity          Int       @default(1)
+  expectedWeight    Float     @default(0)   // weight asked for (OUT)
+  grossWeight       Float     @default(0)   // received (IN)
+  stoneWeight       Float     @default(0)
+  otherWeight       Float     @default(0)
+  netWeight         Float     @default(0)   // gross − stone − other
+  currentRate       Float     @default(0)
+  makingChargeType  String?                 // PERCENTAGE | PER_GRAM | FIXED
+  makingChargeValue Float     @default(0)
+  labourCharge      Float     @default(0)
+  huid              String?
+  hsnCode           String?
+  size              String?
+  jewelleryItemId   String?   @unique
+  barcode           String?
+  receivedAt        DateTime?
+  status            String    @default("PENDING")   // PENDING | RECEIVED
+  notes             String?
+  createdAt         DateTime  @default(now())
+
+  jobWork       JobWork        @relation(fields: [jobWorkId], references: [id], onDelete: Cascade)
+  jewelleryItem JewelleryItem? @relation(fields: [jewelleryItemId], references: [id])
+}
+
+model JobWorkStatusLog {
+  id           String   @id @default(uuid())
+  jobWorkId    String
+  fromStatus   String?
+  toStatus     String
+  changedBy    String?
+  changedByName String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  jobWork JobWork @relation(fields: [jobWorkId], references: [id], onDelete: Cascade)
+}
+
+// ============================
 // REPAIRS
 // ============================
 
@@ -843,14 +974,19 @@ model LedgerAccount {
   organizationId String
   branchId       String?
   name           String
-  type           String   @default("CASH")
+  type           String   @default("CASH")   // CASH | BANK | CARD | WALLET | CHEQUE | METAL | OTHER
   accountNumber  String?
   bankName       String?
   ifscCode       String?
-  openingBalance Float    @default(0)
-  currentBalance Float    @default(0)
-  grams          Float      @default(0)
-  purity         String    @default("")
+  // --- material / metal (bullion) ledger ---
+  // A METAL account tracks stock in grams instead of (only) rupees:
+  //   current grams = openingGrams + credited grams − debited grams
+  metalType      String?                     // GOLD | SILVER | … (only for METAL accounts)
+  purity         String    @default("")      // 22K | SILVER_925 | … (only for METAL accounts)
+  openingGrams   Float     @default(0)       // opening inventory in grams
+  grams          Float     @default(0)       // current stock in grams (cached, recomputed from entries)
+  openingBalance Float     @default(0)
+  currentBalance Float     @default(0)
   isPrimary      Boolean  @default(false)
   isActive       Boolean  @default(true)
   notes          String?
@@ -863,6 +999,7 @@ model LedgerAccount {
   expenses     Expense[]
   income       Income[]
   payments     Payment[]
+  jobWorkMaterials JobWorkMaterial[]
 }
 
 model LedgerEntry {
@@ -872,6 +1009,11 @@ model LedgerEntry {
   accountId      String
   type           String
   amount         Float
+  // --- metal (gram) movement, used by METAL / material ledgers ---
+  grams          Float    @default(0)   // weight in/out in grams (0 for pure cash entries)
+  metalType      String?
+  purity         String?
+  rate           Float?                 // rate per gram used to value the movement
   date           DateTime @default(now())
   description    String?
   reference      String?
@@ -973,6 +1115,7 @@ model Employee {
   organization Organization     @relation(fields: [organizationId], references: [id])
   branch       Branch?          @relation(fields: [branchId], references: [id])
   payments     WorkerPayment[]
+  jobWorks     JobWork[]        @relation("jobWorkWorker")
 }
 
 model WorkerPayment {
@@ -1005,6 +1148,7 @@ model OrnamentType {
   category       String?  // Ring, Bangle, Chain, Necklace…
   notes          String?
   isActive       Boolean  @default(true)
+  metalLedgerAccountId String?  // metal ledger (metal + purity) this ornament is made from
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -1098,7 +1242,11 @@ model ShopSettings {
   customPurities    String?  // JSON array of purity names e.g. ["24K","22K","18K","14K","10K","SILVER_999","SILVER_925"]
   customHallmarks   String?  // JSON array of hallmark master entries e.g. [{"id":"...","label":"Hallmark 22K","purity":"22K","charge":45}]
   hallmarkCharge    Float    @default(45) // default hallmark charge per item used in billing
-  barcodeLabel      String   @default("Jeweller|Item|Weight|Purity") // Format for barcode printing using | as separator with placeholders: Jeweller, Item, Weight, Purity
+  // Barcode sticker content: ordered, "|"-separated list of field keys printed
+  // on a sticker (jeweller, item, weight, purity, gross, stone, net, metal,
+  // rate, amount, sku, barcode, hsn, category, ornament, hallmark, making, size, date).
+  // Managed from Settings → Barcode.
+  barcodeLabel      String   @default("jeweller|item|weight|purity")
   setupCompleted    Boolean  @default(false)
   setupStep         Int      @default(0)            // 0=pending, 1=profile, 2=accounts, 3=users, 4=done
   createdAt         DateTime @default(now())

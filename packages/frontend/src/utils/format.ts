@@ -67,3 +67,17 @@ export function fmtCount(value: number | null | undefined): string {
   if (value == null || isNaN(value as number)) return '0';
   return (value as number).toLocaleString('en-IN');
 }
+
+/**
+ * Turns the codes the database stores into words a shopkeeper reads:
+ * `PART_PAID` → `Part paid`, `BANK_TRANSFER` → `Bank transfer`, `GOLD` → `Gold`.
+ */
+export function humanize(value: unknown): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '—';
+  const words = raw.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  // all-caps codes (IN_STOCK, GST) are title-cased, mixed case is left alone
+  const isShouty = raw === raw.toUpperCase() && /[A-Z]/.test(raw);
+  const spaced = isShouty ? words.toLowerCase() : words;
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}

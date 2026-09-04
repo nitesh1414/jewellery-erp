@@ -291,7 +291,33 @@ async function main() {
     },
   });
 
-  console.log(`✓ Ledger accounts: ${cashAccount.name}, ${bankAccount.name}`);
+  // Metal / material ledgers — stock is tracked in grams for one metal + purity
+  const metalLedgers = [
+    { id: 'metal-gold-22k', name: 'GOLD 22K', metalType: 'GOLD', purity: '22K' },
+    { id: 'metal-silver-925', name: 'SILVER 925', metalType: 'SILVER', purity: 'SILVER_925' },
+  ];
+  for (const metal of metalLedgers) {
+    await prisma.ledgerAccount.upsert({
+      where: { id: metal.id },
+      update: {},
+      create: {
+        id: metal.id,
+        organizationId: org.id,
+        branchId: branch.id,
+        name: metal.name,
+        type: 'METAL',
+        metalType: metal.metalType,
+        purity: metal.purity,
+        openingGrams: 0,
+        grams: 0,
+        openingBalance: 0,
+        currentBalance: 0,
+        notes: 'Metal ledger — stock tracked in grams',
+      },
+    });
+  }
+
+  console.log(`✓ Ledger accounts: ${cashAccount.name}, ${bankAccount.name}, ${metalLedgers.map((m) => m.name).join(', ')}`);
 
   console.log('Seed completed successfully!');
   console.log('Admin login: admin@jewellery.com / admin123');

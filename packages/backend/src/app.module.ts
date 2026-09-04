@@ -13,7 +13,7 @@ import { RatesModule } from './modules/rates/rates.module';
 import { SalesModule } from './modules/sales/sales.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { UrdModule } from './modules/urd/urd.module';
-import { JobOrdersModule } from './modules/job-orders/job-orders.module';
+import { JobWorkModule } from './modules/job-work/job-work.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { SettingsModule } from './modules/settings/settings.module';
@@ -22,11 +22,9 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { EmployeesModule } from './modules/employees/employees.module';
-import { RepairsModule } from './modules/repairs/repairs.module';
 import { PrintingModule } from './modules/printing/printing.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { OrnamentsModule } from './modules/ornaments/ornaments.module';
-import { QuotationsModule } from './modules/quotations/quotations.module';
 
 @Module({
   imports: [
@@ -45,7 +43,7 @@ import { QuotationsModule } from './modules/quotations/quotations.module';
     SalesModule,
     PurchasesModule,
     UrdModule,
-    JobOrdersModule,
+    JobWorkModule,
     PaymentsModule,
     ReportsModule,
     SettingsModule,
@@ -53,11 +51,9 @@ import { QuotationsModule } from './modules/quotations/quotations.module';
     NotificationsModule,
     DashboardModule,
     EmployeesModule,
-    RepairsModule,
     PrintingModule,
     LedgerModule,
     OrnamentsModule,
-    QuotationsModule,
   ],
 })
 export class AppModule {}

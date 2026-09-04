@@ -96,14 +96,13 @@ export default function BarcodesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Barcode Management</h1>
-          <p className="text-gray-500 text-sm mt-1">Generate, assign, and print barcodes</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => setShowGenerate(true)} className="btn-primary">
             <Plus className="w-4 h-4" /> Generate Barcodes
           </button>
@@ -117,7 +116,7 @@ export default function BarcodesPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid stat-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <div className="stat-card">
           <p className="stat-label">Total Barcodes</p>
           <p className="stat-value">{stats?.total || 0}</p>
@@ -138,7 +137,7 @@ export default function BarcodesPage() {
 
       {/* Barcode Scanner */}
       <div className="card">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="flex-1 relative">
             <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-500" />
             <input
@@ -147,8 +146,9 @@ export default function BarcodesPage() {
               placeholder="Scan barcode here..."
               value={scanInput}
               onChange={(e) => setScanInput(e.target.value)}
+              data-enter-action
               onKeyDown={(e) => e.key === 'Enter' && handleScan(scanInput)}
-              className="input-field pl-10 font-mono text-lg"
+              className="input-field pl-10 font-mono text-base"
               autoFocus
             />
           </div>
@@ -158,7 +158,7 @@ export default function BarcodesPage() {
         </div>
 
         {scanResult && (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-green-800">
@@ -166,7 +166,7 @@ export default function BarcodesPage() {
                    scanResult.type === 'JEWELLERY_ITEM' ? '✓ Jewellery Item' : '⚠ Barcode Only'}
                 </p>
                 {(scanResult.item || scanResult.barcode) && (
-                  <div className="mt-2 text-sm text-green-700 space-y-1">
+                  <div className="mt-2 text-[13px] text-green-700 space-y-1">
                     <p>Barcode: <strong>{(scanResult.item?.barcode || scanResult.barcode?.barcode)}</strong></p>
                     {scanResult.item?.designCode && <p>Item: <strong>{scanResult.item.designCode}</strong></p>}
                     {scanResult.item?.purity && <p>Purity: <strong>{scanResult.item.purity}</strong></p>}
@@ -191,6 +191,7 @@ export default function BarcodesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
+            data-search-input
             placeholder="Search barcode..."
             className="input-field pl-10"
             value={search}
@@ -201,6 +202,7 @@ export default function BarcodesPage() {
 
       {/* Barcode Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead>
             <tr className="border-b bg-gray-50">
@@ -232,16 +234,16 @@ export default function BarcodesPage() {
                   <td className="table-cell">
                     {b.jewelleryItem ? (
                       <div>
-                        <p className="text-sm font-medium">{b.jewelleryItem.designCode}</p>
+                        <p className="text-[13px] font-medium">{b.jewelleryItem.designCode}</p>
                         <p className="text-xs text-gray-400">{b.jewelleryItem.purity}</p>
                       </div>
                     ) : (
                       <span className="text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="table-cell text-sm">{new Date(b.createdAt).toLocaleDateString('en-IN')}</td>
+                  <td className="table-cell text-[13px]">{new Date(b.createdAt).toLocaleDateString('en-IN')}</td>
                   <td className="table-cell text-right">{b.printedCount}</td>
-                  <td className="table-cell text-right text-sm">
+                  <td className="table-cell text-right text-[13px]">
                     {b.lastPrintedAt ? new Date(b.lastPrintedAt).toLocaleDateString('en-IN') : '—'}
                   </td>
                   <td className="table-cell text-right">
@@ -269,13 +271,14 @@ export default function BarcodesPage() {
             )}
           </tbody>
         </table>
+        </div>
 
         {data && data.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
-            <span className="text-sm text-gray-500">Page {page} of {data.totalPages}</span>
-            <div className="flex gap-2">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-sm py-1">Prev</button>
-              <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-sm py-1">Next</button>
+          <div className="flex items-center justify-between px-3 py-3 border-t">
+            <span className="text-[13px] text-gray-500">Page {page} of {data.totalPages}</span>
+            <div className="flex flex-wrap gap-2">
+              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary text-[13px] py-1">Prev</button>
+              <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary text-[13px] py-1">Next</button>
             </div>
           </div>
         )}
@@ -284,9 +287,9 @@ export default function BarcodesPage() {
       {/* Generate Modal */}
       {showGenerate && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowGenerate(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Generate Barcodes</h3>
-            <div className="space-y-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">Generate Barcodes</h3>
+            <div className="space-y-3">
               <div>
                 <label className="label">Prefix</label>
                 <select className="input-field" value={generatePrefix} onChange={e => setGeneratePrefix(e.target.value)}>
@@ -308,7 +311,7 @@ export default function BarcodesPage() {
                 />
                 <p className="text-xs text-gray-400 mt-1">Max 500 at a time</p>
               </div>
-              <div className="bg-gray-50 rounded-lg p-3 text-sm">
+              <div className="bg-gray-50 rounded-lg p-3 text-[13px]">
                 <p>Next sequence: <strong>{generatePrefix}{(stats?.total || 0) + 1}</strong></p>
                 <p className="text-gray-500 mt-1">
                   Will generate: <strong>{generatePrefix}{String((stats?.total || 0) + 1).padStart(8, '0')}</strong> to{' '}
@@ -316,7 +319,7 @@ export default function BarcodesPage() {
                 </p>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowGenerate(false)} className="btn-secondary">Cancel</button>
               <button
                 onClick={() => generateMutation.mutate({ count: generateCount, prefix: generatePrefix })}
@@ -333,8 +336,8 @@ export default function BarcodesPage() {
       {/* Assign Modal */}
       {showAssign && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAssign(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Assign Barcode: {assignBarcode}</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">Assign Barcode: {assignBarcode}</h3>
             <div>
               <label className="label">Jewellery Item Barcode</label>
               <input
@@ -342,6 +345,7 @@ export default function BarcodesPage() {
                 placeholder="Scan or enter item barcode"
                 value={assignItemBarcode}
                 onChange={e => setAssignItemBarcode(e.target.value)}
+                data-enter-action
                 onKeyDown={async (e) => {
                   if (e.key === 'Enter' && assignItemBarcode.trim()) {
                     try {
@@ -355,7 +359,7 @@ export default function BarcodesPage() {
                 autoFocus
               />
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowAssign(null)} className="btn-secondary">Cancel</button>
             </div>
           </div>

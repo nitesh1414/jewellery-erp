@@ -101,6 +101,12 @@ class ApiService {
     return data;
   }
 
+  /** Cities present in the customer book (for the filter dropdown). */
+  async getCustomerCities() {
+    const { data } = await this.client.get('/customers/cities');
+    return data as string[];
+  }
+
   async createCustomer(body: any) {
     const { data } = await this.client.post('/customers', body);
     return data;
@@ -179,6 +185,12 @@ class ApiService {
     return data;
   }
 
+  /** Raw metal / material stock held in the metal ledger accounts. */
+  async getInventoryMetalStock() {
+    const { data } = await this.client.get('/inventory/metal-stock');
+    return data;
+  }
+
   async getStockTransactions(params?: any) {
     const { data } = await this.client.get('/inventory/transactions', { params });
     return data;
@@ -198,6 +210,12 @@ class ApiService {
   async generateBarcodes(count: number) {
     const { data } = await this.client.post('/barcodes/generate', { count });
     return data;
+  }
+
+  /** Sticker data (shop name + item values) for the given barcode numbers. */
+  async getBarcodeLabels(codes: string[]) {
+    const { data } = await this.client.get('/barcodes/labels', { params: { codes: codes.join(',') } });
+    return data as any[];
   }
 
   // Purchases
@@ -221,47 +239,11 @@ class ApiService {
     return data;
   }
 
-  // Job Orders
-  async getJobOrders(params?: any) {
-    const { data } = await this.client.get('/job-orders', { params });
-    return data;
-  }
-
-  async addJobAdvance(id: string, body: { amount: number; paymentMode?: string; reference?: string }) {
-    const { data } = await this.client.post(`/job-orders/${id}/advance`, body);
-    return data;
-  }
-
-  async generateJobFinalBill(id: string, body: any) {
-    const { data } = await this.client.post(`/job-orders/${id}/final-bill`, body);
-    return data;
-  }
-
   async addSalePayment(id: string, body: { amount: number; paymentMode: string; reference?: string }) {
     const { data } = await this.client.post(`/sales/${id}/payment`, body);
     return data;
   }
 
-
-  async getJobOrderStats() {
-    const { data } = await this.client.get('/job-orders/stats/overview');
-    return data;
-  }
-
-  async getJobOrder(id: string) {
-    const { data } = await this.client.get(`/job-orders/${id}`);
-    return data;
-  }
-
-  async createJobOrder(body: any) {
-    const { data } = await this.client.post('/job-orders', body);
-    return data;
-  }
-
-  async getMyJobs() {
-    const { data } = await this.client.get('/job-orders/my-jobs');
-    return data;
-  }
 
   // Suppliers
   async getSuppliers(params?: any) {
@@ -275,6 +257,11 @@ class ApiService {
   }
 
   // URD
+  async getUrdStats(params?: any) {
+    const { data } = await this.client.get('/urd/stats/overview', { params });
+    return data;
+  }
+
   async getUrdTransactions(params?: any) {
     const { data } = await this.client.get('/urd', { params });
     return data;
@@ -295,6 +282,24 @@ class ApiService {
     return data;
   }
 
+  /** Pay the customer for the old gold (payment adjustment). */
+  async settleUrd(id: string, body: { amount?: number; paymentMode?: string; reference?: string; accountId?: string; notes?: string }) {
+    const { data } = await this.client.post(`/urd/${id}/settle`, body);
+    return data;
+  }
+
+  /** Adjust the old gold against one of the customer's unpaid bills. */
+  async adjustUrd(id: string, body: { saleId: string; amount?: number }) {
+    const { data } = await this.client.post(`/urd/${id}/adjust`, body);
+    return data;
+  }
+
+  /** Sell / melt the old gold out (metal leaves the material ledger, money in). */
+  async sellUrd(id: string, body: { amount?: number; paymentMode?: string; reference?: string; accountId?: string; notes?: string }) {
+    const { data } = await this.client.post(`/urd/${id}/sell`, body);
+    return data;
+  }
+
   // Payments
   async getPayments(params?: any) {
     const { data } = await this.client.get('/payments', { params });
@@ -306,14 +311,25 @@ class ApiService {
     return data;
   }
 
-  // Rates
+  // Rates — daily schedule + history
   async getRates() {
     const { data } = await this.client.get('/rates');
     return data;
   }
 
+  async getRateHistory(limit?: number) {
+    const { data } = await this.client.get('/rates/history', { params: { limit: limit || 200 } });
+    return data;
+  }
+
   async updateRate(id: string, rate: number) {
     const { data } = await this.client.put(`/rates/${id}`, { rate });
+    return data;
+  }
+
+  /** Add the rate for a metal + purity, or update it when it already exists. */
+  async upsertRate(body: { metalType: string; purity: string; rate: number; effectiveDate?: string }) {
+    const { data } = await this.client.post('/rates', body);
     return data;
   }
 
@@ -355,9 +371,15 @@ class ApiService {
     return data;
   }
 
-  // ====== Ledger Accounts (cash/bank) ======
-  async getAccounts() {
-    const { data } = await this.client.get('/ledger/accounts');
+  // ====== Ledger Accounts (cash/bank + metal/material) ======
+  async getAccounts(params?: any) {
+    const { data } = await this.client.get('/ledger/accounts', { params });
+    return data;
+  }
+
+  /** Metal / material (bullion) ledgers only. */
+  async getMetalAccounts() {
+    const { data } = await this.client.get('/ledger/accounts', { params: { type: 'METAL' } });
     return data;
   }
 
@@ -539,6 +561,12 @@ class ApiService {
     return data;
   }
 
+  /** Ornaments with the stock held in a metal + purity (optionally from a metal ledger). */
+  async getOrnamentsWithStock(params?: any) {
+    const { data } = await this.client.get('/ornaments/with-stock', { params });
+    return data;
+  }
+
   async createOrnament(body: any) {
     const { data } = await this.client.post('/ornaments', body);
     return data;
@@ -567,6 +595,49 @@ class ApiService {
 
   async deleteHallmark(id: string) {
     const { data } = await this.client.delete(`/settings/hallmarks/${id}`);
+    return data;
+  }
+
+  // ====== Job work (OUT → IN) ======
+  async getJobWorks(params?: any) {
+    const { data } = await this.client.get('/job-work', { params });
+    return data;
+  }
+
+  async getJobWorkStats(params?: any) {
+    const { data } = await this.client.get('/job-work/stats', { params });
+    return data;
+  }
+
+  async getJobWork(id: string) {
+    const { data } = await this.client.get('/job-work/' + id);
+    return data;
+  }
+
+  /** Job work OUT — issue metal / material to a worker. */
+  async createJobWork(body: any) {
+    const { data } = await this.client.post('/job-work', body);
+    return data;
+  }
+
+  async updateJobWork(id: string, body: any) {
+    const { data } = await this.client.put('/job-work/' + id, body);
+    return data;
+  }
+
+  async updateJobWorkStatus(id: string, body: any) {
+    const { data } = await this.client.put('/job-work/' + id + '/status', body);
+    return data;
+  }
+
+  /** Job work IN — receive the finished ornaments (creates items + barcodes). */
+  async receiveJobWork(id: string, body: any) {
+    const { data } = await this.client.post('/job-work/' + id + '/receive', body);
+    return data;
+  }
+
+  async deleteJobWork(id: string) {
+    const { data } = await this.client.delete('/job-work/' + id);
     return data;
   }
 

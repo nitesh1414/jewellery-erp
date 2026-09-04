@@ -1,8 +1,10 @@
+import { humanize } from '../../utils/format';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAppShortcut } from '../../hooks/useAppShortcut';
+import { paymentAccounts } from '../../utils/accounts';
 import { Search, Plus, CircleDollarSign, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 
 export default function PaymentsPage() {
@@ -18,7 +20,7 @@ export default function PaymentsPage() {
   const { data } = useQuery({ queryKey: ['payments', search, page], queryFn: () => api.getPayments({ search, page, limit: 20 }) });
   const { data: customers } = useQuery({ queryKey: ['customers-all'], queryFn: () => api.getCustomers({ limit: 100 }) });
   const { data: accounts } = useQuery({ queryKey: ['accounts'], queryFn: () => api.getAccounts(), staleTime: 60000 });
-  const activeAccounts = ((accounts as any) || []).filter((a: any) => a.isActive !== false && !['INCOME', 'SALES', 'REVENUE'].includes(a.type));
+  const activeAccounts = paymentAccounts(accounts);
 
   const createMutation = useMutation({
     mutationFn: (b: any) => api.createPayment(b),
@@ -29,18 +31,19 @@ export default function PaymentsPage() {
   const fm = (n: number) => '₹' + (n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div><h1 className="page-title">Payments</h1><p className="text-gray-500 text-sm mt-1">Record and track all payments</p></div>
-        <button onClick={() => setShowForm(true)} className="btn-primary"><Plus className="w-4 h-4" /> New Payment</button>
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <h1 className="page-title">Payments</h1>
+        <button data-hotkey-add onClick={() => setShowForm(true)} className="btn-primary"><Plus className="w-4 h-4" /> New Payment</button>
       </div>
 
-      <div className="relative max-w-xs">
+      <div className="relative w-full sm:max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input type="text" placeholder="Search payment ref..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+        <input data-search-input type="text" placeholder="Search payment ref..." className="input-field pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead><tr className="border-b bg-gray-50">
             <th className="table-header">Transaction ID</th><th className="table-header">Type</th><th className="table-header">Customer/Supplier</th>
@@ -56,23 +59,27 @@ export default function PaymentsPage() {
                     {p.customerId ? 'Receipt' : 'Payment'}
                   </span>
                 </td>
-                <td className="table-cell">{p.customerId ? 'Customer' : p.supplierId ? 'Supplier' : '—'}</td>
+                <td className="table-cell">
+                  {p.customer?.name || p.supplier?.name || (p.customerId || p.supplierId ? '—' : 'Walk-in')}
+                  {p.account?.name && <span className="block text-[11px] text-gray-400">→ {p.account.name}</span>}
+                </td>
                 <td className="table-cell text-right font-medium">{fm(p.amount)}</td>
-                <td className="table-cell"><span className="badge-info">{p.paymentMode}</span></td>
-                <td className="table-cell text-sm">{new Date(p.date).toLocaleDateString('en-IN')}</td>
+                <td className="table-cell"><span className="badge-info">{humanize(p.paymentMode)}</span></td>
+                <td className="table-cell text-[13px]">{new Date(p.date).toLocaleDateString('en-IN')}</td>
                 <td className="table-cell text-xs text-gray-400">{p.reference || '—'}</td>
               </tr>
             ))}
             {(!data?.items || data.items.length === 0) && <tr><td colSpan={7} className="text-center py-12 text-gray-400">No payments recorded</td></tr>}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Record Payment</h3>
-            <div className="space-y-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-3 sm:p-4 modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">Record Payment</h3>
+            <div className="space-y-3">
               <div><label className="label">Customer</label>
                 <select className="input-field" value={form.customerId} onChange={e => setForm({...form, customerId: e.target.value, supplierId: '' })}>
                   <option value="">Select customer (or leave blank)</option>
@@ -89,13 +96,13 @@ export default function PaymentsPage() {
                   <option value="">— no ledger —</option>
                   {activeAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.name} ({a.type})</option>)}
                 </select>
-                <p className="text-[10px] text-gray-400 mt-1">The amount is credited to this account in the ledger.</p></div>
+                <p className="text-[11px] text-gray-400 mt-1">The amount is credited to this account in the ledger.</p></div>
               <div><label className="label">Reference</label><input className="input-field" value={form.reference} onChange={e => setForm({...form, reference: e.target.value})} placeholder="UPI ref / cheque no" /></div>
               <div><label className="label">Notes</label><input className="input-field" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
-              <button onClick={() => { if (!form.amount) { toast.error('Amount required'); return; } createMutation.mutate(form); }} disabled={createMutation.isPending} className="btn-primary"><CircleDollarSign className="w-4 h-4" /> Record Payment</button>
+              <button onClick={() => { if (!form.amount) { toast.error('Amount required'); return; } createMutation.mutate(form); }} data-hotkey-save disabled={createMutation.isPending} className="btn-primary"><CircleDollarSign className="w-4 h-4" /> Record Payment</button>
             </div>
           </div>
         </div>

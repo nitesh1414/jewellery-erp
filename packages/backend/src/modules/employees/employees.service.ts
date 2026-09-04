@@ -93,9 +93,13 @@ export class EmployeesService {
   async remove(id: string, organizationId: string) {
     const existing = await this.prisma.employee.findFirst({ where: { id, organizationId } });
     if (!existing) throw new NotFoundException('Worker not found');
-    // detach assignments? keep history — just deactivate is safer, but hard delete requested
-    const [assignments] = await Promise.all([this.prisma.jobAssignment.count({ where: { employeeId: id } })]);
-    if (assignments > 0) {
+    // A worker who is used anywhere (job work, payments) is deactivated so the
+    // history stays intact; an untouched worker can be removed completely.
+    const [jobWorks, payments] = await Promise.all([
+      this.prisma.jobWork.count({ where: { workerId: id } }),
+      this.prisma.workerPayment.count({ where: { employeeId: id } }),
+    ]);
+    if (jobWorks + payments > 0) {
       // keep history: deactivate instead of delete
       await this.prisma.employee.update({ where: { id }, data: { isActive: false } });
       await this.prisma.workerPayment.deleteMany({ where: { employeeId: id } });

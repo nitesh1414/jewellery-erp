@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { TopNav } from './TopNav';
 import { QuickActionFAB } from '../QuickActionFAB';
 import { KeyboardShortcutsHelp } from '../KeyboardShortcutsHelp';
+import { ConfirmHost } from '../ConfirmDialog';
 import { useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../services/api';
@@ -44,12 +45,13 @@ export function AppLayout() {
       <ScrollToTop />
       <SetupRedirect />
       <main className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto w-full max-w-[1600px] p-3 sm:p-3 lg:p-4">
           <Outlet />
         </div>
       </main>
       <QuickActionFAB />
       <KeyboardShortcutsHelp />
+      <ConfirmHost />
     </div>
   );
 }

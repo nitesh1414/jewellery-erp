@@ -1,16 +1,24 @@
-import { useEffect } from 'react';
-
-type ShortcutEvent = 'app:add' | 'app:new';
+import { useEffect, useRef } from 'react';
+import { onAppShortcut, AppShortcutName } from '../hotkeys/bus';
 
 /**
- * Listens for a global "add"/"new" shortcut (Ctrl+A / Ctrl+N) and invokes the
- * handler. Pages use this to open their "Add/New" modal from anywhere.
+ * Answer a named global shortcut while this screen is mounted.
+ *
+ * The screen decides *what* the shortcut means (open its Add dialog, save its
+ * form, focus its search box…); the global engine decides *which key* fires it.
+ *
+ *   useAppShortcut('app:add', () => setShowAdd(true));
+ *
+ * Return `false` to say "not handled" — the engine then falls back to its
+ * generic behaviour (e.g. click the dialog's Save button). Useful when a screen
+ * has a panel open on top of it.
  */
-export function useAppShortcut(event: ShortcutEvent, handler: () => void) {
+export function useAppShortcut(name: AppShortcutName, handler: () => void | boolean) {
+  // Always call the newest handler without re-subscribing on every render.
+  const ref = useRef(handler);
   useEffect(() => {
-    const fn = () => handler();
-    window.addEventListener(event, fn);
-    return () => window.removeEventListener(event, fn);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [event]);
+    ref.current = handler;
+  });
+
+  useEffect(() => onAppShortcut(name, () => ref.current()), [name]);
 }
