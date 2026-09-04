@@ -58,7 +58,7 @@ export class ReportsService {
         acc[key].value += i.netWeight * i.currentRate;
         acc[key].count += i.quantity;
         return acc;
-      }, {})).map(([metal, data]) => ({ metal, ...data as any })),
+      }, {})).map(([metal, data]: [string, any]) => ({ metal, ...(data as any) })),
     };
   }
   /** Job work OUT → IN: what was given to which worker, what came back. */

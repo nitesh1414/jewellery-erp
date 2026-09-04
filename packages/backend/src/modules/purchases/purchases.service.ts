@@ -25,6 +25,22 @@ function ornamentWeightNote(item: any): string {
   return `GROSS ${g3(item?.grossWeight)} g - STONE WEIGHT ${g3(item?.stoneWeight)} g - OTHER ${g3(item?.otherWeight)} g`;
 }
 
+/**
+ * One metal (bullion) line, normalised before it is saved.
+ *
+ * The type is explicit on purpose: `rawLines` is built by a conditional that
+ * produces two object literals, and without an annotation TypeScript unifies
+ * them into `unknown`, which then breaks the Prisma create payload.
+ */
+interface MetalPurchaseLine {
+  metalType: string;
+  purity: string;
+  grams: number;
+  rate: number;
+  accountId: string | null;
+  notes: string;
+}
+
 @Injectable()
 export class PurchasesService {
   constructor(
@@ -187,8 +203,8 @@ export class PurchasesService {
         otherCharges: data.otherCharges || 0,
       };
     }
-    const metalTypes = new Set(itemsRaw.map((i: any) => i.metalType).filter(Boolean));
-    const purities = new Set(itemsRaw.map((i: any) => i.purity).filter(Boolean));
+    const metalTypes = new Set<string>(itemsRaw.map((i: any) => i.metalType).filter(Boolean));
+    const purities = new Set<string>(itemsRaw.map((i: any) => i.purity).filter(Boolean));
     const gross = itemsRaw.reduce((s: number, i: any) => s + (Number(i.grossWeight) || 0), 0);
     const net = itemsRaw.reduce((s: number, i: any) => s + this.lineWeight(i), 0);
     const qty = itemsRaw.reduce((s: number, i: any) => s + (Number(i.quantity) || 1), 0);
@@ -274,7 +290,7 @@ export class PurchasesService {
       throw new BadRequestException('Add at least one metal line with a weight in grams');
     }
 
-    const rawLines = lines.length
+    const rawLines: MetalPurchaseLine[] = lines.length
       ? lines.map((i: any) => ({
           metalType: (i.metalType || data.metalType || 'GOLD').toUpperCase(),
           purity: i.purity || data.purity || '22K',
@@ -292,8 +308,8 @@ export class PurchasesService {
           notes: '',
         }];
 
-    const metalTypes = new Set(rawLines.map((l) => l.metalType));
-    const purities = new Set(rawLines.map((l) => l.purity));
+    const metalTypes = new Set<string>(rawLines.map((l) => l.metalType));
+    const purities = new Set<string>(rawLines.map((l) => l.purity));
     const totalGrams = Math.round(rawLines.reduce((s, l) => s + l.grams, 0) * 1000) / 1000;
     const amount = rawLines.reduce((s, l) => s + Math.round(l.grams * l.rate * 100) / 100, 0);
     const totalAmount = this.totalAmountOf(

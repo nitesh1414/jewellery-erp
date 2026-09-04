@@ -17,7 +17,7 @@ import { BadRequestException } from '@nestjs/common';
  */
 export const NON_PAYMENT_ACCOUNT_TYPES = ['METAL', 'INCOME', 'SALES', 'REVENUE', 'EXPENSE'];
 
-export const isMoneyAccountType = (type: unknown): boolean =>
+export const isMoneyAccountType = (type?: string | null): boolean =>
   !NON_PAYMENT_ACCOUNT_TYPES.includes(String(type ?? '').toUpperCase());
 
 /**
