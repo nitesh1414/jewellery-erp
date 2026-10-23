@@ -2,6 +2,41 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 /**
+ * Load `packages/license-server/.env` (if present) before any env var is
+ * read, so a VPS deployment can keep all settings in one file no matter how
+ * the process is started (PM2, systemd, plain `npm run start:license`).
+ * Real environment variables always win. This is a deliberately tiny
+ * KEY=VALUE parser (no multiline values — use LICENSE_PRIVATE_KEY_FILE for
+ * PEM material), so it needs no extra dependency.
+ */
+function loadDotEnvFile(): void {
+  try {
+    const envFile = path.join(__dirname, '..', '.env');
+    const text = fs.readFileSync(envFile, 'utf8');
+    for (const rawLine of text.split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith('#')) continue;
+      const eq = line.indexOf('=');
+      if (eq <= 0) continue;
+      const key = line.slice(0, eq).trim();
+      let value = line.slice(eq + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      if (process.env[key] === undefined) process.env[key] = value;
+    }
+  } catch {
+    /* no .env file — configuration comes from the real environment */
+  }
+}
+loadDotEnvFile();
+
+const DEFAULT_JWT_SECRET = 'license-server-dev-secret-change-me';
+
+/**
  * Central configuration. Everything can be overridden with environment
  * variables so the same build runs locally (SQLite) or on a cloud host.
  */
@@ -18,10 +53,14 @@ const dataDir = process.env.LICENSE_DATA_DIR
 fs.mkdirSync(dataDir, { recursive: true });
 
 export const config = {
+  /** Interface to bind. Keep 0.0.0.0 for direct access; behind an Nginx
+   * reverse proxy on the same box set HOST=127.0.0.1 so the API is not
+   * reachable on the public interface at all. */
+  host: process.env.HOST || '0.0.0.0',
   port: envInt('PORT', 4010),
   dataDir,
   databaseUrl: process.env.DATABASE_URL || `file:${path.join(dataDir, 'license.db')}`,
-  jwtSecret: process.env.JWT_SECRET || 'license-server-dev-secret-change-me',
+  jwtSecret: process.env.JWT_SECRET || DEFAULT_JWT_SECRET,
   adminEmail: process.env.ADMIN_EMAIL || 'admin@jewellery-erp.cloud',
   adminPassword: process.env.ADMIN_PASSWORD || 'Admin@12345',
   adminName: process.env.ADMIN_NAME || 'License Admin',
@@ -38,6 +77,15 @@ export const config = {
   /** Days before expiry counted as "expiring soon" on the dashboard. */
   expiringSoonDays: envInt('EXPIRING_SOON_DAYS', 30),
 };
+
+if (process.env.NODE_ENV === 'production' && config.jwtSecret === DEFAULT_JWT_SECRET) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[license-server] WARNING: JWT_SECRET is not set — admin tokens are signed with the public ' +
+      'development secret, so anyone can forge an admin session. Set JWT_SECRET (e.g. `openssl rand -hex 48`) ' +
+      'in packages/license-server/.env — see docs/DEPLOY-LICENSE-SERVER-VPS.md.',
+  );
+}
 
 function loadPrivateKey(): string {
   const keyDir = path.join(__dirname, '..', 'keys');

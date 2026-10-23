@@ -71,9 +71,9 @@ async function main() {
     );
   }
 
-  app.listen(config.port, () => {
+  app.listen(config.port, config.host, () => {
     // eslint-disable-next-line no-console
-    console.log(`[license-server] listening on http://0.0.0.0:${config.port}`);
+    console.log(`[license-server] listening on http://${config.host}:${config.port}`);
   });
 }
 

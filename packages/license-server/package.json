@@ -5,13 +5,17 @@
   "description": "Cloud license/subscription server with admin API for the Jewellery ERP desktop app",
   "main": "dist/index.js",
   "scripts": {
-    "build": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && tsc -p tsconfig.json",
-    "dev": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "node ../../scripts/ensure-license-core.mjs --strict && node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && tsc -p tsconfig.json",
+    "dev": "node ../../scripts/ensure-license-core.mjs --strict && node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && ts-node-dev --respawn --transpile-only src/index.ts",
+    "prestart": "node ../../scripts/ensure-license-core.mjs --check",
     "start": "node dist/index.js",
     "db:push": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && prisma db push --skip-generate",
     "db:generate": "node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma",
     "db:studio": "prisma studio",
-    "seed:admin": "ts-node-dev --transpile-only src/scripts/seed-admin.ts"
+    "seed:admin": "node ../../scripts/ensure-license-core.mjs --strict && node ../../scripts/prisma-generate.mjs --schema prisma/schema.prisma && ts-node --transpile-only src/scripts/seed-admin.ts",
+    "seed:admin:prod": "node dist/scripts/seed-admin.js",
+    "generate-keys": "node ../../scripts/generate-license-keys.mjs",
+    "generate-keys:ts": "node ../../scripts/ensure-license-core.mjs --strict && ts-node --transpile-only src/scripts/generate-keys.ts"
   },
   "dependencies": {
     "@jewellery-erp/license-core": "*",
@@ -29,6 +33,7 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.0"
   }

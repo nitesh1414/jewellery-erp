@@ -18,6 +18,11 @@ packages/license-server/data/
 packages/license-server/keys/license-private-key.pem
 packages/license-server/keys/license-public-key.pem
 
+# License server deployment secrets/backups (copy the *.example files first)
+packages/license-server/.env
+deploy/license-server/ecosystem.config.cjs
+backups/
+
 # Desktop electron packaging output
 packages/desktop-electron/staging/
 packages/desktop-electron/release/

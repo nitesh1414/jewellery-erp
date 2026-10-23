@@ -283,7 +283,13 @@ first launch of the new version.
 
 ```powershell
 npm run dev:license     # license server :4010 + admin portal :5174
+npm run build:license   # production build (license-core + server + portal)
+npm run start:license   # run the production license server (serves portal too)
 ```
+
+Deploying the license server on a Linux VPS (PM2/systemd + Nginx + HTTPS):
+**[docs/DEPLOY-LICENSE-SERVER-VPS.md](docs/DEPLOY-LICENSE-SERVER-VPS.md)**.
+Generate production signing keys with `npm run license:generate-keys`.
 
 Admins create license keys from the cloud panel: day / month / year / lifetime
 plans, optional **machine-ID lock** or open keys with N seats, bulk creation,
