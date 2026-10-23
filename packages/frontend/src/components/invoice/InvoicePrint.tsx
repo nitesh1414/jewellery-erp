@@ -42,7 +42,9 @@ interface Bill {
   balanceAmount: number;
   isGst: boolean;
   items: Item[];
-  payments: { amount: number; paymentMode: string; reference?: string }[];
+  payments: { amount: number; paymentMode: string; reference?: string; isProposed?: boolean }[];
+  urdTransactions?: any[]; // old gold received against this bill
+  urdDeduction?: number;   // line-level URD already removed from the taxable amount
 }
 
 interface Shop {
@@ -77,8 +79,72 @@ function safeInt(n: any) {
   return Math.round(Number(n) || 0);
 }
 
+/* ==================== SETTLEMENT SUMMARY ==================== */
+/** Every mode the bill was (or will be) settled with — URD, cash, online … */
+const MODE_LABELS: Record<string, string> = {
+  CASH: 'Cash', ONLINE: 'Online', UPI: 'UPI', DEBIT_CARD: 'Debit Card',
+  CREDIT_CARD: 'Credit Card', BANK_TRANSFER: 'Bank Transfer', CHEQUE: 'Cheque',
+  URD: 'URD / Old Gold',
+};
+
+function SettlementSummary({ bill }: { bill: Bill }) {
+  const rows = bill.payments || [];
+  const urd = bill.urdTransactions || [];
+  if (rows.length === 0 && urd.length === 0) return null;
+  const proposed = rows.some((p: any) => p.isProposed);
+  return (
+    <div style={{ marginTop: 12, fontSize: 11, border: '1px solid #ddd', background: '#fafafa' }}>
+      <div style={{ padding: '6px 8px', borderBottom: '1px solid #ddd', fontWeight: 700, letterSpacing: 0.3 }}>
+        {proposed ? 'PROPOSED SETTLEMENT (not collected)' : 'PAYMENT DETAILS'}
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+        <tbody>
+          {rows.map((p, i) => (
+            <tr key={'p' + i}>
+              <td style={{ padding: '3px 8px' }}>{MODE_LABELS[p.paymentMode] || String(p.paymentMode).replace(/_/g, ' ')}</td>
+              <td style={{ padding: '3px 8px', color: '#666' }}>{p.reference || ''}</td>
+              <td style={{ padding: '3px 8px', textAlign: 'right' }}>{fmt(p.amount)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {urd.length > 0 && (
+        <div style={{ borderTop: '1px dashed #ccc', padding: '6px 8px' }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>URD / Old gold received</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+            <thead>
+              <tr style={{ color: '#666' }}>
+                <th style={{ textAlign: 'left', padding: '2px 0' }}>URD No</th>
+                <th style={{ textAlign: 'left', padding: '2px 0' }}>Metal / Purity</th>
+                <th style={{ textAlign: 'right', padding: '2px 0' }}>Net Wt</th>
+                <th style={{ textAlign: 'right', padding: '2px 0' }}>Rate</th>
+                <th style={{ textAlign: 'right', padding: '2px 0' }}>Deduction</th>
+                <th style={{ textAlign: 'right', padding: '2px 0' }}>Melting</th>
+                <th style={{ textAlign: 'right', padding: '2px 0' }}>Credited</th>
+              </tr>
+            </thead>
+            <tbody>
+              {urd.map((u: any) => (
+                <tr key={u.id}>
+                  <td style={{ padding: '2px 0' }}>{u.urdNumber}</td>
+                  <td style={{ padding: '2px 0' }}>{u.metalType} {u.purity}</td>
+                  <td style={{ textAlign: 'right', padding: '2px 0' }}>{safeNum(u.netWeight)} g</td>
+                  <td style={{ textAlign: 'right', padding: '2px 0' }}>{fmt(u.rate)}</td>
+                  <td style={{ textAlign: 'right', padding: '2px 0' }}>{u.deduction ? fmt(u.deduction) : '—'}</td>
+                  <td style={{ textAlign: 'right', padding: '2px 0' }}>{u.meltingLoss ? `${u.meltingLoss}%` : '—'}</td>
+                  <td style={{ textAlign: 'right', padding: '2px 0', fontWeight: 700 }}>{fmt(u.finalValue)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ==================== A4 GST TAX INVOICE ==================== */
-function A4GST({ bill, shop, hideGst = false }: { bill: Bill; shop: Shop; hideGst?: boolean }) {
+function A4GST({ bill, shop, hideGst = false, estimate = null }: { bill: Bill; shop: Shop; hideGst?: boolean; estimate?: string | null }) {
   return (
     <div className="invoice-page">
       {/* Header */}
@@ -97,7 +163,7 @@ function A4GST({ bill, shop, hideGst = false }: { bill: Bill; shop: Shop; hideGs
           </div>
         </div>
         <div className="invoice-title">
-          <h1>{bill.billType === 'ESTIMATE' ? 'ESTIMATE' : hideGst ? 'INVOICE' : 'TAX INVOICE'}</h1>
+          <h1>{estimate || bill.billType === 'ESTIMATE' ? 'ESTIMATE / QUOTATION' : hideGst ? 'INVOICE' : 'TAX INVOICE'}</h1>
           <div className="bill-no">#{bill.billNumber}</div>
           <div style={{ fontSize: 11, marginTop: 4 }}>Date: {fmtDate(bill.billDate)}</div>
         </div>
@@ -118,7 +184,8 @@ function A4GST({ bill, shop, hideGst = false }: { bill: Bill; shop: Shop; hideGs
             <span>Bill No:</span><strong>{bill.billNumber}</strong>
             <span>Date:</span><strong>{fmtDate(bill.billDate)}</strong>
             <span>Type:</span><strong>{bill.billType}</strong>
-            <span>Status:</span><strong>FINAL</strong>
+            <span>Status:</span><strong>{estimate || bill.billType === 'ESTIMATE' ? 'ESTIMATE' : 'FINAL'}</strong>
+            {estimate && <><span>Valid until:</span><strong>{estimate}</strong></>}
           </div>
         </div>
       </div>
@@ -179,6 +246,12 @@ function A4GST({ bill, shop, hideGst = false }: { bill: Bill; shop: Shop; hideGs
                 <td style={{ textAlign: 'right', color: 'red' }}>− {fmt(bill.discount)}</td>
               </tr>
             )}
+            {(bill.urdDeduction || 0) > 0 && (
+              <tr>
+                <td>Less URD (old gold, item level)</td>
+                <td style={{ textAlign: 'right', color: 'red' }}>− {fmt(bill.urdDeduction || 0)}</td>
+              </tr>
+            )}
             <tr>
               <td>Taxable Amount</td>
               <td style={{ textAlign: 'right' }}>{fmt(bill.taxableAmount)}</td>
@@ -213,15 +286,20 @@ function A4GST({ bill, shop, hideGst = false }: { bill: Bill; shop: Shop; hideGs
         <strong>Amount in Words:</strong> {numberToWords(safeInt(bill.netAmount))} Rupees Only
       </div>
 
-      {/* Payment Mode */}
-      {bill.payments && bill.payments.length > 0 && (
-        <div style={{ marginTop: 12, fontSize: 11, padding: 8, background: '#fafafa', border: '1px solid #ddd' }}>
-          <strong>Payment Mode:</strong>
-          {bill.payments.map((p, i) => (
-            <div key={i} style={{ marginLeft: 8 }}>
-              • {p.paymentMode}: {fmt(p.amount)} {p.reference && <span>(Ref: {p.reference})</span>}
-            </div>
-          ))}
+      {/* Settlement — URD / cash / online … exactly as the customer paid */}
+      <SettlementSummary bill={bill} />
+
+      {/* Estimate terms */}
+      {(estimate || bill.billType === 'ESTIMATE') && (
+        <div style={{ marginTop: 14, padding: 10, border: '1px dashed #888', fontSize: 10, color: '#444' }}>
+          <strong>Terms &amp; Conditions:</strong>
+          <ul style={{ marginTop: 4, paddingLeft: 16 }}>
+            <li>This estimate is valid for 7 days from the date of issue.</li>
+            <li>Prices are based on current market gold/silver rates and may change.</li>
+            <li>Making charges, wastage, and taxes apply as per prevailing rates.</li>
+            <li>Hallmarking charges are extra as applicable.</li>
+            <li>This is not a bill. Final billing happens at the time of purchase.</li>
+          </ul>
         </div>
       )}
 
@@ -300,13 +378,32 @@ function Thermal({ bill, shop, width = 80 }: { bill: Bill; shop: Shop; width?: 5
 
       <div className="divider"></div>
 
-      {bill.payments && bill.payments.length > 0 && (
+      {(bill.payments || []).length > 0 && (
         <div>
-          <div style={{ marginBottom: 4 }}><strong>Payment:</strong></div>
+          <div style={{ marginBottom: 4 }}>
+            <strong>{(bill.payments || []).some((p: any) => p.isProposed) ? 'Proposed payment:' : 'Payment:'}</strong>
+          </div>
           {bill.payments.map((p, i) => (
             <div key={i} className="row" style={{ fontSize: 10 }}>
-              <span>{p.paymentMode}</span>
+              <span>{MODE_LABELS[p.paymentMode] || String(p.paymentMode).replace(/_/g, ' ')}</span>
               <span>{fmt(p.amount)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(bill.urdTransactions || []).length > 0 && (
+        <div>
+          <div style={{ marginBottom: 4 }}><strong>URD / old gold:</strong></div>
+          {bill.urdTransactions!.map((u: any) => (
+            <div key={u.id} style={{ fontSize: 10 }}>
+              <div className="row">
+                <span>{u.metalType} {u.purity} · {safeNum(u.netWeight)}g</span>
+                <span>{fmt(u.finalValue)}</span>
+              </div>
+              <div style={{ fontSize: 9, color: '#555' }}>
+                rate {fmt(u.rate)}/g{u.deduction ? ` · ded ${fmt(u.deduction)}` : ''}{u.meltingLoss ? ` · melting ${u.meltingLoss}%` : ''} · {u.urdNumber}
+              </div>
             </div>
           ))}
         </div>
@@ -321,106 +418,15 @@ function Thermal({ bill, shop, width = 80 }: { bill: Bill; shop: Shop; width?: 5
 }
 
 /* ==================== ESTIMATE / QUOTATION ==================== */
+/**
+ * An estimate prints exactly like the bill — full item table, discount, URD,
+ * GST (when the shop bills with GST), round off, net amount and the proposed
+ * settlement — so the customer sees the same figures that will be billed.
+ */
 function Estimate({ bill, shop }: { bill: Bill; shop: Shop }) {
-  const validityDate = new Date(new Date(bill.billDate).getTime() + 7 * 24 * 60 * 60 * 1000);
-  return (
-    <div className="invoice-page">
-      <div className="invoice-header">
-        <div style={{ flex: 1 }}>
-          <div className="shop-name">{shop.shopName || 'Jewellery Shop'}</div>
-          <div className="shop-details">
-            {shop.shopAddress && <div>{shop.shopAddress}</div>}
-            {(shop.shopCity || shop.shopState) && <div>{[shop.shopCity, shop.shopState, shop.shopPin].filter(Boolean).join(', ')}</div>}
-            {shop.shopPhone && <div>📞 {shop.shopPhone}</div>}
-            {shop.shopGstin && <div><strong>GSTIN:</strong> {shop.shopGstin}</div>}
-          </div>
-        </div>
-        <div className="invoice-title">
-          <h1>ESTIMATE</h1>
-          <div className="bill-no">#{bill.billNumber}</div>
-          <div style={{ fontSize: 11, marginTop: 4 }}>Date: {fmtDate(bill.billDate)}</div>
-          <div style={{ fontSize: 11 }}>Valid till: {fmtDate(validityDate.toISOString())}</div>
-        </div>
-      </div>
-
-      <div style={{ background: '#fef3c7', border: '1px solid #fbbf24', padding: 8, marginBottom: 12, fontSize: 11, borderRadius: 4 }}>
-        ⚠ This is an <strong>ESTIMATE</strong>. Prices are subject to change based on prevailing gold rates at the time of purchase.
-      </div>
-
-      <div className="customer-info">
-        <div className="info-block">
-          <h4>Estimate For</h4>
-          <div className="value">{bill.customerName}</div>
-          {bill.customerMobile && <div style={{ fontSize: 11 }}>📱 {bill.customerMobile}</div>}
-          {bill.customerAddress && <div style={{ fontSize: 11 }}>{bill.customerAddress}</div>}
-        </div>
-        <div className="info-block">
-          <h4>Estimate Details</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 11 }}>
-            <span>Estimate No:</span><strong>{bill.billNumber}</strong>
-            <span>Date:</span><strong>{new Date(bill.billDate).toLocaleDateString('en-IN')}</strong>
-            <span>Valid:</span><strong>7 Days</strong>
-          </div>
-        </div>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th style={{ width: '5%' }}>#</th>
-            <th>Description</th>
-            <th>HSN</th>
-            <th>Purity</th>
-            <th style={{ textAlign: 'right' }}>Net Wt (g)</th>
-            <th style={{ textAlign: 'right' }}>Rate/g</th>
-            <th style={{ textAlign: 'right' }}>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bill.items.map((item, idx) => (
-            <tr key={idx}>
-              <td>{idx + 1}</td>
-              <td>{item.particular}</td>
-              <td>{item.hsnCode}</td>
-              <td>{item.purity}</td>
-              <td style={{ textAlign: 'right' }}><strong>{safeNum(item.netWeight)}</strong></td>
-              <td style={{ textAlign: 'right' }}>₹{safeInt(item.ratePerGram)}</td>
-              <td style={{ textAlign: 'right' }}><strong>₹{fmt(item.totalAmount).replace('₹ ', '')}</strong></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="total-section">
-        <table className="total-table">
-          <tbody>
-            <tr className="grand-total">
-              <td><strong>ESTIMATE TOTAL</strong></td>
-              <td style={{ textAlign: 'right' }}><strong>{fmt(bill.netAmount)}</strong></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div style={{ marginTop: 30, padding: 12, border: '1px dashed #888', fontSize: 11, color: '#444' }}>
-        <strong>Terms & Conditions:</strong>
-        <ul style={{ marginTop: 6, paddingLeft: 18 }}>
-          <li>This estimate is valid for 7 days from the date of issue.</li>
-          <li>Prices are based on current market gold/silver rates and may change.</li>
-          <li>Making charges, wastage, and taxes apply as per prevailing rates.</li>
-          <li>Hallmarking charges are extra as applicable.</li>
-          <li>This is not a bill. Final billing happens at the time of purchase.</li>
-        </ul>
-      </div>
-
-      <div className="signature" style={{ textAlign: 'right', fontSize: 11, marginTop: 30 }}>
-        <div style={{ marginTop: 40, display: 'inline-block', borderTop: '1px solid #000', paddingTop: 4, minWidth: 180 }}>
-          Authorized Signatory<br/>
-          For {shop.shopName || 'Jewellery Shop'}
-        </div>
-      </div>
-    </div>
-  );
+  const validityDate = new Date(new Date(bill.billDate).getTime() + 7 * 24 * 60 * 60 * 1000)
+    .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  return <A4GST bill={bill} shop={shop} hideGst={!bill.isGst} estimate={validityDate} />;
 }
 
 /* ==================== BARCODE LABEL ==================== */

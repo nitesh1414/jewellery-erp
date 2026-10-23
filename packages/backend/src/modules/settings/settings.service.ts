@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 
+import { parseBarcodeLabel, DEFAULT_BARCODE_LABEL, BARCODE_LABEL_FIELDS } from '../barcodes/barcodes.service';
+
 const DEFAULT_METALS = ['GOLD', 'SILVER', 'PLATINUM', 'PALLADIUM', 'ROSE_GOLD', 'WHITE_GOLD'];
 const DEFAULT_PURITIES = ['24K', '22K', '20K', '18K', '14K', '10K', 'SILVER_999', 'SILVER_925', 'SILVER_900', 'SILVER_800', 'PLATINUM_950', 'PLATINUM_900'];
 const DEFAULT_HALLMARKS: HallmarkEntry[] = [
@@ -42,7 +44,10 @@ export class SettingsService {
       customMetals,
       customPurities,
       customHallmarks,
-      barcodeLabel: settings.barcodeLabel || 'Jeweller|Item|Weight|Purity',
+      // Barcode sticker content: ordered field keys (Settings → Barcode)
+      barcodeLabel: (settings.barcodeLabel || DEFAULT_BARCODE_LABEL),
+      barcodeFields: parseBarcodeLabel(settings.barcodeLabel),
+      barcodeFieldOptions: BARCODE_LABEL_FIELDS,
     };
   }
 
@@ -54,6 +59,9 @@ export class SettingsService {
     for (const k of Object.keys(data)) {
       if (k === 'customMetals' || k === 'customPurities') {
         if (data[k] !== undefined) update[k] = JSON.stringify(data[k]);
+      } else if (k === 'barcodeLabel') {
+        // Store the sticker fields as a clean, ordered "key|key|…" string
+        if (data[k] !== undefined) update[k] = parseBarcodeLabel(data[k]).join('|');
       } else {
         update[k] = data[k];
       }

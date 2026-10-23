@@ -41,22 +41,21 @@ export class DashboardService {
       stockValue: stockItems.reduce((s, i) => s + i.netWeight * i.currentRate, 0),
     };
 
-    // Job work summary
-    const jobOrders = await this.prisma.jobOrder.findMany({
-      where: { ...baseWhere },
-    });
+    // Job work summary (OUT → IN)
+    const jobWorks = await this.prisma.jobWork.findMany({ where: { ...baseWhere } });
 
     const jobSummary = {
-      pending: jobOrders.filter(j => ['ASSIGNED', 'ACCEPTED', 'IN_PROGRESS'].includes(j.status)).length,
-      inProgress: jobOrders.filter(j => j.status === 'IN_PROGRESS').length,
-      ready: jobOrders.filter(j => j.status === 'READY').length,
-      delayed: jobOrders.filter(j => {
-        if (!['DELIVERED', 'CANCELLED'].includes(j.status) && j.expectedDelivery) {
-          return new Date(j.expectedDelivery) < new Date();
+      pending: jobWorks.filter(j => j.status === 'GIVEN').length,
+      inProgress: jobWorks.filter(j => j.status === 'IN_PROCESS').length,
+      ready: jobWorks.filter(j => j.status === 'COMPLETED').length,
+      delayed: jobWorks.filter(j => {
+        if ((j.status === 'GIVEN' || j.status === 'IN_PROCESS') && j.dueDate) {
+          return new Date(j.dueDate) < new Date();
         }
         return false;
       }).length,
     };
+
 
     // Customer outstanding
     const customersWithLedger = await this.prisma.customer.findMany({

@@ -18,6 +18,17 @@ export class InventoryController {
     return this.inventoryService.getStockBalance(user.organizationId, user.branchId);
   }
 
+  /** Raw metal / material stock held in the metal ledger accounts. */
+  @Get('metal-stock')
+  async getMetalStock(@CurrentUser() user: any) {
+    const rows = await this.inventoryService.getMetalLedgerStock(user.organizationId, user.branchId);
+    return {
+      items: rows,
+      totalGrams: Math.round(rows.reduce((s, r) => s + r.grams, 0) * 1000) / 1000,
+      totalValue: Math.round(rows.reduce((s, r) => s + r.value, 0) * 100) / 100,
+    };
+  }
+
   @Get('transactions')
   async getTransactions(@CurrentUser() user: any, @Query() query: any) {
     return this.inventoryService.getTransactions(user.organizationId, query);

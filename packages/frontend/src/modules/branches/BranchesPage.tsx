@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -35,16 +36,16 @@ export default function BranchesPage() {
     else createMut.mutate(form);
   }
 
-  const list: any[] = (branches as any) || [];
+  const list: any[] = Array.isArray(branches) ? (branches as any[]) : [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div><h1 className="page-title">Branches</h1><p className="text-gray-500 text-sm mt-1">Run multiple shops from one software</p></div>
-        <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add Branch</button>
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <h1 className="page-title">Branches</h1>
+        <button data-hotkey-add className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add Branch</button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {isLoading && <div className="col-span-full text-center py-12 text-gray-400">Loading…</div>}
         {!isLoading && list.length === 0 && (
           <div className="col-span-full card text-center py-12">
@@ -62,10 +63,10 @@ export default function BranchesPage() {
               <div className="flex items-center gap-1">
                 <span className={'badge ' + (b.isActive ? 'badge-success' : 'badge-gray')}>{b.isActive ? 'Active' : 'Inactive'}</span>
                 <button onClick={() => openEdit(b)} className="btn-ghost p-1 text-primary-600"><Edit2 className="w-3.5 h-3.5" /></button>
-                {!b.isPrimary && <button onClick={() => confirm('Deactivate ' + b.name + '?') && deleteMut.mutate(b.id)} className="btn-ghost p-1 text-red-500"><MapPin className="w-3.5 h-3.5" /></button>}
+                {!b.isPrimary && <button onClick={async () => { if (await confirmAction({ title: 'Deactivate ' + b.name + '?', message: 'The branch stays in your history but cannot be used for new entries.', danger: true })) deleteMut.mutate(b.id); }} className="btn-ghost p-1 text-red-500"><MapPin className="w-3.5 h-3.5" /></button>}
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t text-sm space-y-1 text-gray-600">
+            <div className="mt-3 pt-3 border-t text-[13px] space-y-1 text-gray-600">
               {b.address && <p className="flex items-start gap-2"><MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />{b.address}, {b.city}{b.state ? ', ' + b.state : ''}{b.pin ? ' - ' + b.pin : ''}</p>}
               {b.phone && <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" />{b.phone}</p>}
             </div>
@@ -75,8 +76,8 @@ export default function BranchesPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">{editing ? 'Edit Branch' : 'New Branch'}</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-3 sm:p-4 modal-panel" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">{editing ? 'Edit Branch' : 'New Branch'}</h3>
             <div className="space-y-3">
               <div><label className="label">Branch Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Main Branch" /></div>
               <div className="grid grid-cols-2 gap-3">
@@ -91,12 +92,12 @@ export default function BranchesPage() {
               </div>
               <label className="flex items-center gap-2 mt-3">
                 <input type="checkbox" checked={form.isPrimary} onChange={(e) => setForm({ ...form, isPrimary: e.target.checked })} />
-                <span className="text-sm">Mark as primary branch</span>
+                <span className="text-[13px]">Mark as primary branch</span>
               </label>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</button>
-              <button className="btn-primary" onClick={submit}>
+              <button data-hotkey-save className="btn-primary" onClick={submit}>
                 {editing ? 'Update Branch' : 'Create Branch'}
               </button>
             </div>

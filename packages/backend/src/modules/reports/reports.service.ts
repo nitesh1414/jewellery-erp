@@ -58,14 +58,19 @@ export class ReportsService {
         acc[key].value += i.netWeight * i.currentRate;
         acc[key].count += i.quantity;
         return acc;
-      }, {})).map(([metal, data]) => ({ metal, ...data as any })),
+      }, {})).map(([metal, data]: [string, any]) => ({ metal, ...(data as any) })),
     };
   }
+  /** Job work OUT → IN: what was given to which worker, what came back. */
   async jobWorkReport(orgId: string, q: { status?: string; employeeId?: string; branchId?: string }) {
     const where: any = { organizationId: orgId };
     if (q.branchId) where.branchId = q.branchId;
     if (q.status) where.status = q.status;
-    if (q.employeeId) where.assignments = { some: { employeeId: q.employeeId } };
-    return this.prisma.jobOrder.findMany({ where, include: { assignments: { include: { materials: true, materialReturns: true } } }, orderBy: { createdAt: 'desc' } });
+    if (q.employeeId) where.workerId = q.employeeId;
+    return this.prisma.jobWork.findMany({
+      where,
+      include: { items: true, materials: true, worker: { select: { id: true, name: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

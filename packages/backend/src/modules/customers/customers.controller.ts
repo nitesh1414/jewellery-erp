@@ -9,14 +9,20 @@ import { RequirePermissions } from '../../common/decorators/permissions.decorato
 export class CustomersController {
   constructor(private customersService: CustomersService) {}
 
+  @Get('cities')
+  async cities(@CurrentUser() user: any) {
+    return this.customersService.listCities(user.organizationId);
+  }
+
   @Get()
   async findAll(
     @CurrentUser() user: any,
     @Query('search') search?: string,
+    @Query('city') city?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.customersService.findAll(user.organizationId, { search, page, limit });
+    return this.customersService.findAll(user.organizationId, { search, city, page, limit });
   }
 
   @Get(':id')

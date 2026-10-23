@@ -190,8 +190,19 @@ Device (public; the key is the credential):
 
 ## Server deployment notes
 
-* Default port `4010` (`PORT`), data in `packages/license-server/data`
-  (`LICENSE_DATA_DIR`), SQLite by default (`DATABASE_URL`).
-* For managed Postgres: set `DATABASE_URL=postgresql://…` — the server pushes
-  the schema on boot. `JWT_SECRET` must be set to a long random value.
-* Suggested hosts: Railway/Render/Fly.io (Node service + disk) or any VPS.
+**Full step-by-step VPS guide (Ubuntu/Debian + PM2/systemd + Nginx + HTTPS):
+[`docs/DEPLOY-LICENSE-SERVER-VPS.md`](DEPLOY-LICENSE-SERVER-VPS.md)** — with
+ready-to-copy configs in `deploy/license-server/`.
+
+* Production build/run: `npm run build:license` then `npm run start:license`
+  (never the `dev` scripts on a server).
+* Default port `4010` (`PORT`), bind interface `HOST` (use `127.0.0.1` behind
+  a reverse proxy), data in `packages/license-server/data`
+  (`LICENSE_DATA_DIR`), SQLite by default (`DATABASE_URL`). All settings can
+  live in `packages/license-server/.env` (see `.env.example` there).
+* For managed Postgres: switch the schema `provider` to `postgresql`, set
+  `DATABASE_URL=postgresql://…`, and set `LICENSE_AUTO_DB_PUSH=1` for the
+  first boot only — unlike SQLite, the schema is not auto-pushed afterwards.
+  `JWT_SECRET` must be set to a long random value.
+* Suggested hosts: any Linux VPS (see the guide) or Railway/Render/Fly.io
+  (Node service + persistent disk for `data/` and `keys/`).

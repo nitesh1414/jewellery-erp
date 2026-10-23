@@ -16,11 +16,13 @@ export class SalesController {
     @Query('billType') billType?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('customerId') customerId?: string,
+    @Query('unpaid') unpaid?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
     return this.salesService.findAll(user.organizationId, {
-      search, status, billType, branchId: user.branchId || undefined, startDate, endDate, page, limit,
+      search, status, billType, branchId: user.branchId || undefined, startDate, endDate, customerId, unpaid: unpaid === 'true', page, limit,
     });
   }
 

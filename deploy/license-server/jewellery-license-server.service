@@ -1,0 +1,31 @@
+# Alternative to PM2: run the license server under systemd.
+#
+#   sudo cp deploy/license-server/jewellery-license-server.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now jewellery-license-server
+#   journalctl -u jewellery-license-server -f
+#
+# Adjust User= (create the user and chown the checkout, see the VPS guide)
+# and the node path in ExecStart (`which node`) if Node was installed via nvm.
+# Application settings come from packages/license-server/.env (loaded by the
+# server itself), so no EnvironmentFile is required.
+
+[Unit]
+Description=Jewellery ERP License Server (API + admin portal)
+After=network.target
+
+[Service]
+Type=simple
+User=jewellery-erp
+Group=jewellery-erp
+WorkingDirectory=/var/www/jewellery-erp/packages/license-server
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+# The checkout stays read-only except for runtime data + generated keys.
+ReadWritePaths=/var/www/jewellery-erp/packages/license-server/data /var/www/jewellery-erp/packages/license-server/keys
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

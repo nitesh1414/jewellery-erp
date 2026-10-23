@@ -39,22 +39,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-3">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-600 shadow-lg mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-600 shadow-lg mb-3">
             <Diamond className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Jewellery ERP</h1>
+          <h1 className="text-xl font-bold text-gray-900">Jewellery ERP</h1>
           <p className="text-gray-500 mt-1">Shop Management & POS System</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign In</h2>
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-8 modal-panel">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">Sign In</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label className="label">Email Address</label>
               <input
@@ -105,19 +105,21 @@ export default function LoginPage() {
           </form>
 
           {/* Demo credentials */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Demo Credentials</p>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between bg-gray-50 rounded-lg px-3 py-2">
+          <details className="mt-3 pt-6 border-t border-gray-200">
+            <summary className="text-xs font-medium text-gray-500 uppercase tracking-wide cursor-pointer select-none">
+              Demo credentials (for testing)
+            </summary>
+            <div className="space-y-2 text-[13px] text-gray-600 mt-3">
+              <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between bg-gray-50 rounded-lg px-3 py-2">
                 <span>Admin</span>
-                <span className="text-gray-400">admin@jewellery.com / admin123</span>
+                <span className="text-gray-400 wrap-any">admin@jewellery.com / admin123</span>
               </div>
-              <div className="flex justify-between bg-gray-50 rounded-lg px-3 py-2">
+              <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between bg-gray-50 rounded-lg px-3 py-2">
                 <span>Cashier</span>
-                <span className="text-gray-400">cashier@jewellery.com / cash123</span>
+                <span className="text-gray-400 wrap-any">cashier@jewellery.com / cash123</span>
               </div>
             </div>
-          </div>
+          </details>
         </div>
       </div>
     </div>

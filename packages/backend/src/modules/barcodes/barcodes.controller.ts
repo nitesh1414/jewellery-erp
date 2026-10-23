@@ -29,6 +29,17 @@ export class BarcodesController {
     return this.barcodesService.getLabelData(barcode, user.organizationId);
   }
 
+  /** Sticker data for many barcodes (Settings → Barcode drives the fields). */
+  @Get('labels')
+  async getLabels(@Query('codes') codes: string, @CurrentUser() user: any) {
+    const list = String(codes || '')
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean)
+      .slice(0, 500);
+    return this.barcodesService.getLabels(list, user.organizationId);
+  }
+
   @Get('scan/:barcode')
   async scan(@Param('barcode') barcode: string, @CurrentUser() user: any) {
     return this.barcodesService.scan(barcode, user.organizationId);

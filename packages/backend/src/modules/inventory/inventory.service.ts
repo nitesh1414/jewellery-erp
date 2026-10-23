@@ -49,13 +49,65 @@ export class InventoryService {
   }
 
   /**
-   * Stock balance by metal type and purity
+   * Stock in grams held in the metal / material ledgers (type = METAL),
+   * grouped by metal + purity. Gram balances are recomputed from the ledger
+   * entries (opening grams + credited − debited) so the figure is always live.
+   */
+  async getMetalLedgerStock(organizationId: string, branchId?: string) {
+    const accountWhere: any = { organizationId, type: 'METAL', isActive: true };
+    if (branchId) {
+      accountWhere.OR = [{ branchId }, { branchId: null }];
+    }
+    const accounts = await this.prisma.ledgerAccount.findMany({
+      where: accountWhere,
+      orderBy: [{ metalType: 'asc' }, { purity: 'asc' }],
+    });
+    if (accounts.length === 0) return [];
+
+    const movements = await this.prisma.ledgerEntry.groupBy({
+      by: ['accountId', 'type'],
+      where: { accountId: { in: accounts.map((a) => a.id) }, linkedTo: { not: 'OPENING' } },
+      _sum: { grams: true, amount: true },
+    });
+
+    const byAccount = new Map<string, { grams: number; amount: number }>();
+    for (const m of movements) {
+      const entry = byAccount.get(m.accountId) || { grams: 0, amount: 0 };
+      const sign = m.type === 'CREDIT' ? 1 : -1;
+      entry.grams += (Number(m._sum.grams) || 0) * sign;
+      entry.amount += (Number(m._sum.amount) || 0) * sign;
+      byAccount.set(m.accountId, entry);
+    }
+
+    return accounts.map((a) => {
+      const move = byAccount.get(a.id) || { grams: 0, amount: 0 };
+      const grams = Math.round((Number(a.openingGrams || 0) + move.grams) * 1000) / 1000;
+      const value = Math.round((Number(a.openingBalance || 0) + move.amount) * 100) / 100;
+      return {
+        metalType: (a.metalType || 'METAL').toUpperCase(),
+        purity: a.purity || '',
+        grams,
+        value,
+        ledgerAccountId: a.id,
+        ledgerAccountName: a.name,
+        rate: grams > 0 ? Math.round((value / grams) * 100) / 100 : 0,
+      };
+    });
+  }
+
+  /**
+   * Stock balance by metal type and purity.
+   *
+   * Combines the ornament stock held as jewellery items with the raw
+   * metal / material stock held in the metal ledgers, so one table answers
+   * "how much of this metal + purity do we have".
    */
   async getStockBalance(organizationId: string, branchId?: string) {
     const where: any = { organizationId, status: 'IN_STOCK' };
     if (branchId) where.branchId = branchId;
 
     const items = await this.prisma.jewelleryItem.findMany({ where });
+    const metalLedgers = await this.getMetalLedgerStock(organizationId, branchId);
 
     // Group by metal type and purity
     const grouped = new Map<string, {
@@ -87,21 +139,96 @@ export class InventoryService {
       grouped.set(key, existing);
     }
 
-    const stock = Array.from(grouped.values()).map(s => ({
-      ...s,
-      totalWeight: Math.round(s.totalWeight * 1000) / 1000,
-      totalValue: Math.round(s.totalValue),
-      totalPurchaseValue: Math.round(s.totalPurchaseValue),
-    }));
+    // Ornament stock, keyed by "METAL|PURITY"
+    const ornamentStock = new Map<string, {
+      metalType: string;
+      purity: string;
+      ornamentWeight: number;
+      totalQuantity: number;
+      totalValue: number;
+      totalPurchaseValue: number;
+      pieceCount: number;
+    }>();
+    for (const s of grouped.values()) {
+      ornamentStock.set(`${s.metalType}|${s.purity}`.toUpperCase(), {
+        metalType: s.metalType,
+        purity: s.purity,
+        ornamentWeight: Math.round(s.totalWeight * 1000) / 1000,
+        totalQuantity: s.totalQuantity,
+        totalValue: Math.round(s.totalValue),
+        totalPurchaseValue: Math.round(s.totalPurchaseValue),
+        pieceCount: s.pieceCount,
+      });
+    }
+
+    // Metal / material stock coming from the metal ledger accounts
+    const metalStock = new Map<string, {
+      metalType: string;
+      purity: string;
+      metalWeight: number;
+      metalValue: number;
+      ledgerAccountId: string;
+      ledgerAccountName: string;
+      rate: number;
+    }>();
+    for (const m of metalLedgers) {
+      const key = `${m.metalType}|${m.purity}`.toUpperCase();
+      const existing = metalStock.get(key);
+      if (existing) {
+        existing.metalWeight = Math.round((existing.metalWeight + m.grams) * 1000) / 1000;
+        existing.metalValue = Math.round(existing.metalValue + m.value);
+      } else {
+        metalStock.set(key, {
+          metalType: m.metalType,
+          purity: m.purity,
+          metalWeight: m.grams,
+          metalValue: m.value,
+          ledgerAccountId: m.ledgerAccountId,
+          ledgerAccountName: m.ledgerAccountName,
+          rate: m.rate,
+        });
+      }
+    }
+
+    // One row per metal + purity that holds ornaments, metal, or both
+    const keys = Array.from(new Set([...ornamentStock.keys(), ...metalStock.keys()]));
+    const stock = keys.map((key) => {
+      const o = ornamentStock.get(key);
+      const m = metalStock.get(key);
+      const metalType = (o?.metalType || m?.metalType || '').toUpperCase();
+      const purity = o?.purity || m?.purity || '';
+      const metalWeight = m?.metalWeight || 0;
+      const ornamentWeight = o?.ornamentWeight || 0;
+      return {
+        metalType,
+        purity,
+        // metalWeight: raw metal / material held in the metal ledger (grams)
+        metalWeight: Math.round(metalWeight * 1000) / 1000,
+        // ornamentWeight: net weight of the jewellery items in stock (grams)
+        ornamentWeight: Math.round(ornamentWeight * 1000) / 1000,
+        // totalWeight: everything available for this metal + purity
+        totalWeight: Math.round((metalWeight + ornamentWeight) * 1000) / 1000,
+        totalQuantity: o?.totalQuantity || 0,
+        pieceCount: o?.pieceCount || 0,
+        totalValue: Math.round((o?.totalValue || 0) + (m?.metalValue || 0)),
+        totalPurchaseValue: Math.round(o?.totalPurchaseValue || 0),
+        metalValue: Math.round(m?.metalValue || 0),
+        ledgerAccountId: m?.ledgerAccountId || null,
+        ledgerAccountName: m?.ledgerAccountName || null,
+        metalRate: m?.rate || 0,
+      };
+    }).sort((a, b) => a.metalType.localeCompare(b.metalType) || a.purity.localeCompare(b.purity));
 
     const grandTotal = {
       totalWeight: Math.round(stock.reduce((s, i) => s + i.totalWeight, 0) * 1000) / 1000,
+      metalWeight: Math.round(stock.reduce((s, i) => s + i.metalWeight, 0) * 1000) / 1000,
+      ornamentWeight: Math.round(stock.reduce((s, i) => s + i.ornamentWeight, 0) * 1000) / 1000,
       totalValue: Math.round(stock.reduce((s, i) => s + i.totalValue, 0)),
       totalPurchaseValue: Math.round(stock.reduce((s, i) => s + i.totalPurchaseValue, 0)),
       totalPieces: stock.reduce((s, i) => s + i.pieceCount, 0),
     };
 
-    return { stock, grandTotal };
+    return { stock, grandTotal, metalLedgers };
   }
 
   /**

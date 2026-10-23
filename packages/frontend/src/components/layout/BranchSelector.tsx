@@ -70,17 +70,17 @@ export function BranchSelector() {
         <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
           <div className="px-3 py-2 border-b border-gray-100">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Switch Branch</p>
-            <p className="text-[10px] text-gray-400">Actions below use this branch</p>
+            <p className="text-[11px] text-gray-400">Actions below use this branch</p>
           </div>
           {activeBranches.map((b: any) => (
             <button
               key={b.id}
               onClick={() => onChange(b.id)}
-              className='w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 text-left'
+              className='w-full flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-gray-50 text-left'
             >
               <span className="flex-1">
                 <span className="font-medium text-gray-800">{b.name}</span>
-                <span className="block text-[10px] text-gray-400">Code: {b.code}</span>
+                <span className="block text-[11px] text-gray-400">Code: {b.code}</span>
               </span>
               {b.id === current?.id && <Check className="w-4 h-4 text-primary-600" />}
             </button>

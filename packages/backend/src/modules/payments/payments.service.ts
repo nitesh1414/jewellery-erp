@@ -11,7 +11,17 @@ export class PaymentsService {
     if (supplierId) where.supplierId = supplierId;
     if (branchId) where.branchId = branchId;
     const [items, total] = await Promise.all([
-      this.prisma.payment.findMany({ where, skip: (page-1)*limit, take: +limit, orderBy: { date: 'desc' } }),
+      this.prisma.payment.findMany({
+        where,
+        skip: (page-1)*limit,
+        take: +limit,
+        orderBy: { date: 'desc' },
+        include: {
+          customer: { select: { id: true, name: true, mobile: true } },
+          supplier: { select: { id: true, name: true } },
+          account: { select: { id: true, name: true } },
+        },
+      }),
       this.prisma.payment.count({ where }),
     ]);
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };

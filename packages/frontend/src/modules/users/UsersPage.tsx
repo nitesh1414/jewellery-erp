@@ -1,3 +1,4 @@
+import { confirmAction } from '../../components/ConfirmDialog';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
@@ -20,7 +21,7 @@ export default function UsersPage() {
   });
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: () => api.get<any>('/branches') });
   const { data: roles } = useQuery({ queryKey: ['roles'], queryFn: () => api.get<any>('/roles') });
-  const roleNames = [...new Set([...DEFAULT_ROLES, ...((roles as any) || []).map((r: any) => r.name)])];
+  const roleNames = [...new Set([...DEFAULT_ROLES, ...(Array.isArray(roles) ? (roles as any[]) : []).map((r: any) => r.name)])];
   const createMut = useMutation({
     mutationFn: (b: any) => api.post('/users', b),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); resetForm(); setShowForm(false); },
@@ -64,20 +65,20 @@ export default function UsersPage() {
     });
   }
 
-  const list: any[] = (users as any) || [];
-  const brList: any[] = (branches as any) || [];
+  const list: any[] = Array.isArray(users) ? (users as any[]) : [];
+  const brList: any[] = Array.isArray(branches) ? (branches as any[]) : [];
 
   const branchName = (id?: string) => brList.find((b) => b.id === id)?.name || '—';
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div><h1 className="page-title">User Management</h1><p className="text-gray-500 text-sm mt-1">Create operators — assign a role & one or more branch access</p></div>
-        <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add User</button>
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <h1 className="page-title">User Management</h1>
+        <button data-hotkey-add className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus className="w-4 h-4" /> Add User</button>
       </div>
 
       <div className="flex gap-2">
-        <input className="input-field max-w-xs" placeholder="Search by name / email" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input data-search-input className="input-field max-w-xs" placeholder="Search by name / email" value={search} onChange={(e) => setSearch(e.target.value)} />
         <select className="input-field w-48" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
           <option value="">All roles</option>
           {roleNames.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -85,6 +86,7 @@ export default function UsersPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead><tr className="border-b bg-gray-50">
             <th className="table-header">User</th><th className="table-header">Email</th><th className="table-header">Role</th>
@@ -101,9 +103,9 @@ export default function UsersPage() {
                     <span className="font-medium">{u.name}</span>
                   </div>
                 </td>
-                <td className="table-cell text-sm">{u.email}</td>
+                <td className="table-cell text-[13px]">{u.email}</td>
                 <td className="table-cell"><span className="badge-info">{u.role}</span></td>
-                <td className="table-cell text-sm">{branchName(u.branchId)}</td>
+                <td className="table-cell text-[13px]">{branchName(u.branchId)}</td>
                 <td className="table-cell text-xs">
                   {(u.branchIds || []).length > 1
                     ? `${(u.branchIds || []).length} branches`
@@ -116,20 +118,21 @@ export default function UsersPage() {
                 <td className="table-cell text-right">
                   <div className="flex items-center justify-end gap-1">
                     <button onClick={() => openEdit(u)} className="btn-ghost p-1 text-primary-600" title="Edit user"><Edit2 className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => confirm((u.isActive ? 'Deactivate ' : 'Reactivate ') + u.name + '?') && deactivateMut.mutate(u.id)} className={'btn-ghost p-1 ' + (u.isActive ? 'text-red-500' : 'text-green-600')}><Power className="w-3.5 h-3.5" /></button>
+                    <button onClick={async () => { if (await confirmAction({ title: (u.isActive ? 'Deactivate ' : 'Reactivate ') + u.name + '?', danger: u.isActive, confirmLabel: u.isActive ? 'Deactivate' : 'Reactivate' })) deactivateMut.mutate(u.id); }} className={'btn-ghost p-1 ' + (u.isActive ? 'text-red-500' : 'text-green-600')}><Power className="w-3.5 h-3.5" /></button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showForm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">{editing ? 'Edit User' : 'New User'}</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-3 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold">{editing ? 'Edit User' : 'New User'}</h3>
               <button onClick={() => { setShowForm(false); resetForm(); }} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-3">
@@ -155,20 +158,20 @@ export default function UsersPage() {
                 <label className="label">Branch Access <span className="text-gray-400">(multi-branch — tick all branches this user may operate in)</span></label>
                 <div className="grid grid-cols-2 gap-2 border rounded-xl p-3 max-h-40 overflow-y-auto">
                   {brList.map((b: any) => (
-                    <label key={b.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <label key={b.id} className="flex items-center gap-2 text-[13px] cursor-pointer">
                       <input type="checkbox" checked={form.branchIds.includes(b.id)} onChange={() => toggleBranch(b.id)} className="accent-primary-600" />
                       <span className={b.id === form.branchId ? 'font-semibold text-primary-700' : ''}>{b.name} ({b.code})</span>
                     </label>
                   ))}
                   {brList.length === 0 && <p className="text-xs text-gray-400">No branches yet. Add a branch first.</p>}
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1">The branch selector in the top bar only lists the branches ticked here.</p>
+                <p className="text-[11px] text-gray-400 mt-1">The branch selector in the top bar only lists the branches ticked here.</p>
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-3">Invite the user to login with their email and the password you set.</p>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button className="btn-secondary" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</button>
-              <button className="btn-primary" onClick={submit}>{editing ? 'Update User' : 'Create User'}</button>
+              <button data-hotkey-save className="btn-primary" onClick={submit}>{editing ? 'Update User' : 'Create User'}</button>
             </div>
           </div>
         </div>

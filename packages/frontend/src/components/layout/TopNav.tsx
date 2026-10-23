@@ -5,74 +5,30 @@ import { useAuthStore } from '../../stores/authStore';
 import { useBranchStore } from '../../stores/branchStore';
 import { api } from '../../services/api';
 import { BranchSelector } from './BranchSelector';
-import {
-  LayoutDashboard, ShoppingCart, Receipt, Users, Diamond, Package, Barcode,
-  ShoppingBag, Truck, Briefcase, Gem, Wrench, FileBarChart, Settings, LogOut,
-  Bell, ChevronDown, HandCoins, Clock, Wallet, CreditCard,
-  Building, Users as UsersIcon,
-} from 'lucide-react';
+import { Diamond, LogOut, Bell, ChevronDown, Clock, Menu, X, ArrowRight, Keyboard } from 'lucide-react';
+import { APP_MENU, MenuGroup, mnemonicIndex } from '../../hotkeys/menu';
+import { openShortcutHelp } from '../KeyboardShortcutsHelp';
 
-interface MenuItem {
-  to?: string;
-  label: string;
-  icon?: any;
-  submenu?: { to: string; label: string; icon: any }[];
+/**
+ * Renders a menu label with its Alt shortcut letter underlined, the way
+ * desktop accounting software marks its mnemonics — you can see the key
+ * without opening the help screen.
+ */
+function MenuLabel({ label, mnemonic }: { label: string; mnemonic: string }) {
+  const i = mnemonicIndex(label, mnemonic);
+  // Returns ONE element on purpose. The menu buttons are flex containers with
+  // a gap; a fragment would make "H", "o" and "me" three separate flex items
+  // and the gap would tear the word apart ("H ome").
+  if (i < 0) return <span>{label}</span>;
+  return (
+    <span>
+      {label.slice(0, i)}
+      <span className="underline decoration-primary-500 decoration-1 underline-offset-2">{label[i]}</span>
+      {label.slice(i + 1)}
+    </span>
+  );
 }
 
-const menuItems: MenuItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  {
-    label: 'Sales',
-    icon: ShoppingCart,
-    submenu: [
-      { to: '/billing', label: 'Billing / POS', icon: ShoppingCart },
-      { to: '/bills', label: 'Bills List', icon: Receipt },
-      { to: '/payments', label: 'Payments', icon: HandCoins },
-      { to: '/customers', label: 'Customers', icon: Users },
-    ],
-  },
-  {
-    label: 'Inventory',
-    icon: Package,
-    submenu: [
-      { to: '/jewellery', label: 'Jewellery Items', icon: Diamond },
-      { to: '/inventory', label: 'Stock', icon: Package },
-      { to: '/barcodes', label: 'Barcodes', icon: Barcode },
-      { to: '/purchases', label: 'Purchases', icon: ShoppingBag },
-      { to: '/suppliers', label: 'Suppliers', icon: Truck },
-    ],
-  },
-  {
-    label: 'Accounts',
-    icon: Wallet,
-    submenu: [
-      { to: '/ledger/accounts', label: 'Ledger Accounts', icon: Wallet },
-      { to: '/ledger/entries', label: 'Credit / Debit Entries', icon: CreditCard },
-      { to: '/expenses', label: 'Expenses', icon: ShoppingBag },
-      { to: '/income', label: 'Income (Non-Sale)', icon: CreditCard },
-    ],
-  },
-  {
-    label: 'Job Work',
-    icon: Briefcase,
-    submenu: [
-      { to: '/job-orders', label: 'Job Orders', icon: Briefcase },
-      { to: '/urd', label: 'URD / Old Gold', icon: Gem },
-      { to: '/reports', label: 'Repairs', icon: Wrench },
-    ],
-  },
-  {
-    label: 'Admin',
-    icon: Building,
-    submenu: [
-      { to: '/branches', label: 'Branches', icon: Building },
-      { to: '/users', label: 'Users', icon: Users },
-      { to: '/roles', label: 'Roles & Access', icon: Users },
-      { to: '/reports', label: 'Reports Center', icon: FileBarChart },
-      { to: '/settings', label: 'Settings', icon: Settings },
-    ],
-  },
-];
 
 export function TopNav() {
   const location = useLocation();
@@ -80,8 +36,13 @@ export function TopNav() {
   const { user, logout } = useAuthStore();
   const clearBranch = useBranchStore((s) => s.clearBranch);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  // True when the dropdown was opened with Alt+letter (so we focus it).
+  const [openedByKey, setOpenedByKey] = useState(false);
+  const submenuRef = useRef<HTMLDivElement>(null);
   const [showUser, setShowUser] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
+  // Below lg the horizontal menu is hidden, so a drawer carries the same menu
+  const [showDrawer, setShowDrawer] = useState(false);
   // company details from Settings (shop name + logo shown everywhere)
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings(), staleTime: 60000 });
   // live date-time in the header bar (updates every second, no separate bar)
@@ -129,7 +90,16 @@ export function TopNav() {
   useEffect(() => {
     setOpenMenu(null);
     setShowUser(false);
+    setShowDrawer(false);
   }, [location.pathname]);
+
+  // Esc closes the mobile drawer
+  useEffect(() => {
+    if (!showDrawer) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowDrawer(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showDrawer]);
 
 
 
@@ -139,9 +109,69 @@ export function TopNav() {
     navigate('/login');
   };
 
-  const isMenuActive = (item: MenuItem) => {
+  // Alt + letter opens a menu — the mnemonic is underlined in the label.
+  // While a menu is open: 1…9 jumps to a screen, ↑/↓ moves, Enter opens.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.key === 'Alt') return;
+      const group = APP_MENU.find((m) => m.mnemonic.toLowerCase() === e.key.toLowerCase());
+      if (!group) return;
+      e.preventDefault();
+      if (group.to) {
+        setOpenMenu(null);
+        setOpenedByKey(false);
+        navigate(group.to);
+        return;
+      }
+      setOpenMenu((cur) => (cur === group.key ? null : group.key));
+      setOpenedByKey(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
+
+  // Move real focus into the dropdown when it was opened with the keyboard, so
+  // ↑/↓ and Enter work without a mouse.
+  useEffect(() => {
+    if (!openMenu || !openedByKey) return;
+    const t = window.setTimeout(() => {
+      const links = submenuRef.current?.querySelectorAll<HTMLElement>('a[href]');
+      links?.[0]?.focus();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [openMenu, openedByKey]);
+
+  const onSubmenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, group: MenuGroup) => {
+    const links = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('a[href]'));
+    if (!links.length) return;
+
+    if (/^[1-9]$/.test(e.key)) {
+      const sub = group.items?.[Number(e.key) - 1];
+      if (sub) {
+        e.preventDefault();
+        setOpenMenu(null);
+        setOpenedByKey(false);
+        navigate(sub.to);
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const i = links.indexOf(document.activeElement as HTMLElement);
+      const next = links[(i + (e.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length];
+      next?.focus();
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setOpenMenu(null);
+      setOpenedByKey(false);
+    }
+  };
+
+  const isMenuActive = (item: MenuGroup) => {
     if (item.to) return location.pathname === item.to || location.pathname === item.to + '/';
-    if (item.submenu) return item.submenu.some(s => location.pathname.startsWith(s.to));
+    if (item.items) return item.items.some(s => location.pathname.startsWith(s.to));
     return false;
   };
 
@@ -152,10 +182,18 @@ export function TopNav() {
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm z-30 sticky top-0" ref={navRef}>
       {/* Main navigation bar */}
-      <div className="h-14 px-4 flex items-center justify-between">
+      <div className="h-14 px-3 flex items-center justify-between">
         {/* Left: Logo + Main menu */}
-        <div className="flex items-center gap-6 flex-1 min-w-0">
-          <NavLink to="/dashboard" className="flex items-center gap-2 flex-shrink-0 pr-4 border-r border-gray-100 h-14">
+        <div className="flex items-center gap-3 lg:gap-3 flex-1 min-w-0">
+          {/* Mobile / tablet menu button */}
+          <button
+            onClick={() => setShowDrawer(true)}
+            className="lg:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100 flex-shrink-0"
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <NavLink to="/dashboard" className="flex items-center gap-2 flex-shrink-0 pr-0 lg:pr-4 lg:border-r border-gray-100 h-14 min-w-0">
             {settings?.logo ? (
               <img src={settings.logo} alt={settings.shopName || 'logo'} className="w-8 h-8 rounded-lg object-cover" />
             ) : (
@@ -164,63 +202,75 @@ export function TopNav() {
               </div>
             )}
             <div className="hidden sm:block max-w-[160px]">
-              <h1 className="text-sm font-bold text-gray-900 leading-tight truncate">{settings?.shopName || 'Jewellery Shop'}</h1>
-              <p className="text-[10px] text-gray-500 leading-tight">ERP & POS</p>
+              <h1 className="text-[13px] font-bold text-gray-900 leading-tight truncate">{settings?.shopName || 'Jewellery Shop'}</h1>
+              <p className="text-[11px] text-gray-500 leading-tight">ERP & POS</p>
             </div>
           </NavLink>
 
           {/* Main menu items */}
           <nav className="hidden lg:flex items-center gap-1 flex-1">
-            {menuItems.map((item, idx) => {
+            {APP_MENU.map((item, idx) => {
               const isActive = isMenuActive(item);
               if (item.to) {
                 return (
                   <NavLink
                     key={idx}
                     to={item.to}
-                    className={'px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ' +
+                    title={item.label + ' (Alt+' + item.mnemonic.toUpperCase() + ')'}
+                    className={'px-3 py-2 text-[13px] font-medium rounded-md transition-colors flex items-center gap-2 ' +
                       (isActive ? 'text-primary-700 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50')}
                   >
                     {item.icon && <item.icon className="w-4 h-4" />}
-                    {item.label}
+                    <MenuLabel label={item.label} mnemonic={item.mnemonic} />
                   </NavLink>
                 );
               }
               // Submenu dropdown
-              const menuKey = item.label;
+              const menuKey = item.key;
               const isOpen = openMenu === menuKey;
               return (
                 <div key={idx} className="relative">
                   <button
-                    onClick={() => setOpenMenu(isOpen ? null : menuKey)}
-                    onMouseEnter={() => setOpenMenu(menuKey)}
-                    className={'px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1 ' +
+                    onClick={() => { setOpenMenu(isOpen ? null : menuKey); setOpenedByKey(false); }}
+                    onMouseEnter={() => { setOpenMenu(menuKey); setOpenedByKey(false); }}
+                    title={item.label + ' (Alt+' + item.mnemonic.toUpperCase() + ')'}
+                    className={'px-3 py-2 text-[13px] font-medium rounded-md transition-colors flex items-center gap-1 ' +
                       (isActive || isOpen ? 'text-primary-700 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50')}
                   >
                     {item.icon && <item.icon className="w-4 h-4" />}
-                    {item.label}
+                    <MenuLabel label={item.label} mnemonic={item.mnemonic} />
                     <ChevronDown className={'w-3 h-3 transition-transform ' + (isOpen ? 'rotate-180' : '')} />
                   </button>
                   {isOpen && (
                     <div
-                      className="absolute top-full left-0 mt-1 min-w-[220px] bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50"
-                      onMouseLeave={() => setOpenMenu(null)}
+                      ref={submenuRef}
+                      onKeyDown={(e) => onSubmenuKeyDown(e, item)}
+                      className="absolute top-full left-0 mt-1 min-w-[236px] bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50"
+                      onMouseLeave={() => { setOpenMenu(null); setOpenedByKey(false); }}
                     >
-                      {item.submenu?.map((sub, subIdx) => {
+                      {item.items?.map((sub, subIdx) => {
                         const SubIcon = sub.icon;
                         const subActive = location.pathname === sub.to;
                         return (
                           <NavLink
                             key={subIdx}
                             to={sub.to}
-                            className={'flex items-center gap-2 px-3 py-2 text-sm transition-colors ' +
+                            className={'flex items-center gap-2 px-3 py-2 text-[13px] transition-colors ' +
                               (subActive ? 'bg-primary-50 text-primary-700' : 'text-gray-700 hover:bg-gray-50')}
                           >
                             <SubIcon className="w-4 h-4 text-gray-400" />
-                            {sub.label}
+                            <span className="flex-1 truncate">{sub.label}</span>
+                            {subIdx < 9 && (
+                              <kbd className="shrink-0 bg-gray-100 border border-gray-200 px-1 rounded text-[10px] font-mono text-gray-500">
+                                {subIdx + 1}
+                              </kbd>
+                            )}
                           </NavLink>
                         );
                       })}
+                      <div className="px-3 pt-1 mt-1 border-t border-gray-100 text-[10px] text-gray-400">
+                        {item.items && item.items.length > 1 ? 'Press 1–' + Math.min(9, item.items.length) + ' to open' : 'Press 1 to open'}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -245,6 +295,16 @@ export function TopNav() {
           {/* Branch selector (multi-branch) */}
           <BranchSelector />
 
+          {/* Keyboard shortcuts — always one click away */}
+          <button
+            onClick={() => openShortcutHelp()}
+            className="p-2 rounded-md hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+            title="Keyboard shortcuts (F1)"
+            aria-label="Keyboard shortcuts"
+          >
+            <Keyboard className="w-4 h-4" />
+          </button>
+
           {/* Notifications */}
           <div className="relative">
             <button
@@ -254,7 +314,7 @@ export function TopNav() {
             >
               <Bell className="w-4 h-4" />
               {notifUnread > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
                   {notifUnread > 9 ? '9+' : notifUnread}
                 </span>
               )}
@@ -262,21 +322,21 @@ export function TopNav() {
             {showNotif && (
               <div className="absolute right-0 top-full mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                 <div className="px-3 py-2 border-b bg-gray-50 flex items-center justify-between">
-                  <span className="text-sm font-semibold">Notifications</span>
+                  <span className="text-[13px] font-semibold">Notifications</span>
                   <button onClick={() => api.put('/notifications/read-all').then(() => qc.invalidateQueries({ queryKey: ['notifications'] }))} className="text-xs text-primary-600 hover:text-primary-700">
                     Mark all read
                   </button>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                   {notifications?.items?.length === 0 && (
-                    <div className="px-3 py-8 text-center text-gray-400 text-sm">No notifications</div>
+                    <div className="px-3 py-8 text-center text-gray-400 text-[13px]">No notifications</div>
                   )}
                   {notifications?.items?.map((n: any) => (
                     <div key={n.id} className={'px-3 py-2.5 hover:bg-gray-50 border-b border-gray-50 cursor-pointer ' + (n.status === 'UNREAD' ? 'bg-blue-50/50' : '')}
                       onClick={() => { api.put('/notifications/' + n.id + '/read'); qc.invalidateQueries({ queryKey: ['notifications'] }); }}>
-                      <p className="text-sm font-medium text-gray-800">{n.title}</p>
+                      <p className="text-[13px] font-medium text-gray-800">{n.title}</p>
                       <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString('en-IN')}</p>
+                      <p className="text-[11px] text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString('en-IN')}</p>
                     </div>
                   ))}
                 </div>
@@ -296,17 +356,17 @@ export function TopNav() {
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-xs font-medium text-gray-900 leading-tight">{user.name}</p>
-                  <p className="text-[10px] text-gray-500 leading-tight capitalize">{user.role?.replace('_', ' ')}</p>
+                  <p className="text-[11px] text-gray-500 leading-tight capitalize">{user.role?.replace('_', ' ')}</p>
                 </div>
                 <ChevronDown className="w-3 h-3 text-gray-400" />
               </button>
               {showUser && (
                 <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
                   <div className="px-3 py-2 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+                    <p className="text-[13px] font-medium text-gray-900 truncate">{user.name}</p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                   </div>
-                  <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100">
+                  <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 border-t border-gray-100">
                     <LogOut className="w-4 h-4" /> Logout
                   </button>
                 </div>
@@ -316,6 +376,68 @@ export function TopNav() {
         </div>
       </div>
 
+      {/* Mobile / tablet drawer — the same menu, stacked and scrollable */}
+      {showDrawer && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowDrawer(false)} />
+          <div className="relative w-[86vw] max-w-sm bg-white h-full shadow-xl flex flex-col">
+            <div className="flex items-center justify-between px-3 h-14 border-b border-gray-100">
+              <div className="min-w-0">
+                <p className="text-[13px] font-bold text-gray-900 truncate">{settings?.shopName || 'Jewellery Shop'}</p>
+                <p className="text-[11px] text-gray-500">ERP &amp; POS</p>
+              </div>
+              <button onClick={() => setShowDrawer(false)} className="p-2 rounded-md hover:bg-gray-100 text-gray-600" aria-label="Close menu">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto py-2">
+              {APP_MENU.map((item, idx) => {
+                const active = isMenuActive(item);
+                if (item.to) {
+                  return (
+                    <NavLink
+                      key={idx}
+                      to={item.to}
+                      className={'flex items-center gap-3 px-3 py-3 text-[13px] font-medium ' + (active ? 'text-primary-700 bg-primary-50' : 'text-gray-700 hover:bg-gray-50')}
+                    >
+                      {item.icon && <item.icon className="w-4 h-4 text-gray-400" />}
+                      <MenuLabel label={item.label} mnemonic={item.mnemonic} />
+                    </NavLink>
+                  );
+                }
+                return (
+                  <div key={idx} className="px-2 py-1">
+                    <div className="flex items-center gap-3 px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                      {item.icon && <item.icon className="w-3.5 h-3.5" />}
+                      {item.label}
+                      <span className="ml-auto normal-case tracking-normal">Alt+{item.mnemonic.toUpperCase()}</span>
+                    </div>
+                    <div className="ml-2 border-l border-gray-100 pl-2">
+                      {item.items?.map((sub, subIdx) => {
+                        const SubIcon = sub.icon;
+                        return (
+                          <NavLink
+                            key={subIdx}
+                            to={sub.to}
+                            className={'flex items-center justify-between gap-2 px-2 py-2.5 text-[13px] rounded-md ' +
+                              (location.pathname === sub.to ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50')}
+                          >
+                            <span className="flex items-center gap-2 min-w-0">
+                              <SubIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                              <span className="truncate">{sub.label}</span>
+                            </span>
+                            <ArrowRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

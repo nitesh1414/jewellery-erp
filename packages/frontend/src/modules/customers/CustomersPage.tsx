@@ -16,11 +16,21 @@ export default function CustomersPage() {
   const [form, setForm] = useState({ name: '', mobile: '', email: '', address: '', city: '', state: '', gstin: '', notes: '' });
   const limit = 25;
 
+  const [city, setCity] = useState('');
+
   const { data, isLoading } = useQuery({
-    queryKey: ['customers', search, page],
-    queryFn: () => api.getCustomers({ search, page, limit }),
+    queryKey: ['customers', search, page, city],
+    queryFn: () => api.getCustomers({ search, page, limit, city: city || undefined }),
     placeholderData: keepPreviousData,
   });
+
+  // cities that customers actually live in
+  const { data: citiesData } = useQuery({
+    queryKey: ['customers', 'cities'],
+    queryFn: () => api.getCustomerCities(),
+    staleTime: 300000,
+  });
+  const cities: string[] = Array.isArray(citiesData) ? citiesData : [];
 
   const createMutation = useMutation({
     mutationFn: (body: any) => api.createCustomer(body),
@@ -52,18 +62,13 @@ export default function CustomersPage() {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:items-center sm:justify-between">
         <div>
           <h1 className="page-title">Customers</h1>
-          <p className="text-gray-500 text-xs mt-0.5">
-            <UsersIcon className="w-3 h-3 inline mr-1" />
-            {total.toLocaleString('en-IN')} registered
-            {searchInput && <span className="text-orange-600 ml-2">· filtered to "{searchInput}"</span>}
-          </p>
         </div>
-        <button onClick={() => { setEditingCustomer(null); resetForm(); setShowAdd(true); }} className="btn-primary">
+        <button data-hotkey-add onClick={() => { setEditingCustomer(null); resetForm(); setShowAdd(true); }} className="btn-primary">
           <Plus className="w-4 h-4" /> Add Customer
         </button>
       </div>
@@ -74,6 +79,7 @@ export default function CustomersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
+            data-search-input
             placeholder="Search by name, mobile, ID, GSTIN..."
             className="input-field pl-10"
             value={searchInput}
@@ -82,21 +88,18 @@ export default function CustomersPage() {
           />
         </div>
         <select
-          className="input-field w-32"
-          onChange={e => {
-            // quick filter by city (simple approach: navigate to customer with that search)
-            if (e.target.value) { setSearchInput(e.target.value); setPage(1); }
-          }}
+          className="input-field w-32 sm:w-40"
+          value={city}
+          onChange={e => { setCity(e.target.value); setPage(1); }}
         >
           <option value="">All Cities</option>
-          <option value="Nagpur">Nagpur</option>
-          <option value="Mumbai">Mumbai</option>
-          <option value="Pune">Pune</option>
+          {cities.map((c: string) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
       {/* Compact table — handles large datasets */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="table-wrap">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
             <tr>
@@ -123,11 +126,11 @@ export default function CustomersPage() {
                 <tr key={c.id} className="border-b border-gray-50 hover:bg-blue-50/40 transition-colors">
                   <td className="px-3 py-2 font-mono text-xs text-gray-500">{c.customerId}</td>
                   <td className="px-3 py-2">
-                    <p className="font-medium text-sm text-gray-900">{c.name}</p>
+                    <p className="font-medium text-[13px] text-gray-900">{c.name}</p>
                     {c.email && <p className="text-[11px] text-gray-400 truncate max-w-xs">{c.email}</p>}
                   </td>
-                  <td className="px-3 py-2 text-sm">{c.mobile || '—'}</td>
-                  <td className="px-3 py-2 text-sm text-gray-600">{c.city || '—'}</td>
+                  <td className="px-3 py-2 text-[13px]">{c.mobile || '—'}</td>
+                  <td className="px-3 py-2 text-[13px] text-gray-600">{c.city || '—'}</td>
                   <td className="px-3 py-2 font-mono text-[11px] text-gray-500">{c.gstin || '—'}</td>
                   <td className="px-3 py-2 text-right">
                     {c.outstanding > 0 ? (
@@ -155,8 +158,9 @@ export default function CustomersPage() {
             )}
           </tbody>
         </table>
+        </div>
         {/* Pagination footer */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-sm bg-gray-50">
+        <div className="flex items-center justify-between px-3 py-3 border-t border-gray-100 text-[13px] bg-gray-50">
           <span className="text-gray-600">
             Showing <strong className="text-gray-900">{customers.length}</strong> of <strong className="text-gray-900">{total.toLocaleString('en-IN')}</strong> · page {page} of {totalPages}
           </span>
@@ -179,8 +183,8 @@ export default function CustomersPage() {
       {/* Add / Edit modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">{editingCustomer ? 'Edit Customer' : 'Add Customer'}</h3>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-3 sm:p-6 max-h-[90vh] overflow-y-auto modal-panel" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-3">{editingCustomer ? 'Edit Customer' : 'Add Customer'}</h3>
             <div className="space-y-3">
               <div><label className="label">Name *</label><input className="input-field" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
@@ -195,9 +199,10 @@ export default function CustomersPage() {
               <div><label className="label">GSTIN</label><input className="input-field" value={form.gstin} onChange={e => setForm({ ...form, gstin: e.target.value })} /></div>
               <div><label className="label">Notes</label><textarea className="input-field" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <div className="flex justify-end gap-3 mt-3 pt-3 border-t">
               <button onClick={() => { setShowAdd(false); setEditingCustomer(null); }} className="btn-secondary">Cancel</button>
               <button
+                data-hotkey-save
                 onClick={() => {
                   if (!form.name) { toast.error('Name required'); return; }
                   if (editingCustomer) {

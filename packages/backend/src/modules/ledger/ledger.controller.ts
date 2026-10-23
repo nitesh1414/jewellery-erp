@@ -10,8 +10,8 @@ export class LedgerController {
 
   // ===== Accounts =====
   @Get('accounts')
-  async listAccounts(@CurrentUser() u: any, @Query('inactive') inactive?: string) {
-    return this.service.listAccounts(u.organizationId, inactive === '1');
+  async listAccounts(@CurrentUser() u: any, @Query('inactive') inactive?: string, @Query('type') type?: string) {
+    return this.service.listAccounts(u.organizationId, inactive === '1', type);
   }
 
   @Get('accounts/:id')

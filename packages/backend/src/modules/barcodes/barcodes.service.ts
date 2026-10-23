@@ -1,6 +1,71 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 
+/** Every field the barcode sticker can print (Settings → Barcode). */
+export const BARCODE_LABEL_FIELDS = [
+  'jeweller',
+  'item',
+  'weight',
+  'purity',
+  'metal',
+  'gross',
+  'stone',
+  'net',
+  'rate',
+  'amount',
+  'sku',
+  'barcode',
+  'hsn',
+  'category',
+  'ornament',
+  'hallmark',
+  'making',
+  'size',
+  'date',
+] as const;
+
+export const DEFAULT_BARCODE_LABEL = 'jeweller|item|weight|purity';
+
+/**
+ * Normalise a stored barcode label setting into an ordered list of field keys.
+ * Accepts the legacy "Jeweller|Item|Weight|Purity" spelling too.
+ */
+export function parseBarcodeLabel(raw?: string | null): string[] {
+  const fallback = DEFAULT_BARCODE_LABEL.split('|');
+  if (!raw) return fallback;
+  const keys = String(raw)
+    .split('|')
+    .map((k) => k.trim().toLowerCase())
+    .filter(Boolean)
+    .filter((k) => (BARCODE_LABEL_FIELDS as readonly string[]).includes(k));
+  return keys.length ? Array.from(new Set(keys)) : fallback;
+}
+
+/** Item columns needed to render a sticker. */
+const LABEL_ITEM_SELECT = {
+  designCode: true,
+  sku: true,
+  metalType: true,
+  purity: true,
+  grossWeight: true,
+  stoneWeight: true,
+  otherWeight: true,
+  netWeight: true,
+  currentRate: true,
+  purchaseRate: true,
+  hsnCode: true,
+  category: true,
+  subCategory: true,
+  ornament: true,
+  hallmarkNumber: true,
+  certificateNumber: true,
+  makingChargeType: true,
+  makingChargeValue: true,
+  size: true,
+  quantity: true,
+  status: true,
+};
+
 @Injectable()
 export class BarcodesService {
   constructor(private prisma: PrismaService) {}
@@ -24,7 +89,7 @@ export class BarcodesService {
         skip,
         take: +limit,
         orderBy: { createdAt: 'desc' },
-        include: { jewelleryItem: { select: { designCode: true, purity: true, netWeight: true, sku: true } } },
+        include: { jewelleryItem: { select: LABEL_ITEM_SELECT } },
       }),
       this.prisma.barcode.count({ where }),
     ]);
@@ -207,13 +272,18 @@ export class BarcodesService {
   }
 
   /**
-   * Get label data for printing (shop info + item details)
+   * Get label data for printing (shop info + item details).
+   *
+   * `fields` mirrors the Settings → Barcode configuration: it is the ordered
+   * list of field keys the sticker should print (jeweller, item, weight,
+   * purity, …). Values are resolved here so every print surface (web, desktop)
+   * renders the same content.
    */
-  async getLabelData(barcode: string, organizationId: string) {
+  async getLabelData(barcode: string, organizationId: string, weightPrecision = 3) {
     const barcodeRecord = await this.prisma.barcode.findUnique({
       where: { barcode },
       include: {
-        jewelleryItem: true,
+        jewelleryItem: { select: LABEL_ITEM_SELECT },
         organization: { include: { settings: true } },
       },
     });
@@ -222,19 +292,64 @@ export class BarcodesService {
 
     const item = barcodeRecord.jewelleryItem;
     const settings = barcodeRecord.organization?.settings;
+    return this.buildLabel(barcodeRecord.barcode, item, settings, weightPrecision);
+  }
+
+  /** Build the printable values for one sticker. */
+  buildLabel(barcode: string, item: any, settings: any, weightPrecision = 3) {
+    const wp = Number(weightPrecision) || 3;
+    const g = (n: any) => (Number(n) ? `${Number(n).toFixed(wp)} g` : '');
+    const money = (n: any) => (Number(n) ? `₹${Number(n).toLocaleString('en-IN')}` : '');
+    const net = Number(item?.netWeight) || 0;
+    const rate = Number(item?.currentRate) || 0;
+    const making = item?.makingChargeType
+      ? `${item.makingChargeType === 'PERCENTAGE' ? `${Number(item.makingChargeValue) || 0}%`
+        : item.makingChargeType === 'PER_GRAM' ? `₹${Number(item.makingChargeValue) || 0}/g`
+          : money(item.makingChargeValue)}`
+      : '';
 
     return {
       shopName: settings?.shopName || 'Jewellery Shop',
-      barcode: barcodeRecord.barcode,
-      productName: item?.designCode || '',
+      barcode,
+      // raw values
+      jeweller: settings?.shopName || 'Jewellery Shop',
+      item: item?.designCode || item?.sku || '',
+      weight: g(net),
       purity: item?.purity || '',
-      weight: item?.netWeight ? `${item.netWeight.toFixed(3)}g` : '',
-      grossWeight: item?.grossWeight ? `${item.grossWeight.toFixed(3)}g` : '',
-      rate: item?.currentRate ? `₹${item.currentRate.toLocaleString('en-IN')}` : '',
+      metal: item?.metalType || '',
+      gross: g(item?.grossWeight),
+      stone: g(item?.stoneWeight),
+      net: g(net),
+      rate: rate ? `₹${rate.toLocaleString('en-IN')}/g` : '',
+      amount: money(Math.round(net * rate * 100) / 100),
       sku: item?.sku || '',
-      makingCharge: item?.makingChargeType || '',
+      hsn: item?.hsnCode || '',
+      category: item?.category || item?.subCategory || '',
+      ornament: item?.ornament || '',
+      hallmark: item?.hallmarkNumber || '',
+      making,
+      size: item?.size || '',
+      date: new Date().toLocaleDateString('en-IN'),
+      // raw item fields so the print surface can resolve anything it needs
+      raw: item || null,
+      // legacy keys used by older print surfaces
+      productName: item?.designCode || '',
+      grossWeight: g(item?.grossWeight),
       status: item?.status || 'UNASSIGNED',
+      // which fields to print, in order
+      fields: parseBarcodeLabel(settings?.barcodeLabel),
     };
+  }
+
+  /** Label data for many barcodes at once (used by the sticker print page). */
+  async getLabels(barcodes: string[], organizationId: string) {
+    const settings = await this.prisma.shopSettings.findUnique({ where: { organizationId } });
+    const weightPrecision = Number(settings?.weightPrecision) || 3;
+    const records = await this.prisma.barcode.findMany({
+      where: { organizationId, barcode: { in: barcodes } },
+      include: { jewelleryItem: { select: LABEL_ITEM_SELECT } },
+    });
+    return records.map((r) => this.buildLabel(r.barcode, r.jewelleryItem, settings, weightPrecision));
   }
 
   /**
