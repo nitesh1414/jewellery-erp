@@ -279,7 +279,7 @@ Customers' apps verify licenses offline against the public key baked in at
 installers (on your build machine/CI, not necessarily the VPS) with:
 
 ```bash
-# copy the PUBLIC key off the VPS first (never the private one) into the your
+# copy the PUBLIC key off the VPS first (never the private one) into your
 # build machine's checkout, at the same relative path (it is gitignored):
 #   scp root@<vps>:/var/www/jewellery-erp/packages/license-server/keys/license-public-key.pem \
 #       packages/license-server/keys/license-public-key.pem
