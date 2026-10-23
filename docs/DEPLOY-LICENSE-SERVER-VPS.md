@@ -236,10 +236,15 @@ systemctl reload nginx
 > **not `default`**. Certbot picks the server block whose `server_name`
 > matches the domain; if our site wasn't enabled yet, it silently deploys
 > HTTPS onto Ubuntu's `default` static site and every `/api/…` request then
-> returns an nginx **404** (the proxy is never consulted). Fix: enable our
-> site (`ln -s` above), `rm -f /etc/nginx/sites-enabled/default`, reload, then
-> either re-run certbot ("Keep the existing certificate") or paste the manual
-> 443 block from the Troubleshooting table.
+> returns an nginx **404** (the proxy is never consulted; `nginx -t` also
+> warns about a "conflicting server name" once both sites claim the domain,
+> and the block from the alphabetically-first file wins). Fix: enable our
+> site (`ln -s` above), then **remove only certbot's `<domain>` blocks from
+> the file it deployed to** — on a shared VPS, back up that file first and
+> delete just its appended `server { … }` blocks for your domain; deleting
+> the whole `default` site is only OK on a dedicated box. Reload, then either
+> re-run certbot ("Keep the existing certificate") so it deploys to our site,
+> or paste the manual 443 block from the Troubleshooting table.
 
 HTTPS is not optional in practice: license keys and admin passwords cross
 this connection, and desktops should only ever activate against an
