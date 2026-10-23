@@ -32,8 +32,21 @@ const prismaCli = path.join(repoRoot, 'node_modules', 'prisma', 'build', 'index.
 
 const skipInstall = process.argv.includes('--skip-install');
 
+function quoteForCmd(token) {
+  return /\s/.test(token) ? `"${token}"` : token;
+}
+
 function run(cmd, args, opts = {}) {
-  const res = spawnSync(cmd, args, { stdio: 'inherit', shell: process.platform === 'win32', ...opts });
+  // Windows needs a shell to launch npm/npx (they are .cmd shims), but routing
+  // an .exe through cmd.exe unquoted breaks on paths with spaces — Node
+  // installed under "C:\Program Files\nodejs\node.exe" dies with
+  // "'C:\Program' is not recognized as an internal or external command".
+  // Spawn executables directly (no shell); use a shell (with quoting) only
+  // for shim commands.
+  const useShell = opts.shell ?? (process.platform === 'win32' && !/\.exe$/i.test(cmd));
+  const finalCmd = useShell ? quoteForCmd(cmd) : cmd;
+  const finalArgs = useShell ? args.map(quoteForCmd) : args;
+  const res = spawnSync(finalCmd, finalArgs, { stdio: 'inherit', ...opts, shell: useShell });
   if (res.status !== 0) {
     throw new Error(`Command failed (${res.status}): ${cmd} ${args.join(' ')}`);
   }
