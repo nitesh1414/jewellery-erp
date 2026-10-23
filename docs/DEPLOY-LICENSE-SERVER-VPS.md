@@ -219,11 +219,27 @@ cd /var/www/jewellery-erp
 sed 's/licenses.example.com/licenses.YOUR-DOMAIN/' deploy/license-server/nginx-license-server.conf \
   | tee /etc/nginx/sites-available/jewellery-license-server
 ln -s /etc/nginx/sites-available/jewellery-license-server /etc/nginx/sites-enabled/
+# If this VPS serves nothing else, also remove Ubuntu's stock site so it can
+# never claim your domain:  rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
+
+# BEFORE running certbot, prove OUR site (not the default one) owns the domain:
+nginx -T 2>/dev/null | grep -E "server_name|listen"
+curl -s http://licenses.YOUR-DOMAIN/api/health    # must already proxy → {"ok":true,...}
 
 certbot --nginx -d licenses.YOUR-DOMAIN     # obtains cert, adds 443 + redirect
 systemctl reload nginx
 ```
+
+> ⚠️ **Check certbot's output line** `Successfully deployed certificate for …
+> to /etc/nginx/sites-enabled/…`. It must say **`jewellery-license-server`**,
+> **not `default`**. Certbot picks the server block whose `server_name`
+> matches the domain; if our site wasn't enabled yet, it silently deploys
+> HTTPS onto Ubuntu's `default` static site and every `/api/…` request then
+> returns an nginx **404** (the proxy is never consulted). Fix: enable our
+> site (`ln -s` above), `rm -f /etc/nginx/sites-enabled/default`, reload, then
+> either re-run certbot ("Keep the existing certificate") or paste the manual
+> 443 block from the Troubleshooting table.
 
 HTTPS is not optional in practice: license keys and admin passwords cross
 this connection, and desktops should only ever activate against an
