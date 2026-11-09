@@ -209,6 +209,18 @@ set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/         # cmd
 npm run dist:desktop:win
 ```
 
+### No way to download anything? Ship a portable `.zip`
+
+The ZIP target does **not** need the NSIS toolchain, so it always works:
+
+```powershell
+npm run dist:desktop:win:zip     # → packages/desktop-electron/release/*.zip
+```
+
+The user unzips it and runs `Shri Jewellers ERP.exe` — same app, same local
+backend, database and licence; it just has no installer, Start-menu entry or
+uninstaller. Use it to ship while the network problem is being sorted out.
+
 ### “EPERM / EBUSY: operation not permitted” while writing `release\`
 
 A file from a previous build is locked: the app is still running, an Explorer

@@ -269,6 +269,7 @@ npm run dist:desktop:win     # Windows installer (.exe)  → packages/desktop-el
 npm run dist:desktop:mac     # macOS (.dmg, Intel + Apple Silicon)
 npm run dist:desktop:linux   # Linux (.AppImage / .deb / .rpm / .tar.gz)
 npm run dist:desktop         # current OS
+npm run dist:desktop:win:zip # no NSIS needed — portable .zip fallback
 ```
 
 Prerequisites per OS are listed in **[docs/ELECTRON.md](docs/ELECTRON.md)**.

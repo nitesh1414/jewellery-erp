@@ -30,6 +30,9 @@
  *   --no-fetch         never touch the network (fail if the toolchain is missing)
  *   --keep-release     do not delete release/<platform>-unpacked before building
  *   --verbose          stream electron-builder DEBUG output
+ *   --zip              Windows: build a portable .zip instead of the NSIS
+ *                      installer. Needs no NSIS toolchain, so it still works
+ *                      when GitHub release assets are unreachable.
  */
 import { spawn, spawnSync } from 'child_process';
 import fs from 'fs';
@@ -47,6 +50,7 @@ const flags = new Set(args.filter((a) => a.startsWith('--')));
 const target = (args.find((a) => !a.startsWith('--')) || detectTarget()).toLowerCase();
 
 const SKIP_PREPARE = flags.has('--skip-prepare');
+const ZIP = flags.has('--zip');
 const NO_FETCH = flags.has('--no-fetch');
 const KEEP_RELEASE = flags.has('--keep-release');
 
@@ -188,7 +192,7 @@ function checkDiskSpace() {
 // 2. NSIS toolchain (only needed for Windows installers)
 // ---------------------------------------------------------------------------
 function ensureNsisToolchain() {
-  if (!target.startsWith('win')) return;
+  if (!target.startsWith('win') || ZIP) return;
   step('NSIS toolchain');
   if (NO_FETCH) {
     const res = spawnSync(process.execPath, [path.join(__dirname, 'fetch-builder-tools.mjs'), '--check'], {
@@ -415,8 +419,16 @@ function fail(message) {
 }
 
 async function main() {
-  const cfg = TARGETS[target];
-  if (!cfg) fail(`Unknown target "${target}". Use: win | mac | linux`);
+  const base = TARGETS[target];
+  if (!base) fail(`Unknown target "${target}". Use: win | mac | linux`);
+  const cfg = { ...base };
+
+  if (ZIP) {
+    if (!target.startsWith('win')) fail('--zip is only implemented for the Windows target.');
+    cfg.builderArgs = ['--win', 'zip'];
+    cfg.artifact = /\.zip$/i;
+    cfg.label = 'Windows (portable .zip — no installer)';
+  }
 
   say(`Shri Jewellers ERP — desktop installer (${cfg.label})`);
 

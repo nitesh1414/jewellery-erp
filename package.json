@@ -33,7 +33,8 @@
     "tools:fetch": "node scripts/fetch-builder-tools.mjs",
     "tools:check": "node scripts/fetch-builder-tools.mjs --check",
     "dist:desktop:win:no-fetch": "node scripts/build-desktop.mjs win --no-fetch",
-    "dist:desktop:win:verbose": "node scripts/build-desktop.mjs win --verbose"
+    "dist:desktop:win:verbose": "node scripts/build-desktop.mjs win --verbose",
+    "dist:desktop:win:zip": "node scripts/build-desktop.mjs win --zip"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
