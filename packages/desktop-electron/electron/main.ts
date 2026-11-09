@@ -220,28 +220,48 @@ async function showGuardScreen(evaluation: LicenseEvaluation): Promise<void> {
   }
 }
 
-function consumePendingLicenseKey(): void {
-  try {
-    const key = fs.readFileSync(userDataPaths.pendingKeyFile(), 'utf8').trim();
-    if (key) {
-      log('found installer-provided license key — pre-activating');
-      licenseManager!
-        .activateOnline(key)
-        .then((res) => {
-          log(`pre-activation result: ${res.ok}`);
-          if (!res.ok) {
-            // keep the file? no — surface the error on the activation screen
-            fs.unlinkSync(userDataPaths.pendingKeyFile());
-          } else {
-            fs.unlinkSync(userDataPaths.pendingKeyFile());
-            boot(); // re-evaluate → launch app
-          }
-        })
-        .catch((e) => log(`pre-activation error: ${e}`));
+/**
+ * Read the key the installer pre-seeded (`/LICENSEKEY=…`, see assets/installer.nsh).
+ *
+ * The NSIS script writes to $APPDATA\Shri Jewellers ERP — the folder Electron
+ * uses for userData. If the packaged productName ever changes, the two paths
+ * diverge silently, so both are checked before giving up.
+ */
+function readPendingLicenseKey(): { file: string; key: string } | null {
+  const candidates = [
+    userDataPaths.pendingKeyFile(),
+    path.join(app.getPath('appData'), 'Shri Jewellers ERP', 'pending-license-key.txt'),
+  ];
+  for (const file of Array.from(new Set(candidates))) {
+    try {
+      const key = fs.readFileSync(file, 'utf8').trim();
+      if (key) return { file, key };
+    } catch {
+      /* not present */
     }
-  } catch {
-    /* no pending key */
   }
+  return null;
+}
+
+function consumePendingLicenseKey(): void {
+  const pending = readPendingLicenseKey();
+  if (!pending) return;
+
+  log('found installer-provided license key — pre-activating');
+  licenseManager!
+    .activateOnline(pending.key)
+    .then((res) => {
+      log(`pre-activation result: ${res.ok}`);
+      // Either way the file is consumed: on failure the activation screen
+      // shows the reason and lets the user paste the key again.
+      try {
+        fs.unlinkSync(pending.file);
+      } catch {
+        /* already gone */
+      }
+      if (res.ok) boot(); // re-evaluate → launch the app
+    })
+    .catch((e) => log(`pre-activation error: ${e}`));
 }
 
 // Periodic: watermark clock, pick up revocations/extensions, re-check expiry.

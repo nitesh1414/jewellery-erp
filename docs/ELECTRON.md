@@ -119,6 +119,26 @@ npm run dev:desktop   # builds backend+frontend, launches the Electron shell
 4. After activation the app starts the local backend, copies the pristine
    SQLite template database into the user data folder and opens the ERP.
 
+## Smoke test after installing
+
+Run through this once on a clean Windows machine before shipping a build:
+
+1. **Install** `ShriJewellersERP-Setup-<version>.exe` (per-user, no admin).
+2. **Activation** — the app opens the activation screen showing the machine ID.
+   Activate with a key, or install silently with a pre-seeded key:
+   `ShriJewellersERP-Setup-1.0.0.exe /S /LICENSEKEY=JERP-…` (the installer writes
+   `%APPDATA%\Shri Jewellers ERP\pending-license-key.txt`, the app activates it
+   on first launch and deletes it).
+3. **Login** — `admin@jewellery.com` / `admin123`, then change the password.
+4. **Local backend** — Dashboard loads (it calls `/api/*` on `127.0.0.1:8973`).
+   If not, `%APPDATA%\Shri Jewellers ERP\logs\backend.log` has the reason.
+5. **Database** — `%APPDATA%\Shri Jewellers ERP\data\jewellery.db` exists after
+   the first launch (copied from the bundled `template.db`).
+6. **Printer** — Barcodes → Print → **Test label** prints the 2.1 × 0.5 in
+   jewellery tag with sample data; confirm it fits the stock and scans.
+7. **Uninstall** — keeps `%APPDATA%\Shri Jewellers ERP` (database + license), so a
+   reinstall/upgrade continues where the user left off.
+
 ## Updating / code signing
 
 * **Windows**: builds are unsigned by default (SmartScreen warning). Add a

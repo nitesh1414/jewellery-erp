@@ -139,6 +139,14 @@ npm run build          # compile every package
   identical. The **22 × 12 cm tag** is a large card printed one tag per page
   (`@page size 220mm 120mm`); smaller sizes print as a grid on A4 (or as a roll
   for the 58/80 mm thermal layouts).
+- **Jewellery price tags (2.1 × 0.5 in)**: Barcodes → **Print Jewellery Tags**
+  (or pick that size on the print screen) prints the compact barbell tag Indian
+  jewellers staple to ornaments — **shop name + barcode + number** on the left,
+  **item · PURITY · G WT · N.WT · HUID** on the right, one label per page at
+  `@page size 53.34mm 12.7mm`. A **Test label** button prints the same design
+  with sample data so the label printer can be calibrated first. Reference art
+  and the mm-by-mm spec live in
+  **[docs/design](docs/design/README.md)**.
 - **Multi-branch**: if the user has access to more than one branch, a branch
   selector appears in the top bar. All actions (sale, purchase, expense,
   income, URD, payment…) are recorded against the selected branch; the default
@@ -235,7 +243,9 @@ npm run build          # compile every package
   making charge, size and date, then drag them into the order you want. The
   first field prints as the heading, the rest under the barcode. The same
   setting drives `Barcodes → print`, the 🖨 button on jewellery items and
-  `GET /api/barcodes/labels`.
+  `GET /api/barcodes/labels`. (The dedicated **2.1 × 0.5 in jewellery tag**
+  ignores this ordering — at 53 × 13 mm there is only room for its fixed six
+  pieces of information.)
 - **Job order actions**: marking a job READY / DELIVERED / IN PROGRESS etc.
   asks for the **action date + note** and appends it to the Action Log
   (status history) in the job detail. Advance and bill payments can be taken

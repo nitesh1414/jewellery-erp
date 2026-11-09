@@ -52,6 +52,8 @@ tags look like.
 ## Printing
 
 1. Barcodes → select/print, or Barcodes → **Print Jewellery Tags**.
+   Not sure about the printer? Press **Test label** on the print screen — it
+   renders this exact design with sample data (no barcode records needed).
 2. Choose **2.1 × 0.5 in (53 × 13 mm)** in the size selector.
 3. In the browser print dialog pick your label printer and set the stock to
    **2.1 × 0.5 in / 54 × 13 mm**, scale **100 % (actual size)**, margins

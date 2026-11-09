@@ -315,6 +315,10 @@ export default function SettingsPage() {
                 Choose what prints on a barcode tag — tick the fields you want and order them with the arrows. The
                 first field is the heading line; the rest print under the barcode.
               </p>
+              <p className="text-[12px] text-gray-400 mt-1">
+                The 2.1 × 0.5 in (53 × 13 mm) jewellery price tag always uses its fixed compact layout
+                (shop name + barcode, item · purity · G WT · N.WT · HUID) — there is no room for more at that size.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

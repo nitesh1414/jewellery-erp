@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import JsBarcode from 'jsbarcode';
 import { api } from '../../services/api';
 import JewelleryTag, { TAG_H_MM, TAG_W_MM } from './JewelleryTag';
-import { Printer, ArrowLeft, Settings } from 'lucide-react';
+import { Printer, ArrowLeft, Settings, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 /**
@@ -53,8 +53,24 @@ const STICKER_SIZES: StickerSize[] = [
   },
 ];
 
+/**
+ * Sample sticker used by "Test label" — mirrors the reference jewellery tag so
+ * the printer/label stock can be calibrated before a real batch is printed.
+ * Nothing is saved and no barcode record is needed.
+ */
+const DEMO_TAG = {
+  barcode: '0000909011',
+  jewelleryItem: {
+    ornament: 'Gents Ring',
+    purity: '22K',
+    grossWeight: 3.65,
+    netWeight: 3.65,
+    hallmarkNumber: 'IVFN8S',
+  },
+};
+
 export default function BarcodePrintPage() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const ids = params.get('ids');
   const codes = params.get('codes'); // barcode strings (e.g. from jewellery items)
@@ -62,6 +78,20 @@ export default function BarcodePrintPage() {
   // ?size=220x120 lets other screens (job work IN …) jump straight to the big tag
   const [sizeKey, setSizeKey] = useState(params.get('size') || '38x25');
   const [copies, setCopies] = useState(1);
+  // ?test=1 → print the sample jewellery tag (label calibration, no data)
+  const testMode = params.get('test') === '1';
+
+  const toggleTestLabel = () => {
+    const next = new URLSearchParams(params);
+    if (testMode) {
+      next.delete('test');
+    } else {
+      next.set('test', '1');
+      next.set('size', '2.1x0.5');
+      setSizeKey('2.1x0.5');
+    }
+    setParams(next);
+  };
 
   const size = STICKER_SIZES.find((s) => s.key === sizeKey)!;
   // Sizes that are their own page (big 22 × 12 cm tag card, 2.1 × 0.5 in label
@@ -83,7 +113,7 @@ export default function BarcodePrintPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['barcode-print', ids, codes, scope],
-    enabled: !!settings,
+    enabled: !!settings && !testMode,
     queryFn: async () => {
       // print by barcode value (jumped from Jewellery/Inventory tab)
       if (codes) {
@@ -112,11 +142,12 @@ export default function BarcodePrintPage() {
 
   const stickers = useMemo(() => {
     const list: any[] = [];
-    for (const b of data || []) {
+    const source: any[] = testMode ? [DEMO_TAG] : data || [];
+    for (const b of source) {
       for (let c = 0; c < Math.max(1, copies); c++) list.push(b);
     }
     return list;
-  }, [data, copies]);
+  }, [data, copies, testMode]);
 
   return (
     <div className="min-h-screen bg-gray-100 print:bg-white">
@@ -137,6 +168,13 @@ export default function BarcodePrintPage() {
           <select className="input-field w-28 !py-1.5 text-sm" value={copies} onChange={(e) => setCopies(Number(e.target.value))}>
             {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}× copy</option>)}
           </select>
+          <button
+            onClick={toggleTestLabel}
+            className={'btn-secondary text-sm' + (testMode ? ' ring-2 ring-primary-400' : '')}
+            title="Print one sample jewellery tag to calibrate the label printer"
+          >
+            <Tag className="w-4 h-4" /> {testMode ? 'Real labels' : 'Test label'}
+          </button>
           <button onClick={() => window.open('/settings', '_blank')} className="btn-secondary text-sm" title="Shop name and other settings">
             <Settings className="w-4 h-4" /> Shop name
           </button>
@@ -146,6 +184,13 @@ export default function BarcodePrintPage() {
 
       <div className="p-6 print:p-0">
         <div className="print:hidden mb-3 text-xs text-gray-400 space-y-1">
+          {testMode && (
+            <p className="rounded border border-primary-200 bg-primary-50 px-3 py-2 text-primary-700">
+              <strong>Test label</strong> — sample item (Gents Ring · 22K · G WT 3.65 · N.WT 3.65 ·
+              HUID IVFN8S) printed with your shop name. Nothing is saved; switch back to “Real labels”
+              to print your barcodes.
+            </p>
+          )}
           <p>
             {size.variant === 'split'
               ? <>Each <strong>22 × 12 cm tag</strong> prints on its own page — put the tag card in the printer or pick a custom {size.w} × {size.h} mm paper size in the print dialog.</>
