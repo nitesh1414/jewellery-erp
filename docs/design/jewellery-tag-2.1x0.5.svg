@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="53.34mm" height="12.7mm" viewBox="0 0 53.34 12.7">
+  <rect x="0" y="0" width="53.34" height="12.7" rx="1.4" fill="#ffffff" stroke="#d0d0d0" stroke-width="0.12"/>
+  <!-- left column -->
+  <text x="14.05" y="3.57"
+        font-family="DejaVu Sans" font-size="2.63" font-weight="bold"
+        text-anchor="middle" fill="#000" textLength="26.03" lengthAdjust="spacingAndGlyphs">Rajshri Jewellers</text>
+  <svg x="0.9" y="4.41" width="26.30" height="4.35"
+       viewBox="0 0 180 40" preserveAspectRatio="none" shape-rendering="crispEdges"><rect x="0" y="0" width="180" height="40" fill="#ffffff"/><g transform="translate(0, 0)" fill="#000000"><rect x="0" y="0" width="4" height="40"/><rect x="6" y="0" width="2" height="40"/><rect x="12" y="0" width="6" height="40"/><rect x="22" y="0" width="4" height="40"/><rect x="28" y="0" width="4" height="40"/><rect x="36" y="0" width="4" height="40"/><rect x="44" y="0" width="4" height="40"/><rect x="50" y="0" width="4" height="40"/><rect x="58" y="0" width="4" height="40"/><rect x="66" y="0" width="4" height="40"/><rect x="72" y="0" width="8" height="40"/><rect x="82" y="0" width="4" height="40"/><rect x="88" y="0" width="4" height="40"/><rect x="94" y="0" width="8" height="40"/><rect x="104" y="0" width="4" height="40"/><rect x="110" y="0" width="4" height="40"/><rect x="120" y="0" width="2" height="40"/><rect x="126" y="0" width="2" height="40"/><rect x="132" y="0" width="2" height="40"/><rect x="136" y="0" width="4" height="40"/><rect x="144" y="0" width="2" height="40"/><rect x="154" y="0" width="4" height="40"/><rect x="164" y="0" width="6" height="40"/><rect x="172" y="0" width="2" height="40"/><rect x="176" y="0" width="4" height="40"/></g></svg>
+  <text x="14.05" y="10.79"
+        font-family="DejaVu Sans Mono" font-size="2.30" letter-spacing="0.16"
+        text-anchor="middle" fill="#111">0000909011</text>
+  <!-- right column -->
+  <text x="28.55" y="2.61" font-family="DejaVu Sans" font-size="2.45"
+        font-weight="bold" fill="#000">Gents Ring</text>
+  <text x="37.15" y="4.99" font-family="DejaVu Sans" font-size="1.95"
+    text-anchor="end" fill="#111">PURITY:</text>
+  <text x="37.85" y="4.99" font-family="DejaVu Sans" font-size="1.95"
+    font-weight="bold" fill="#000">22K</text>
+  <text x="37.15" y="7.18" font-family="DejaVu Sans" font-size="1.95"
+    text-anchor="end" fill="#111">G WT:</text>
+  <text x="37.85" y="7.18" font-family="DejaVu Sans" font-size="1.95"
+    font-weight="bold" fill="#000">3.65</text>
+  <text x="37.15" y="9.37" font-family="DejaVu Sans" font-size="1.95"
+    text-anchor="end" fill="#111">N.WT:</text>
+  <text x="37.85" y="9.37" font-family="DejaVu Sans" font-size="1.95"
+    font-weight="bold" fill="#000">3.65</text>
+  <text x="37.15" y="11.56" font-family="DejaVu Sans" font-size="1.95"
+    text-anchor="end" fill="#111">HUID:</text>
+  <text x="37.85" y="11.56" font-family="DejaVu Sans" font-size="1.95"
+    font-weight="bold" fill="#000">IVFN8S</text>
+  <line x1="27.736800000000002" y1="1" x2="27.736800000000002" y2="11.7" stroke="#e2e2e2" stroke-width="0.12" stroke-dasharray="0.5 0.4"/>
+</svg>

@@ -18,12 +18,16 @@ files:
 extraResources:
   # Compiled NestJS backend with its own production node_modules (incl. the
   # Prisma SQLite engine) and the pristine template database.
+  #
+  # NOTE: scripts that only make sense at build time must be filtered out with
+  # `!**/…` — a bare filename glob only matches the root of `from:`.
   - from: staging/backend
     to: backend
     filter:
       - '**/*'
-      - '!seed-desktop.cjs'
-      - '!package-lock.json'
+      - '!**/seed-desktop.cjs'
+      - '!**/package-lock.json'
+      - '!**/*.map'
   # Built React app served by the local backend.
   - from: staging/frontend
     to: frontend
@@ -56,8 +60,15 @@ nsis:
   shortcutName: Shri Jewellers ERP
   uninstallDisplayName: Shri Jewellers ERP
   runAfterFinish: true
+  # Differential (delta) installers are pointless without electron-updater and
+  # make every build pay for an extra block-map pass.
+  differentialPackage: false
   include: assets/installer.nsh
   artifactName: ShriJewellersERP-Setup-${version}.${ext}
+  # NSIS is downloaded once into the electron-builder cache
+  # (%LOCALAPPDATA%\electron-builder\Cache). On networks where GitHub release
+  # assets are blocked, pre-fetch it with `npm run tools:fetch` (mirrors
+  # supported) — see docs/ELECTRON.md → Troubleshooting.
 
 portable:
   artifactName: ShriJewellersERP-Portable-${version}.${ext}

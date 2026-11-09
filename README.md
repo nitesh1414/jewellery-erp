@@ -262,6 +262,10 @@ npm run dist:desktop         # current OS
 ```
 
 Prerequisites per OS are listed in **[docs/ELECTRON.md](docs/ELECTRON.md)**.
+If the build stops right after `signing with signtool.exe … elevate.exe`, the
+NSIS toolchain could not be downloaded — run `npm run tools:fetch` (mirror
+friendly) once and rebuild. See
+**[docs/ELECTRON.md → Troubleshooting](docs/ELECTRON.md#troubleshooting)**.
 
 After installing, the app opens the activation screen: paste the license key
 you received (the machine ID shown there is what your vendor needs for

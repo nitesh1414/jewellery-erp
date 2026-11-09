@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import JsBarcode from 'jsbarcode';
 import { api } from '../../services/api';
+import JewelleryTag, { TAG_H_MM, TAG_W_MM } from './JewelleryTag';
 import { Printer, ArrowLeft, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,11 +12,13 @@ import { useNavigate } from 'react-router-dom';
  * your printer. Every common small jewellery label size is included; the
  * page layout is in real millimetres so what you see is what prints.
  *
- * EVERY size prints the same tag design:
- *   left half  — jewellery shop name with the barcode under it
- *   right half — Item, Purity, Gross, Net, HUID
- * The type and the barcode scale with the sticker, so a 22 × 12 cm tag and a
- * 38 × 25 mm sticker look identical.
+ * Two tag designs are rendered:
+ *
+ *  • standard  (19 × 9 mm … 22 × 12 cm) — shop name + barcode on the left,
+ *    Item / Purity / Gross / Net / HUID on the right; type scales with the tag.
+ *  • jewellery barbell tag (2.1 × 0.5 in) — the compact price-tag layout used
+ *    by Indian jewellers: shop name + barcode + number on the left,
+ *    Item / PURITY / G WT / N.WT / HUID on the right (see JewelleryTag.tsx).
  */
 
 interface StickerSize {
@@ -26,7 +29,7 @@ interface StickerSize {
   cols: number; // stickers per row on A4 sheet (for sheet layouts)
   layout: 'sheet' | 'roll';
   desc: string;
-  variant?: 'stack' | 'split'; // split = big tag: shop name + barcode left, details right
+  variant?: 'stack' | 'split' | 'jewellery'; // split = big tag; jewellery = 2.1 × 0.5 in barbell tag
 }
 
 const STICKER_SIZES: StickerSize[] = [
@@ -40,6 +43,10 @@ const STICKER_SIZES: StickerSize[] = [
   { key: '50x38', label: '50 × 38 mm', w: 50, h: 38, cols: 4, layout: 'sheet', desc: 'Large label with rate' },
   { key: 'roll58', label: 'Roll 58 mm (thermal)', w: 58, h: 20, cols: 1, layout: 'roll', desc: '58mm thermal printer roll' },
   { key: 'roll80', label: 'Roll 80 mm (thermal)', w: 80, h: 25, cols: 1, layout: 'roll', desc: '80mm thermal printer roll' },
+  {
+    key: '2.1x0.5', label: '2.1 × 0.5 in (53 × 13 mm)', w: TAG_W_MM, h: TAG_H_MM, cols: 1, layout: 'roll', variant: 'jewellery',
+    desc: 'Jewellery barbell tag — shop name + barcode left, item / purity / G.WT / N.WT / HUID right',
+  },
   {
     key: '220x120', label: '22 × 12 cm tag', w: 220, h: 120, cols: 1, layout: 'sheet', variant: 'split',
     desc: 'Big tag — shop name + barcode on the left, item / purity / gross / net / HUID on the right',
@@ -57,10 +64,17 @@ export default function BarcodePrintPage() {
   const [copies, setCopies] = useState(1);
 
   const size = STICKER_SIZES.find((s) => s.key === sizeKey)!;
-  // A 22 × 12 cm tag is its own page (print on tag card / custom 220×120mm paper)
-  const pageCss = size.variant === 'split'
-    ? `@page { size: ${size.w}mm ${size.h}mm; margin: 0; } @media print { body { margin: 0; } }`
-    : '@page { size: A4; margin: 8mm; }';
+  // Sizes that are their own page (big 22 × 12 cm tag card, 2.1 × 0.5 in label
+  // roll) tell the browser the exact paper size, so a label printer feeds one
+  // sticker per page instead of scaling to A4.
+  const ownPage = size.variant === 'split' || size.variant === 'jewellery';
+  const pageCss =
+    (ownPage
+      ? `@page { size: ${size.w}mm ${size.h}mm; margin: 0; } @media print { body { margin: 0; } }`
+      : '@page { size: A4; margin: 8mm; }') +
+    // The dashed guides are an on-screen cutting aid only.
+    ' @media print { .jewellery-tag, .jewellery-tag * { border-color: transparent !important; } }';
+  const isTag = size.variant === 'jewellery';
 
   // Shop name (Settings) — the tag design itself is fixed
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings() });
@@ -115,7 +129,7 @@ export default function BarcodePrintPage() {
           <span className="text-sm text-gray-400">{stickers.length} sticker{stickers.length === 1 ? '' : 's'}</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <select className="input-field w-56 !py-1.5 text-sm" value={sizeKey} onChange={(e) => setSizeKey(e.target.value)}>
+          <select className="input-field w-72 !py-1.5 text-sm" value={sizeKey} onChange={(e) => setSizeKey(e.target.value)}>
             {STICKER_SIZES.map((s) => (
               <option key={s.key} value={s.key}>{s.label} — {s.desc}</option>
             ))}
@@ -135,32 +149,58 @@ export default function BarcodePrintPage() {
           <p>
             {size.variant === 'split'
               ? <>Each <strong>22 × 12 cm tag</strong> prints on its own page — put the tag card in the printer or pick a custom {size.w} × {size.h} mm paper size in the print dialog.</>
-              : <>In the print dialog choose your sticker paper size (or the label preset matching {size.label}). For roll printers pick the 58/80&nbsp;mm roll layouts.</>}
+              : size.variant === 'jewellery'
+                ? <>This <strong>2.1 × 0.5 in (53.3 × 12.7 mm)</strong> barbell tag prints one label per page — set your label printer's stock to 2.1 × 0.5 in (or 54 × 13 mm) and print at <strong>100%</strong> / “actual size”.</>
+                : <>In the print dialog choose your sticker paper size (or the label preset matching {size.label}). For roll printers pick the 58/80&nbsp;mm roll layouts.</>}
           </p>
           <p>
-            Every tag prints the same design: <strong className="text-gray-600">shop name + barcode</strong> on the
-            left, <strong className="text-gray-600">Item · Purity · Gross · Net · HUID</strong> on the right. The shop
+            Every tag prints <strong className="text-gray-600">shop name + barcode</strong> on the left and
+            <strong className="text-gray-600"> Item · Purity · G.WT · N.WT · HUID</strong> on the right — the 2.1 × 0.5 in
+            size uses the compact jewellery price-tag layout, the other sizes the large tag card. The shop
             name comes from <button onClick={() => window.open('/settings', '_blank')} className="underline text-primary-600">Settings</button>.
-            {size.h < 25 && <> The {size.label} sticker is small for six pieces of information — use a bigger size if the text prints too fine.</>}
+            {size.h < 25 && size.variant !== 'jewellery' && <> The {size.label} sticker is small for six pieces of information — use a bigger size if the text prints too fine.</>}
           </p>
         </div>
         {isLoading ? (
           <div className="text-center py-16 text-gray-400">Loading…</div>
         ) : (
-          <div className={'print-area ' + (size.layout === 'roll' ? 'flex flex-col items-center gap-1' : 'grid')}
-               style={size.layout === 'sheet' ? { gridTemplateColumns: `repeat(${size.cols}, ${size.w}mm)`, gap: '2mm' } : undefined}>
-            {stickers.map((b: any, i: number) => (
-              <SplitTag
-                key={i}
-                barcode={b.barcode}
-                item={b.jewelleryItem}
-                size={size}
-                shopName={shopName}
-                shop={settings}
-                precision={precision}
-                isLast={i === stickers.length - 1}
-              />
-            ))}
+          <div
+            className={
+              'print-area ' +
+              (isTag ? 'block' : size.layout === 'roll' ? 'flex flex-col items-center gap-1' : 'grid')
+            }
+            style={
+              isTag
+                ? undefined
+                : size.layout === 'sheet'
+                  ? { gridTemplateColumns: `repeat(${size.cols}, ${size.w}mm)`, gap: '2mm' }
+                  : undefined
+            }
+          >
+            {stickers.map((b: any, i: number) =>
+              isTag ? (
+                <JewelleryTag
+                  key={i}
+                  barcode={b.barcode}
+                  item={b.jewelleryItem}
+                  shopName={shopName}
+                  width={size.w}
+                  height={size.h}
+                  isLast={i === stickers.length - 1}
+                />
+              ) : (
+                <SplitTag
+                  key={i}
+                  barcode={b.barcode}
+                  item={b.jewelleryItem}
+                  size={size}
+                  shopName={shopName}
+                  shop={settings}
+                  precision={precision}
+                  isLast={i === stickers.length - 1}
+                />
+              )
+            )}
           </div>
         )}
       </div>

@@ -70,10 +70,11 @@ export default function BarcodesPage() {
     scanRef.current?.focus();
   };
 
-  const printStickers = async (ids: string[]) => {
+  const printStickers = async (ids: string[], size?: string) => {
     if (!ids.length) { toast.error('Nothing to print'); return; }
     try { await api.post('/barcodes/batch/print', { barcodeIds: ids }); } catch { /* tracking only */ }
-    window.open('/print/barcodes?ids=' + ids.join(','), '_blank');
+    const sizeParam = size ? '&size=' + size : '';
+    window.open('/print/barcodes?ids=' + ids.join(',') + sizeParam, '_blank');
   };
 
   const handlePrint = async (barcodeId: string) => {
@@ -86,6 +87,12 @@ export default function BarcodesPage() {
   const handleBatchPrint = async () => {
     if (!data?.items?.length) { toast.error('No barcodes on this page'); return; }
     printStickers(data.items.map((i: any) => i.id));
+  };
+
+  /** Same page, but straight to the 2.1 × 0.5 in jewellery barbell tag design. */
+  const handleTagPrint = async () => {
+    if (!data?.items?.length) { toast.error('No barcodes on this page'); return; }
+    printStickers(data.items.map((i: any) => i.id), '2.1x0.5');
   };
 
   const handlePrintUnassigned = async () => {
@@ -108,6 +115,9 @@ export default function BarcodesPage() {
           </button>
           <button onClick={handleBatchPrint} className="btn-secondary">
             <Printer className="w-4 h-4" /> Print This Page
+          </button>
+          <button onClick={handleTagPrint} className="btn-secondary" title="2.1 × 0.5 in jewellery barbell tag">
+            <Tag className="w-4 h-4" /> Print Jewellery Tags
           </button>
           <button onClick={handlePrintUnassigned} className="btn-secondary">
             <Printer className="w-4 h-4" /> Print Unassigned

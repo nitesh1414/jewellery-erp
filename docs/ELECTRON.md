@@ -130,3 +130,92 @@ npm run dev:desktop   # builds backend+frontend, launches the Electron shell
   to allow). Set a Developer ID + `notarize` for distribution.
 * App updates keep the user's database and subscription license intact
   (they live in the user data folder, outside the installation directory).
+
+## Troubleshooting
+
+Every build can be driven through the wrapper, which checks the environment
+first, pre-fetches the NSIS toolchain, writes a full log to
+`packages/desktop-electron/release/build.log` and turns the common failures
+into an actionable message:
+
+```bash
+npm run dist:desktop:win                 # wrapper (recommended)
+npm run dist:desktop:win:no-fetch        # offline: toolchain must be cached
+npm run dist:desktop:win:verbose         # DEBUG=electron-builder
+node scripts/build-desktop.mjs win --skip-prepare   # re-package only
+```
+
+### Build stops after “signing with signtool.exe … elevate.exe”
+
+This is the most common Windows failure and it is **not** a code problem. That
+line is the last step before electron-builder unpacks its **NSIS toolchain**,
+which it downloads from GitHub *release assets*:
+
+```
+• signing with signtool.exe  path=release\win-unpacked\resources\elevate.exe
+• no signing info identified, signing is skipped
+⨯ Get "https://release-assets.githubusercontent.com/…nsis-resources-3.4.1.7z…": EOF
+```
+
+`release-assets.githubusercontent.com` is frequently blocked or throttled on
+Indian ISPs, office proxies and antivirus web filters. Fix it once, before the
+build:
+
+```powershell
+npm run tools:fetch                      # retries + automatic public mirror
+npm run tools:fetch -- --mirror https://npmmirror.com/mirrors/electron-builder-binaries/
+npm run tools:check                      # → "✔ … (cached)"
+```
+
+Then rebuild. If the machine has no internet at all, run `tools:fetch` on a
+connected machine and copy the cache folder:
+
+| OS | electron-builder cache |
+|---|---|
+| Windows | `%LOCALAPPDATA%\electron-builder\Cache` |
+| macOS | `~/Library/Caches/electron-builder` |
+| Linux | `~/.cache/electron-builder` |
+
+(`ELECTRON_BUILDER_CACHE` can point at a shared folder instead.)
+
+### Build stops while downloading Electron (`electron-v33.x.y-win32-x64.zip`)
+
+Same root cause, different file: the Electron runtime zip is also served from
+GitHub release assets. Use a mirror and rebuild:
+
+```powershell
+$env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"   # PowerShell
+set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/         # cmd
+npm run dist:desktop:win
+```
+
+### “EPERM / EBUSY: operation not permitted” while writing `release\`
+
+A file from a previous build is locked: the app is still running, an Explorer
+window is showing the folder, or antivirus is scanning the new `.exe`. Close
+the app and Explorer, pause real-time protection, then rebuild. The wrapper
+closes stray `Shri Jewellers ERP.exe` processes and removes the stale
+`release\win-unpacked` automatically.
+
+### makensis fails (`cannot execute … exit status 1`)
+
+The generated installer script did not compile — usually a mistake in
+`packages/desktop-electron/assets/installer.nsh`. The makensis error text is
+printed above the failure (and stored in `release/build.log`); fix the include
+and rebuild. Nothing needs to be downloaded again at this point.
+
+### Installer is huge / build is slow
+
+`staging/backend/node_modules` (Prisma engines, NestJS, SQLite) plus Electron
+produce a ~300–400 MB installer and the build needs ~4 GB of free disk. The
+first run is slower because production dependencies are installed into
+`staging/` and the Prisma client is generated for Windows.
+
+### Re-running just the packaging step
+
+```bash
+node scripts/build-desktop.mjs win --skip-prepare --keep-release
+```
+
+The staging folder is reused; delete `packages/desktop-electron/staging` if the
+backend/frontend changed.
